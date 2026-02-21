@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+@theme {
+  --color-nature-bg: #F7F5F0;
+  --color-nature-surface: #FFFFFF;
+  --color-nature-text: #333333;
+  --color-nature-textLight: #666666;
+  --color-nature-primary: #2D5A27;
+  --color-nature-accent: #C4A484;
+  --color-nature-mint: #D1E8E2;
+  --color-nature-border: #E5E0D5;
+
+  --font-sans: "Inter", sans-serif;
+  --font-serif: "Playfair Display", serif;
+
+  --radius-4xl: 2rem;
+  --radius-bento: 32px;
+
+  --shadow-soft: 0 10px 40px -10px rgba(45, 90, 39, 0.05);
+  --shadow-floating: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-nature-bg);
+  color: var(--color-nature-text);
+}
+
+h1, h2, h3, .font-serif {
+  font-family: var(--font-serif);
+}
+
+/* Control de Capas Estilizado */
+.leaflet-control-layers {
+  border-radius: 12px !important;
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  font-family: var(--font-sans) !important;
+  padding: 4px !important;
+  overflow: hidden;
+}
+.leaflet-control-layers-toggle {
+  background-color: white;
+  border-radius: 12px;
+}
+.leaflet-control-layers-expanded {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  padding: 10px !important;
+  color: #333;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(25px);
+  border-right: 1px solid rgba(45, 90, 39, 0.08);
+}
+
+.bento-card {
+  background: #ffffff;
+  border: 1px solid rgba(229, 224, 213, 0.6);
+  border-radius: 24px;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.bento-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+  border-color: var(--color-nature-mint);
+}
+
+.priority-necessary {
+  border-left: 4px solid var(--color-nature-primary);
+}
+.priority-optional {
+  border-left: 4px solid var(--color-nature-accent);
+}
+
+/* --- NUEVO: Marcadores tipo Pin (Gota invertida) --- */
+.pin-marker {
+  width: 36px;
+  height: 36px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: -3px 3px 8px rgba(0, 0, 0, 0.4); /* Sombra proyectada */
+  border: 3px solid white;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pin-marker:hover {
+  transform: rotate(-45deg) scale(1.15) translateY(-5px);
+  z-index: 1000 !important;
+}
+
+/* Corrección para que el icono dentro del pin se vea recto */
+.pin-inner {
+  transform: rotate(45deg);
+  font-size: 16px;
+  margin-top: 2px;
+  margin-left: 2px;
+}
+
+.marker-pulse {
+  animation: pulse-jump 2s infinite;
+}
+
+@keyframes pulse-jump {
+  0% { transform: rotate(-45deg) scale(1); }
+  50% { transform: rotate(-45deg) scale(1.1); }
+  100% { transform: rotate(-45deg) scale(1); }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.custom-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1em;
+}
+
+.input-soft {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+.input-soft:focus {
+  background: white;
+  border-color: var(--color-nature-primary);
+  box-shadow: 0 0 0 4px rgba(45, 90, 39, 0.05);
+}

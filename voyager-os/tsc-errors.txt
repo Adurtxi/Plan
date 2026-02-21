@@ -1,0 +1,8 @@
+﻿src/App.tsx(77,13): error TS2339: Property 'active' does not exist on type 'DragEndEvent'.
+src/App.tsx(77,21): error TS2339: Property 'over' does not exist on type 'DragEndEvent'.
+src/App.tsx(182,29): error TS2322: Type '(event: L.DragEndEvent) => void' is not assignable to type '(event: import("C:/Users/adurm/Documents/GIT/Planner/voyager-os/node_modules/@dnd-kit/core/dist/types/events").DragEndEvent) => void'.
+  Types of parameters 'event' and 'event' are incompatible.
+    Type 'DragEndEvent' is missing the following properties from type 'DragEndEvent': distance, type, popup, target, and 3 more.
+src/App.tsx(215,27): error TS2322: Type '(event: L.DragEndEvent) => void' is not assignable to type '(event: import("C:/Users/adurm/Documents/GIT/Planner/voyager-os/node_modules/@dnd-kit/core/dist/types/events").DragEndEvent) => void'.
+  Types of parameters 'event' and 'event' are incompatible.
+    Type 'DragEndEvent' is missing the following properties from type 'DragEndEvent': distance, type, popup, target, and 3 more.

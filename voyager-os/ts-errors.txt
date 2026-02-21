@@ -1,0 +1,4 @@
+﻿src/App.tsx(7,44): error TS6133: 'Camera' is declared but its value is never read.
+src/App.tsx(7,52): error TS6133: 'Utensils' is declared but its value is never read.
+src/App.tsx(7,62): error TS6133: 'Bed' is declared but its value is never read.
+src/App.tsx(7,67): error TS6133: 'ShoppingBag' is declared but its value is never read.
