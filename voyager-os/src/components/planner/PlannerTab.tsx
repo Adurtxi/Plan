@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Polyline } from 'react-leaflet';
 import { DndContext, closestCenter, type DragEndEvent, type DragStartEvent, useSensor, useSensors, PointerSensor, DragOverlay } from '@dnd-kit/core';
 import { LocationForm } from './LocationForm';
@@ -12,14 +12,10 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { CardVisual } from '../ui/SortableCard';
 import type { Category, Priority, ReservationStatus } from '../../types';
 
-const hashString = (s: string) => {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-  return h;
-};
+
 
 export const PlannerTab = () => {
-  const { locations, filterDay, updateLocationDay, addLocation, setSelectedLocationId } = useAppStore();
+  const { locations, filterDay, transports, updateLocationDay, addLocation, setSelectedLocationId } = useAppStore();
   const { isMobile } = useResponsive();
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -29,8 +25,11 @@ export const PlannerTab = () => {
   const [tempImages, setTempImages] = useState<{ data: string, name: string }[]>([]);
   const [formPriority, setFormPriority] = useState<Priority>('optional');
   const [formCat, setFormCat] = useState<Category>('sight');
+  const [formSlot, setFormSlot] = useState<string>('Mañana');
+  const [formCurrency, setFormCurrency] = useState<string>('EUR');
   const [isFormPanelOpen, setIsFormPanelOpen] = useState(false);
-  const [osrmRoute, setOsrmRoute] = useState<[number, number][] | null>(null);
+
+  const [isAddMode, setIsAddMode] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -73,20 +72,26 @@ export const PlannerTab = () => {
     const loc = locations.find(l => l.id === id);
     if (!loc) return;
     setFormId(loc.id); setTempImages(loc.images); setFormPriority(loc.priority); setFormCat(loc.cat);
+    setFormSlot(loc.slot || 'Mañana'); setFormCurrency(loc.newPrice?.currency || 'EUR');
     setTimeout(() => {
       const form = document.getElementById('mainForm') as HTMLFormElement;
       if (form) {
         (form.elements.namedItem('link') as HTMLInputElement).value = loc.link;
+        (form.elements.namedItem('title') as HTMLInputElement).value = loc.title || '';
         (form.elements.namedItem('cost') as HTMLInputElement).value = loc.cost;
-        (form.elements.namedItem('slot') as HTMLSelectElement).value = loc.slot;
         (form.elements.namedItem('notes') as HTMLTextAreaElement).value = loc.notes;
+        if (loc.datetime) (form.elements.namedItem('datetime') as HTMLInputElement).value = loc.datetime;
+        if (loc.checkOutDatetime) (form.elements.namedItem('checkOutDatetime') as HTMLInputElement).value = loc.checkOutDatetime;
+        if (loc.bookingRef) (form.elements.namedItem('bookingRef') as HTMLInputElement).value = loc.bookingRef;
+        if (loc.newPrice?.amount) (form.elements.namedItem('priceAmount') as HTMLInputElement).value = loc.newPrice.amount.toString();
       }
-      setIsFormPanelOpen(true); setSelectedLocationId(null);
+      setIsFormPanelOpen(true); setSelectedLocationId(null); setIsAddMode(false);
     }, 0);
   };
 
   const resetForm = () => {
     setFormId(null); setTempImages([]); setFormPriority('optional'); setFormCat('sight');
+    setFormSlot('Mañana'); setFormCurrency('EUR');
     (document.getElementById('mainForm') as HTMLFormElement)?.reset();
   };
 
@@ -118,6 +123,7 @@ export const PlannerTab = () => {
 
     addLocation({
       id: formId || Date.now(),
+      title: formData.get('title') as string || undefined,
       link,
       coords: finalCoords,
       priority: formPriority,
@@ -135,7 +141,7 @@ export const PlannerTab = () => {
       bookingRef: formData.get('bookingRef') as string || undefined
     });
 
-    resetForm(); setIsFormPanelOpen(false);
+    resetForm(); setIsFormPanelOpen(false); setIsAddMode(false);
   };
 
   const handleFiles = (files: FileList | null) => {
@@ -157,65 +163,65 @@ export const PlannerTab = () => {
     });
   };
 
-  useEffect(() => {
-    let isMounted = true;
-    if (filterDay === 'all' || filterDay === 'unassigned') {
-      setOsrmRoute(null);
-      return;
-    }
 
-    const dayItems = locations.filter(l => l.day === filterDay && l.coords);
-    const weight: Record<string, number> = { "Mañana": 1, "Tarde": 2, "Noche": 3 };
-    dayItems.sort((a, b) => (weight[a.slot] || 4) - (weight[b.slot] || 4));
-
-    if (dayItems.length > 1) {
-      const coordinates = dayItems.map(i => `${i.coords!.lng},${i.coords!.lat}`).join(';');
-      const cacheKey = `osrm_${Math.abs(hashString(coordinates))}`;
-
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        setOsrmRoute(JSON.parse(cached));
-      } else {
-        fetch(`https://router.project-osrm.org/route/v1/foot/${coordinates}?overview=full&geometries=geojson`)
-          .then(res => res.json())
-          .then(data => {
-            if (isMounted && data.routes && data.routes[0]) {
-              const coords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
-              localStorage.setItem(cacheKey, JSON.stringify(coords));
-              setOsrmRoute(coords);
-            } else if (isMounted) {
-              setOsrmRoute(null);
-            }
-          })
-          .catch(err => {
-            console.error("OSRM Error:", err);
-            if (isMounted) setOsrmRoute(null);
-          });
-      }
-    } else {
-      setOsrmRoute(null);
-    }
-
-    return () => { isMounted = false; };
-  }, [locations, filterDay]);
+  const handleRouteClick = (e: any, _fromId: number, toId: number) => {
+    e.originalEvent.stopPropagation();
+    // Para simplificar, abrimos el Detalle del destino (toId) al hacer clic en la ruta
+    setSelectedLocationId(toId);
+  };
 
   const routePolylines = useMemo(() => {
     if (filterDay === 'all' || filterDay === 'unassigned') return null;
-    const dayItems = locations.filter(l => l.day === filterDay && l.coords);
-    const weight: Record<string, number> = { "Mañana": 1, "Tarde": 2, "Noche": 3 };
-    dayItems.sort((a, b) => (weight[a.slot] || 4) - (weight[b.slot] || 4));
+    const dayItems = locations.filter(l => l.day === filterDay && l.coords && (l.variantId || 'default') === 'default');
 
     if (dayItems.length > 1) {
-      const latlngs = osrmRoute || dayItems.map(i => [i.coords!.lat, i.coords!.lng] as [number, number]);
       return (
         <>
-          <Polyline positions={latlngs} color="white" weight={7} opacity={0.7} lineCap="round" lineJoin="round" />
-          <Polyline positions={latlngs} color="#2D5A27" weight={3} dashArray={osrmRoute ? undefined : "10, 10"} opacity={1} />
+          {dayItems.map((item, idx) => {
+            if (idx === dayItems.length - 1) return null;
+            const nextItem = dayItems[idx + 1];
+            const transportId = `${item.id}-${nextItem.id}`;
+            const segment = transports.find(t => t.id === transportId);
+
+            const hasPolyline = segment?.polyline && segment.polyline.length > 0;
+            const latlngs = hasPolyline
+              ? segment.polyline!
+              : [[item.coords!.lat, item.coords!.lng], [nextItem.coords!.lat, nextItem.coords!.lng]] as [number, number][];
+
+            return (
+              <React.Fragment key={transportId}>
+                <Polyline positions={latlngs} color="white" weight={10} opacity={0.5} lineCap="round" lineJoin="round" eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }} />
+                <Polyline positions={latlngs} color={hasPolyline ? (segment.mode === 'car' ? '#3b82f6' : '#2D5A27') : "#9ca3af"} weight={4} dashArray={hasPolyline ? undefined : "10, 10"} opacity={1} eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }} />
+              </React.Fragment>
+            );
+          })}
         </>
-      )
+      );
     }
     return null;
-  }, [locations, filterDay, osrmRoute]);
+  }, [locations, filterDay, transports, setSelectedLocationId]);
+
+  const handleMapClick = (lat: number, lng: number) => {
+    if (!isAddMode) {
+      // Si no estamos en modo añadir, no abrimos el panel para no interferir
+      return;
+    }
+
+    resetForm();
+    setIsFormPanelOpen(true);
+    setSelectedLocationId(null);
+    setTimeout(() => {
+      const form = document.getElementById('mainForm') as HTMLFormElement;
+      if (form) {
+        // Pre-fill the link field with the coordinates so the form can parse it naturally
+        (form.elements.namedItem('link') as HTMLInputElement).value = `@${lat},${lng}`;
+      }
+    }, 0);
+  };
+
+  // NEW: layout mode state
+  type ViewMode = 'split-horizontal' | 'split-vertical' | 'map-only' | 'board-only';
+  const [viewMode, setViewMode] = useState<ViewMode>('split-horizontal');
 
   if (isMobile) {
     return <MobileTimelineView />;
@@ -224,25 +230,66 @@ export const PlannerTab = () => {
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
       <div className="flex-1 flex overflow-hidden relative">
-        <IdeaInbox
-          handleEdit={handleEdit}
-          handleAddNew={() => { resetForm(); setIsFormPanelOpen(true); setSelectedLocationId(null); }}
-        />
-        <LocationForm
-          isFormPanelOpen={isFormPanelOpen} setIsFormPanelOpen={setIsFormPanelOpen}
-          formId={formId} formPriority={formPriority} setFormPriority={setFormPriority}
-          formCat={formCat} setFormCat={setFormCat} tempImages={tempImages} setTempImages={setTempImages}
-          handleAddLocation={handleAddLocation} handleFiles={handleFiles} resetForm={resetForm}
-          locations={locations} handleEdit={handleEdit}
-        />
         <div className="flex-1 flex flex-col relative w-full overflow-hidden bg-nature-bg">
-          <MapView routePolylines={routePolylines} setIsFormPanelOpen={setIsFormPanelOpen} />
-          <ScheduleBoard handleEdit={handleEdit} />
+          <IdeaInbox
+            handleEdit={handleEdit}
+            handleAddNew={() => { resetForm(); setIsFormPanelOpen(true); setSelectedLocationId(null); setIsAddMode(false); }}
+          />
+
+          <LocationForm
+            isFormPanelOpen={isFormPanelOpen} setIsFormPanelOpen={setIsFormPanelOpen}
+            formId={formId} formPriority={formPriority} setFormPriority={setFormPriority}
+            formCat={formCat} setFormCat={setFormCat}
+            formSlot={formSlot} setFormSlot={setFormSlot}
+            formCurrency={formCurrency} setFormCurrency={setFormCurrency}
+            tempImages={tempImages} setTempImages={setTempImages}
+            handleAddLocation={handleAddLocation} handleFiles={handleFiles} resetForm={resetForm}
+            locations={locations} handleEdit={handleEdit}
+          />
+
+          <div className={`flex flex-1 w-full h-full overflow-hidden ${viewMode === 'split-horizontal' ? 'flex-col' :
+            viewMode === 'split-vertical' ? 'flex-row' :
+              'flex-col' // fallbacks for single views will just hide the other component
+            }`}>
+            {viewMode !== 'board-only' && (
+              <div className={`${viewMode === 'map-only' ? 'w-full h-full' :
+                viewMode === 'split-vertical' ? 'flex-1 h-full border-r border-gray-200' :
+                  'w-full h-[55%] border-b border-gray-200'
+                } shrink-0 transition-all duration-300 relative`}>
+                <MapView
+                  routePolylines={routePolylines}
+                  setIsFormPanelOpen={setIsFormPanelOpen}
+                  onMapClick={handleMapClick}
+                  isAddMode={isAddMode}
+                  setIsAddMode={setIsAddMode}
+                />
+              </div>
+            )}
+
+            {viewMode !== 'map-only' && (
+              <div className={`${viewMode === 'board-only' ? 'w-full h-full' :
+                viewMode === 'split-vertical' ? 'w-[400px] shrink-0 h-full' :
+                  'w-full flex-1'
+                } overflow-hidden transition-all duration-300 relative`}>
+                <ScheduleBoard handleEdit={handleEdit} viewMode={viewMode} />
+              </div>
+            )}
+
+            {/* Global View Selector (Always visible) */}
+            <div className="absolute bottom-6 right-6 z-[600]">
+              <div className="bg-white/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-white">
+                <button onClick={() => setViewMode('split-horizontal')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-horizontal' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Mapa Arriba"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
+                <button onClick={() => setViewMode('split-vertical')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-vertical' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Mapa Izquierda"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
+                <button onClick={() => setViewMode('map-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'map-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Solo Mapa"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>
+                <button onClick={() => setViewMode('board-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'board-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Solo Tablero"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+              </div>
+            </div>
+          </div>
         </div>
         <DetailModal onEdit={handleEdit} />
       </div>
-      <DragOverlay>
-        {activeItem ? <CardVisual item={activeItem} isOverlay /> : null}
+      <DragOverlay dropAnimation={{ duration: 250, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
+        {activeItem ? <div style={{ cursor: 'grabbing', opacity: 0.9, transform: 'scale(1.05)' }}><CardVisual item={activeItem} isOverlay /></div> : null}
       </DragOverlay>
     </DndContext>
   );

@@ -86,22 +86,25 @@ h1, h2, h3, .font-serif {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: -3px 3px 8px rgba(0, 0, 0, 0.4); /* Sombra proyectada */
+  box-shadow: -3px 3px 8px rgba(0, 0, 0, 0.4);
   border: 3px solid white;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.pin-marker:hover {
-  transform: rotate(-45deg) scale(1.15) translateY(-5px);
-  z-index: 1000 !important;
 }
 
 /* Corrección para que el icono dentro del pin se vea recto */
 .pin-inner {
   transform: rotate(45deg);
+  width: 100%;
+  height: 100%;
   font-size: 16px;
-  margin-top: 2px;
-  margin-left: 2px;
+}
+
+.pin-inner img {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pin-marker:hover .pin-inner img {
+  opacity: 1;
 }
 
 .marker-pulse {
@@ -115,18 +118,19 @@ h1, h2, h3, .font-serif {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: rgba(45, 90, 39, 0.2);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: rgba(45, 90, 39, 0.4);
 }
 
 .custom-select {
@@ -146,4 +150,17 @@ h1, h2, h3, .font-serif {
   background: white;
   border-color: var(--color-nature-primary);
   box-shadow: 0 0 0 4px rgba(45, 90, 39, 0.05);
+}
+
+/* Custom Cursor for Map Add Mode */
+.add-mode-active, 
+.add-mode-active .leaflet-interactive, 
+.add-mode-active.leaflet-container,
+.add-mode-active.leaflet-grab {
+  cursor: crosshair !important;
+}
+
+.crosshair-cursor-override,
+.crosshair-cursor-override * {
+  cursor: crosshair !important;
 }

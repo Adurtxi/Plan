@@ -18,12 +18,16 @@ export interface TransportSegment {
   toLocationId: number;
   mode: 'walk' | 'car' | 'transit' | 'flight';
   durationOverride?: number; // In minutes, overrides OSRM if set
+  durationCalculated?: number; // In minutes, from API
+  distance?: number; // In meters, from API
+  polyline?: [number, number][]; // Array of [lat, lng] for drawing the route
   customCost?: PriceInfo;
   notes?: string;
 }
 
 export interface LocationItem {
   id: number;
+  title?: string; // Optional user-defined title
   link: string;
   coords: { lat: number; lng: number } | null;
   priority: Priority;

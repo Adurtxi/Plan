@@ -6,7 +6,7 @@ import { Edit2, CheckCircle2, AlertCircle, Clock, Lightbulb } from 'lucide-react
 import type { LocationItem } from '../../types';
 import { CAT_ICONS } from '../../constants';
 
-export const CardVisual = memo(({ item, onClick, isOverlay }: { item: LocationItem, onClick?: () => void, isOverlay?: boolean }) => {
+export const CardVisual = memo(({ item, onClick, onMoveClick, isMoving, isOverlay }: { item: LocationItem, onClick?: () => void, onMoveClick?: () => void, isMoving?: boolean, isOverlay?: boolean }) => {
   const getStatusIcon = () => {
     switch (item.reservationStatus) {
       case 'booked': return <CheckCircle2 size={12} className="text-green-500" />;
@@ -22,12 +22,12 @@ export const CardVisual = memo(({ item, onClick, isOverlay }: { item: LocationIt
     : (item.cost ? `${item.cost}€` : '-');
 
   const content = (
-    <div className={`bento-card p-4 cursor-grab active:cursor-grabbing relative group bg-white border ${item.priority === 'necessary' ? 'border-nature-primary/30 shadow-[0_4px_20px_-4px_rgba(45,90,39,0.15)] ring-1 ring-nature-primary/10' : 'border-gray-100'} ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''}`}>
+    <div className={`bento-card p-4 cursor-grab active:cursor-grabbing relative group bg-white border ${item.priority === 'necessary' ? 'border-nature-primary/30 shadow-[0_4px_20px_-4px_rgba(45,90,39,0.15)] ring-1 ring-nature-primary/10' : 'border-gray-100'} ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''} ${isMoving ? 'ring-2 ring-nature-accent shadow-lg scale-[1.02]' : ''}`}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           <span className="text-xl text-gray-500 bg-gray-50 p-2 rounded-xl border border-gray-100">{CAT_ICONS[item.cat]}</span>
           <div className="flex flex-col">
-            <h3 className="text-sm font-bold text-nature-text truncate max-w-[120px]">{item.notes.split("\n")[0] || "Ubicación Mapeada"}</h3>
+            <h3 className="text-sm font-bold text-nature-text truncate max-w-[120px]">{item.title || item.notes.split("\n")[0] || "Ubicación"}</h3>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">
                 {formattedTime ? <span className="flex items-center gap-1"><Clock size={10} /> {formattedTime}</span> : item.slot || "S/H"}
@@ -48,11 +48,18 @@ export const CardVisual = memo(({ item, onClick, isOverlay }: { item: LocationIt
           <AlertCircle size={10} /> Urgente Reservar
         </div>
       )}
-      {onClick && (
-        <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="absolute -top-3 -right-3 text-gray-500 bg-white shadow-floating border border-gray-100 hover:text-nature-primary hover:scale-110 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all p-2 rounded-full w-8 h-8 flex items-center justify-center z-10">
-          <Edit2 size={12} />
-        </button>
-      )}
+      <div className="absolute -top-3 -right-3 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all z-10 w-auto">
+        {onMoveClick && (
+          <button onClick={(e) => { e.stopPropagation(); onMoveClick(); }} className={`text-gray-500 shadow-floating border border-gray-100 hover:text-nature-primary hover:scale-110 p-2 rounded-full w-8 h-8 flex items-center justify-center ${isMoving ? 'bg-nature-accent text-white' : 'bg-white'}`} title="Mover">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="19 9 22 12 19 15"></polyline><polyline points="9 19 12 22 15 19"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>
+          </button>
+        )}
+        {onClick && (
+          <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="text-gray-500 bg-white shadow-floating border border-gray-100 hover:text-nature-primary hover:scale-110 p-2 rounded-full w-8 h-8 flex items-center justify-center" title="Editar">
+            <Edit2 size={12} />
+          </button>
+        )}
+      </div>
     </div>
   );
 
@@ -64,7 +71,7 @@ export const CardVisual = memo(({ item, onClick, isOverlay }: { item: LocationIt
 });
 CardVisual.displayName = 'CardVisual';
 
-export const SortableCard = memo(({ item, onClick }: { item: LocationItem, onClick: () => void }) => {
+export const SortableCard = memo(({ item, onClick, onMoveClick, isMoving }: { item: LocationItem, onClick: () => void, onMoveClick?: () => void, isMoving?: boolean }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id.toString() });
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -75,7 +82,7 @@ export const SortableCard = memo(({ item, onClick }: { item: LocationItem, onCli
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="outline-none relative">
-      <CardVisual item={item} onClick={onClick} />
+      <CardVisual item={item} onClick={onClick} onMoveClick={onMoveClick} isMoving={isMoving} />
     </div>
   );
 });

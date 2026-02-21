@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, MapPin, Calendar, CreditCard, Image as ImageIcon } from 'lucide-react';
 import type { Category, Priority, LocationItem, ReservationStatus } from '../../types';
 import { CAT_ICONS } from '../../constants';
+import { CustomSelect } from '../ui/CustomSelect';
 
 interface LocationFormProps {
   isFormPanelOpen: boolean;
@@ -11,6 +12,10 @@ interface LocationFormProps {
   setFormPriority: (p: Priority) => void;
   formCat: Category;
   setFormCat: (c: Category) => void;
+  formSlot: string;
+  setFormSlot: (s: string) => void;
+  formCurrency: string;
+  setFormCurrency: (c: string) => void;
   tempImages: { data: string, name: string }[];
   setTempImages: React.Dispatch<React.SetStateAction<{ data: string, name: string }[]>>;
   handleAddLocation: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -22,6 +27,7 @@ interface LocationFormProps {
 
 export const LocationForm = ({
   isFormPanelOpen, setIsFormPanelOpen, formId, formPriority, setFormPriority, formCat, setFormCat,
+  formSlot, setFormSlot, formCurrency, setFormCurrency,
   tempImages, setTempImages, handleAddLocation, handleFiles, resetForm, locations,
 }: LocationFormProps) => {
   const [activeTab, setActiveTab] = useState<'general' | 'time' | 'finance' | 'assets'>('general');
@@ -60,8 +66,8 @@ export const LocationForm = ({
   );
 
   return (
-    <div className={`w-full md:w-[480px] shrink-0 bg-white border-r border-gray-100 flex flex-col z-20 shadow-2xl h-full absolute md:relative transform ${isFormPanelOpen ? 'translate-x-0' : '-translate-x-full md:hidden md:translate-x-0'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
-      <button type="button" onClick={() => setIsFormPanelOpen(false)} className="md:hidden absolute top-4 right-4 p-2 text-gray-400"><X size={24} /></button>
+    <div className={`w-full md:w-[480px] shrink-0 bg-white border-r border-gray-100 flex flex-col z-[520] shadow-[10px_0_30px_rgba(0,0,0,0.1)] h-full absolute top-0 bottom-0 left-0 transform ${isFormPanelOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
+      <button type="button" onClick={() => setIsFormPanelOpen(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-nature-primary z-50 bg-white/50 rounded-full backdrop-blur transition-colors"><X size={24} /></button>
 
       <div className="p-8 pb-4 bg-gray-50/50">
         <h2 className="text-3xl font-serif text-nature-primary mb-1">{formId ? 'Editar Actividad' : 'Nueva Actividad'}</h2>
@@ -79,6 +85,11 @@ export const LocationForm = ({
         <form id="mainForm" onSubmit={onFormSubmit} className="space-y-8">
 
           <div className={`${activeTab === 'general' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
+            <div>
+              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Título (Opcional)</label>
+              <input name="title" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all font-bold" placeholder="Ej. Visita al Coliseo" />
+            </div>
+
             <div>
               <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Google Maps Link</label>
               <input name="link" type="url" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="https://maps.app.goo.gl/..." required />
@@ -112,24 +123,32 @@ export const LocationForm = ({
             <div className="flex gap-4">
               <div className="w-1/2">
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Momento del día</label>
-                <select name="slot" className="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm outline-none custom-select appearance-none">
-                  <option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option>
-                </select>
+                <CustomSelect
+                  name="slot"
+                  value={formSlot}
+                  onChange={setFormSlot}
+                  options={[
+                    { value: 'Mañana', label: 'Mañana' },
+                    { value: 'Tarde', label: 'Tarde' },
+                    { value: 'Noche', label: 'Noche' }
+                  ]}
+                  buttonClassName="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-nature-text font-bold"
+                />
               </div>
               <div className="w-1/2">
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Cita exacta (Opcional)</label>
-                <input name="datetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary" />
+                <input name="datetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all" />
               </div>
             </div>
             {formCat === 'hotel' && (
               <div>
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Check-Out (Hotel)</label>
-                <input name="checkOutDatetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:bg-white rounded-xl p-3 text-xs outline-none" />
+                <input name="checkOutDatetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all" />
               </div>
             )}
             <div>
               <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas Logísticas</label>
-              <textarea name="notes" rows={4} className="w-full bg-gray-50 border border-gray-100 focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed" placeholder="Recordar entradas, dress code..."></textarea>
+              <textarea name="notes" rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all" placeholder="Recordar entradas, dress code..."></textarea>
             </div>
           </div>
 
@@ -138,7 +157,7 @@ export const LocationForm = ({
               <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-3 block">Estado de la Actividad</label>
               <div className="flex bg-gray-100 rounded-xl p-1">
                 {(['idea', 'pending', 'booked'] as ReservationStatus[]).map(status => (
-                  <button type="button" key={status} onClick={() => setResStatus(status)} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${resStatus === status ? 'bg-white text-nature-primary shadow-sm' : 'text-gray-400'}`}>
+                  <button type="button" key={status} onClick={() => setResStatus(status)} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${resStatus === status ? 'bg-white text-nature-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
                     {status === 'idea' ? 'Idea' : status === 'pending' ? 'Falta' : 'Reservado'}
                   </button>
                 ))}
@@ -148,30 +167,36 @@ export const LocationForm = ({
             <div className="flex gap-4">
               <div className="flex-1">
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Coste/Precio</label>
-                <input name="priceAmount" type="number" step="0.01" className="w-full bg-gray-50 border border-gray-100 focus:bg-white rounded-xl p-4 text-lg font-mono outline-none" placeholder="0.00" />
+                <input name="priceAmount" type="number" step="0.01" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-lg font-mono outline-none transition-all" placeholder="0.00" />
                 {/* Legacy cost input hidden to avoid breaking old handlers temporarily */}
                 <input name="cost" type="hidden" value="0" />
               </div>
-              <div className="flex-[0.4]">
+              <div className="flex-[0.5]">
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Divisa</label>
-                <select name="priceCurrency" className="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 text-xs outline-none">
-                  <option value="EUR">€ EUR</option>
-                  <option value="USD">$ USD</option>
-                  <option value="GBP">£ GBP</option>
-                  <option value="JPY">¥ JPY</option>
-                </select>
+                <CustomSelect
+                  name="priceCurrency"
+                  value={formCurrency}
+                  onChange={setFormCurrency}
+                  options={[
+                    { value: 'EUR', label: '€ EUR' },
+                    { value: 'USD', label: '$ USD' },
+                    { value: 'GBP', label: '£ GBP' },
+                    { value: 'JPY', label: '¥ JPY' }
+                  ]}
+                  buttonClassName="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 text-sm font-bold text-nature-text"
+                />
               </div>
             </div>
 
             <div>
               <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Referencia (Booking/Vuelo)</label>
-              <input name="bookingRef" type="text" className="w-full bg-gray-50 border text-center font-mono tracking-widest uppercase border-gray-100 focus:bg-white rounded-xl p-3 text-sm outline-none placeholder-gray-200" placeholder="XYZ123" />
+              <input name="bookingRef" type="text" className="w-full bg-gray-50 border text-center font-mono tracking-widest uppercase border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-sm outline-none placeholder-gray-200 transition-all" placeholder="XYZ123" />
             </div>
           </div>
 
           <div className={`${activeTab === 'assets' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
             <label className="cursor-pointer">
-              <div className="border-2 border-dashed border-gray-200 hover:border-nature-primary hover:bg-nature-mint/30 bg-gray-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all group">
+              <div className="border-2 border-dashed border-gray-200 hover:border-nature-primary hover:bg-nature-mint/30 bg-gray-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all group shadow-sm hover:shadow-md">
                 <ImageIcon size={32} className="text-gray-300 group-hover:text-nature-primary mb-3 transition-colors" />
                 <p className="text-xs text-gray-400 group-hover:text-nature-primary font-medium">Buscar o arrastrar imágenes</p>
                 <input type="file" multiple hidden accept="image/*" onChange={(e) => handleFiles(e.target.files)} />
@@ -191,10 +216,10 @@ export const LocationForm = ({
 
           {/* Sticky footer for submit */}
           <div className="pt-6 sticky bottom-0 bg-white border-t border-gray-50">
-            <button type="submit" className={`w-full ${formId ? 'bg-gray-800' : 'bg-nature-primary'} text-white font-medium tracking-wide py-4 rounded-xl shadow-floating hover:shadow-2xl transition-all transform active:scale-[0.98]`}>
+            <button type="submit" className={`w-full ${formId ? 'bg-gray-800' : 'bg-nature-primary'} text-white font-bold tracking-wide py-4 text-sm rounded-xl shadow-[0_10px_20px_-10px_rgba(45,90,39,0.5)] hover:shadow-2xl hover:-translate-y-0.5 transition-all transform active:scale-[0.98]`}>
               {formId ? 'Confirmar Edición' : 'Añadir Actividad'}
             </button>
-            {formId && <button type="button" onClick={resetForm} className="w-full text-xs text-gray-400 hover:text-red-500 py-3 font-bold uppercase tracking-widest mt-2">Cancelar</button>}
+            {formId && <button type="button" onClick={resetForm} className="w-full text-xs text-gray-400 hover:text-red-500 py-3 font-bold uppercase tracking-widest mt-2 transition-colors">Cancelar</button>}
           </div>
         </form>
       </div>

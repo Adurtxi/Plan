@@ -1,22 +1,39 @@
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { useEffect } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import { MapPin, Layers } from 'lucide-react';
 import L from 'leaflet';
 import { useAppStore } from '../../store';
 import type { LocationItem } from '../../types';
 import { CAT_ICONS, DAYS } from '../../constants';
+import { CustomSelect } from '../ui/CustomSelect';
 
-const createCustomMarker = (item: LocationItem) => {
+const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
   const isNecessary = item.priority === 'necessary';
   const color = isNecessary ? '#2D5A27' : '#C4A484';
-  const html = `<div class="pin-marker ${isNecessary ? 'marker-pulse' : ''}" style="background-color: ${color};"><div class="pin-inner text-white">${CAT_ICONS[item.cat]}</div></div>`;
-  return L.divIcon({ html, className: '', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -45] });
+  const hasImage = item.images && item.images.length > 0;
+
+  const imgHtml = hasImage
+    ? `<img src="${item.images[0].data}" class="w-full h-full object-cover rounded-full absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />`
+    : '';
+
+  const titleHtml = item.title ? `<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-white px-2 py-1 rounded shadow-md text-[10px] font-bold text-gray-800 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">${item.title}</div>` : '';
+
+  const html = `
+    <div class="pin-marker group relative ${isHovered ? 'scale-125 z-50' : 'hover:scale-125 hover:z-50'} transition-transform duration-300 ${isNecessary && !isHovered ? 'marker-pulse' : ''}" style="background-color: ${color};">
+      <div class="pin-inner text-white relative overflow-hidden flex items-center justify-center">
+        <span class="z-10 group-hover:opacity-0 transition-opacity duration-300">${CAT_ICONS[item.cat]}</span>
+        ${imgHtml}
+      </div>
+      ${titleHtml}
+    </div>
+  `;
+  return L.divIcon({ html, className: 'custom-marker-container', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -45] });
 };
 
 const MapUpdater = ({ locations, filterDay }: { locations: LocationItem[], filterDay: string }) => {
   const map = useMap();
   useEffect(() => {
-    const visibleLocations = locations.filter(loc => loc.coords && loc.day !== 'unassigned' && (filterDay === 'all' || loc.day === filterDay));
+    const visibleLocations = locations.filter(loc => loc.coords && loc.day !== 'unassigned' && (filterDay === 'all' || loc.day === filterDay) && (loc.variantId || 'default') === 'default');
     if (visibleLocations.length > 0) {
       const bounds = L.latLngBounds(visibleLocations.map(loc => [loc.coords!.lat, loc.coords!.lng]));
       map.fitBounds(bounds, { padding: [50, 50] });
@@ -25,35 +42,118 @@ const MapUpdater = ({ locations, filterDay }: { locations: LocationItem[], filte
   return null;
 };
 
+const MapClickHandler = ({ onMapClick, isAddMode }: { onMapClick: (lat: number, lng: number) => void, isAddMode: boolean }) => {
+  useMapEvents({
+    click(e) {
+      if (isAddMode) {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
+  return null;
+};
+
+// Component to handle automatic map resizing when the container changes shape
+const MapResizeHandler = () => {
+  const map = useMap();
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    const container = map.getContainer();
+    if (container) resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, [map]);
+  return null;
+};
+
 interface MapViewProps {
   routePolylines: React.ReactNode;
   setIsFormPanelOpen: (isOpen: boolean) => void;
+  onMapClick?: (lat: number, lng: number) => void;
+  isAddMode: boolean;
+  setIsAddMode: (mode: boolean) => void;
 }
 
-export const MapView = ({ routePolylines, setIsFormPanelOpen }: MapViewProps) => {
+// Internal component to forcefully override the cursor on the Leaflet container
+const MapCursorHandler = ({ isAddMode }: { isAddMode: boolean }) => {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    if (container) {
+      if (isAddMode) {
+        container.classList.add('crosshair-cursor-override');
+        // Fallback direct style override
+        container.style.setProperty('cursor', 'crosshair', 'important');
+      } else {
+        container.classList.remove('crosshair-cursor-override');
+        container.style.removeProperty('cursor');
+      }
+    }
+  }, [map, isAddMode]);
+  return null;
+};
+
+export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddMode, setIsAddMode }: MapViewProps) => {
   const { locations, filterDay, setFilterDay, setSelectedLocationId } = useAppStore();
+  const [mapType, setMapType] = useState<'m' | 's'>('m'); // 'm' for Map, 's' for Satellite
+  const [tempMarker, setTempMarker] = useState<{ lat: number, lng: number } | null>(null);
+
+  // Clear temp marker when exiting add mode
+  useEffect(() => {
+    if (!isAddMode) setTempMarker(null);
+  }, [isAddMode]);
 
   return (
-    <div className="h-[55%] w-full relative z-10 border-b border-gray-200 shadow-sm">
-      <MapContainer center={[40.416, -3.703]} zoom={3} style={{ height: '100%', width: '100%', filter: 'grayscale(0.2)' }} zoomControl={false}>
-        <TileLayer url="http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=es" subdomains={['mt0', 'mt1', 'mt2', 'mt3']} attribution="&copy; Google" maxZoom={20} />
+    <div className="h-full w-full relative z-10 border-b border-gray-200 shadow-sm">
+      <MapContainer className={isAddMode ? 'add-mode-active' : ''} center={[40.416, -3.703]} zoom={3} style={{ height: '100%', width: '100%', filter: mapType === 'm' ? 'grayscale(0.2)' : 'none' }} zoomControl={false}>
+        <MapResizeHandler />
+        <MapCursorHandler isAddMode={isAddMode} />
+        <TileLayer url={`http://{s}.google.com/vt/lyrs=${mapType}&x={x}&y={y}&z={z}&hl=es`} subdomains={['mt0', 'mt1', 'mt2', 'mt3']} attribution="&copy; Google" maxZoom={20} />
         <MapUpdater locations={locations} filterDay={filterDay} />
+        {onMapClick && <MapClickHandler isAddMode={isAddMode} onMapClick={(lat, lng) => {
+          setTempMarker({ lat, lng });
+          onMapClick(lat, lng);
+        }} />}
         {routePolylines}
-        {locations.filter(l => l.coords && l.day !== 'unassigned' && (filterDay === 'all' || l.day === filterDay)).map(loc => (
+        {locations.filter(l => l.coords && l.day !== 'unassigned' && (filterDay === 'all' || l.day === filterDay) && (l.variantId || 'default') === 'default').map(loc => (
           <Marker key={loc.id} position={[loc.coords!.lat, loc.coords!.lng]} icon={createCustomMarker(loc)} eventHandlers={{ click: () => setSelectedLocationId(loc.id) }}>
             <Popup className="font-serif font-bold text-[#333]">{loc.notes.split("\n")[0] || "Ubicación"}</Popup>
           </Marker>
         ))}
+        {tempMarker && (
+          <Marker position={[tempMarker.lat, tempMarker.lng]} icon={L.divIcon({ html: '<div class="w-4 h-4 rounded-full bg-nature-accent border-2 border-white shadow-md animate-pulse"></div>', className: 'custom-temp-marker', iconSize: [16, 16], iconAnchor: [8, 8] })} />
+        )}
       </MapContainer>
 
-      <button onClick={() => setIsFormPanelOpen(true)} className="md:hidden absolute top-6 right-6 z-[400] bg-nature-primary text-white p-3 rounded-full shadow-lg"><MapPin size={24} /></button>
+      {isAddMode && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[400] bg-nature-primary text-white px-6 py-2 rounded-full font-bold shadow-lg animate-pulse flex items-center gap-2">
+          <MapPin size={16} /> Clica en el mapa para añadir destino
+          <button onClick={() => setIsAddMode(false)} className="ml-2 hover:bg-white/20 p-1 rounded-full"><MapPin size={14} className="rotate-45" /></button>
+        </div>
+      )}
+
+      <div className="absolute top-6 right-6 z-[400] flex flex-col gap-2">
+        <button onClick={() => setIsAddMode(!isAddMode)} className={`p-3 rounded-full shadow-lg transition-colors border ${isAddMode ? 'bg-nature-primary text-white border-nature-primary' : 'bg-white/90 backdrop-blur text-nature-primary hover:bg-white border-gray-100'}`} title="Añadir Destino en Mapa">
+          <MapPin size={20} />
+        </button>
+        <button onClick={() => setMapType(prev => prev === 'm' ? 's' : 'm')} className="bg-white/90 backdrop-blur text-nature-primary hover:bg-white p-3 rounded-full shadow-lg transition-colors border border-gray-100" title="Cambiar Vista">
+          {mapType === 'm' ? <Layers size={20} /> : <MapPin size={20} />}
+        </button>
+        <button onClick={() => setIsFormPanelOpen(true)} className="md:hidden bg-nature-primary text-white p-3 rounded-full shadow-lg"><MapPin size={20} /></button>
+      </div>
 
       <div className="absolute top-6 left-6 z-[400] bg-white/90 backdrop-blur-md rounded-xl p-3 shadow-lg flex flex-col gap-1 border border-white">
-        <span className="text-[9px] font-bold tracking-widest text-gray-400 uppercase text-center mb-1">Filtrar Día</span>
-        <select value={filterDay} onChange={(e) => setFilterDay(e.target.value)} className="bg-transparent text-nature-primary font-serif font-bold text-sm outline-none cursor-pointer text-center">
-          <option value="all">Ver Todo</option>
-          {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-        </select>
+        <span className="text-[9px] font-bold tracking-widest text-gray-400 uppercase text-center mb-1">Día</span>
+        <CustomSelect
+          value={filterDay}
+          onChange={setFilterDay}
+          options={[
+            { value: 'all', label: 'Ver Todo' },
+            ...DAYS.map(d => ({ value: d, label: d }))
+          ]}
+          buttonClassName="bg-transparent text-nature-primary font-serif font-bold text-sm"
+        />
       </div>
 
       <div className="absolute bottom-6 left-6 z-[400] bg-white/80 backdrop-blur px-4 py-2 rounded-full border border-white text-[10px] text-gray-600 shadow-sm pointer-events-none flex gap-4">

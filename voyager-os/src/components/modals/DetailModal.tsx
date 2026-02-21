@@ -41,7 +41,7 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
             <span className="text-[10px] font-bold tracking-widest uppercase text-nature-textLight">{selectedLocation.cat}</span>
             <button onClick={() => setSelectedLocationId(null)} className="text-gray-400 hover:text-nature-primary transition-colors"><X size={24} /></button>
           </div>
-          <h2 className="text-4xl font-serif text-nature-text mb-6 leading-tight">{selectedLocation.notes.split("\n")[0] || "Ubicación sin nombre"}</h2>
+          <h2 className="text-4xl font-serif text-nature-text mb-6 leading-tight">{selectedLocation.title || selectedLocation.notes.split("\n")[0] || "Ubicación sin nombre"}</h2>
           <div className="flex gap-3 mb-8">
             <span className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">{selectedLocation.priority === 'necessary' ? 'Esencial' : 'Opcional'}</span>
             <span className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-nature-mint text-nature-primary">{selectedLocation.cost ? `${selectedLocation.cost} €` : '0 €'}</span>
