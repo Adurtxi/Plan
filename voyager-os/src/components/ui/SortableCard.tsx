@@ -6,7 +6,7 @@ import { Edit2, CheckCircle2, AlertCircle, Clock, Lightbulb } from 'lucide-react
 import type { LocationItem } from '../../types';
 import { CAT_ICONS } from '../../constants';
 
-export const CardVisual = memo(({ item, onClick, onCardClick, onMoveClick, onGroupToggle, isGrouped, isMoving, isOverlay }: { item: LocationItem, onClick?: () => void, onCardClick?: () => void, onMoveClick?: () => void, onGroupToggle?: () => void, isGrouped?: boolean, isMoving?: boolean, isOverlay?: boolean }) => {
+export const CardVisual = memo(({ item, onClick, onCardClick, onMoveClick, onGroupToggle, isMoving, isOverlay }: { item: LocationItem, onClick?: () => void, onCardClick?: () => void, onMoveClick?: () => void, onGroupToggle?: () => void, isMoving?: boolean, isOverlay?: boolean }) => {
   const getStatusIcon = () => {
     switch (item.reservationStatus) {
       case 'booked': return <CheckCircle2 size={12} className="text-green-500" />;
@@ -63,8 +63,8 @@ export const CardVisual = memo(({ item, onClick, onCardClick, onMoveClick, onGro
           </button>
         )}
         {onGroupToggle && (
-          <button onClick={(e) => { e.stopPropagation(); onGroupToggle(); }} className={`text-gray-500 shadow-floating border border-gray-100 hover:text-nature-primary hover:scale-110 p-2 rounded-full w-8 h-8 flex items-center justify-center ${isGrouped ? 'bg-nature-mint text-nature-primary' : 'bg-white'}`} title={isGrouped ? "Desagrupar" : "Agrupar"}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+          <button onClick={(e) => { e.stopPropagation(); onGroupToggle(); }} className="text-gray-500 bg-white shadow-floating border border-gray-100 hover:text-nature-primary hover:scale-110 p-2 rounded-full w-8 h-8 flex items-center justify-center" title="Unir al siguiente">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10" /><path d="M13 13v9l5-5" /></svg>
           </button>
         )}
         {onClick && (
@@ -84,7 +84,7 @@ export const CardVisual = memo(({ item, onClick, onCardClick, onMoveClick, onGro
 });
 CardVisual.displayName = 'CardVisual';
 
-export const SortableCard = memo(({ item, onClick, onCardClick, onMoveClick, onGroupToggle, isGrouped, isMoving }: { item: LocationItem, onClick: () => void, onCardClick?: () => void, onMoveClick?: () => void, onGroupToggle?: () => void, isGrouped?: boolean, isMoving?: boolean }) => {
+export const SortableCard = memo(({ item, onClick, onCardClick, onMoveClick, onGroupToggle, isMoving }: { item: LocationItem, onClick: () => void, onCardClick?: () => void, onMoveClick?: () => void, onGroupToggle?: () => void, isMoving?: boolean }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id.toString() });
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -124,7 +124,7 @@ export const SortableCard = memo(({ item, onClick, onCardClick, onMoveClick, onG
           </button>
         </div>
       ) : (
-        <CardVisual item={item} onClick={onClick} onCardClick={onCardClick} onMoveClick={onMoveClick} onGroupToggle={onGroupToggle} isGrouped={isGrouped} isMoving={isMoving} />
+        <CardVisual item={item} onClick={onClick} onCardClick={onCardClick} onMoveClick={onMoveClick} onGroupToggle={onGroupToggle} isMoving={isMoving} />
       )}
     </div>
   );

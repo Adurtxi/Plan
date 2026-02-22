@@ -62,47 +62,58 @@ export const PlannerTab = () => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
+    const activeIdStr = active.id.toString();
+    const overIdStr = over.id.toString();
+
     let targetDay = '';
     let targetVariant = '';
     let overLocId: number | null = null;
-    const overId = over.id.toString();
+    let passOverId: string | number | null = null;
 
-    // Comprobamos si soltamos en una columna o sobre otra tarjeta de ubicación
-    if (overId.startsWith('col-')) {
-      const parts = overId.replace('col-', '').split('::');
+    if (overIdStr.startsWith('col-')) {
+      const parts = overIdStr.replace('col-', '').split('::');
       targetDay = parts[0];
       targetVariant = parts[1] || 'default';
+    } else if (overIdStr.startsWith('group-')) {
+      const groupId = overIdStr.replace('group-', '');
+      const groupItem = locations.find(l => l.groupId === groupId);
+      if (groupItem) {
+        targetDay = groupItem.day;
+        targetVariant = groupItem.variantId || 'default';
+        passOverId = overIdStr;
+      }
     } else {
-      const overLoc = locations.find(l => l.id.toString() === overId);
+      const overLoc = locations.find(l => l.id.toString() === overIdStr);
       if (overLoc) {
         targetDay = overLoc.day;
         targetVariant = overLoc.variantId || 'default';
         overLocId = overLoc.id;
+        passOverId = overLoc.id;
       }
     }
 
     if (targetDay) {
-      if (overLocId === null && active.id.toString() === overId && !overId.startsWith('col-')) {
+      if (passOverId === null && activeIdStr === overIdStr && !overIdStr.startsWith('col-')) {
         // Drop in place on itself do nothing
       } else {
-        const activeItem = locations.find(l => l.id.toString() === active.id.toString());
+        const isGroupDrag = activeIdStr.startsWith('group-');
+        const activeItemCopy = isGroupDrag ? null : locations.find(l => l.id.toString() === activeIdStr);
         const overItem = overLocId ? locations.find(l => l.id === overLocId) : null;
 
         // Time conflict check
-        if (activeItem && overItem && overItem.datetime && !activeItem.datetime) {
-          // Soltando una tarjeta SIN hora, detrás de una tarjeta CON hora.
+        if (activeItemCopy && overItem && overItem.datetime && !activeItemCopy.datetime) {
           setConflictModalData({
             isOpen: true,
-            activeTitle: activeItem.title || activeItem.cat,
+            activeTitle: activeItemCopy.title || activeItemCopy.cat,
             overTitle: overItem.title || overItem.cat,
             overDatetime: overItem.datetime,
             overDuration: overItem.durationMinutes || 60, // Fallback 1h
-            activeItemLoc: activeItem,
-            pendingReorder: () => reorderLocation(Number(active.id), overLocId, targetDay, targetVariant)
+            activeItemLoc: activeItemCopy,
+            pendingReorder: () => reorderLocation(Number(active.id), passOverId, targetDay, targetVariant)
           });
         } else {
           // Flujo normal
-          reorderLocation(Number(active.id), overLocId, targetDay, targetVariant);
+          reorderLocation(isGroupDrag ? activeIdStr : Number(activeIdStr), passOverId, targetDay, targetVariant);
         }
       }
     }
@@ -417,7 +428,15 @@ export const PlannerTab = () => {
         <DetailModal onEdit={handleEdit} />
       </div>
       <DragOverlay dropAnimation={{ duration: 250, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
-        {activeItem ? <div style={{ cursor: 'grabbing', opacity: 0.9, transform: 'scale(1.05)' }}><CardVisual item={activeItem} isOverlay /></div> : null}
+        {activeItem ? (
+          <div style={{ cursor: 'grabbing', opacity: 0.9, transform: 'scale(1.05)' }}>
+            <CardVisual item={activeItem} isOverlay />
+          </div>
+        ) : activeId?.startsWith('group-') ? (
+          <div style={{ cursor: 'grabbing', opacity: 0.9, transform: 'scale(1.05)' }} className="bg-white/90 border-2 border-dashed border-gray-300 rounded-[24px] p-4 font-bold text-gray-500 shadow-xl flex items-center justify-center min-w-[300px] h-[100px]">
+            <span className="opacity-50 mr-2">⣿</span> Moviendo Paquete
+          </div>
+        ) : null}
       </DragOverlay>
     </DndContext>
   );

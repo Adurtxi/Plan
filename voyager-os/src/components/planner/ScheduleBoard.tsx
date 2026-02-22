@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext } from '@dnd-kit/sortable';
+import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { SortableCard } from '../ui/SortableCard';
 import { TransportBlock } from './TransportBlock';
 import { useAppStore } from '../../store';
@@ -20,11 +21,65 @@ interface BoardColumnProps {
   setMovingItemId: (id: number | null) => void;
 }
 
+const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, setMovingItemId, movingItemId }: { groupId: string, items: LocationItem[], handleEdit: any, handleCardClick: any, setMovingItemId: any, movingItemId: any }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `group-${groupId}`,
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+    zIndex: isDragging ? 999 : 1,
+  };
+
+  const { ungroupLocationGroup, groupWithNext } = useAppStore();
+
+  return (
+    <div ref={setNodeRef} style={style} className="bg-white/60 border-2 border-dashed border-gray-200/60 rounded-[24px] p-2 pt-8 pb-3 relative group/container mt-4 mb-2 shadow-sm transition-all hover:bg-white/80">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute -top-3 left-4 bg-gray-50 text-gray-500 hover:text-nature-primary text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-gray-200 cursor-grab active:cursor-grabbing hover:bg-white transition-colors flex items-center gap-2 shadow-sm"
+      >
+        <span className="opacity-50">⣿</span> Paquete Visible
+      </div>
+
+      <button onClick={() => ungroupLocationGroup(groupId)} className="absolute -top-3 right-4 bg-white text-gray-400 hover:text-red-500 hover:border-red-200 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border border-gray-100 opacity-0 group-hover/container:opacity-100 transition-all shadow-sm z-20">
+        Desagrupar
+      </button>
+
+      <div className="flex flex-col gap-3">
+        {items.map((item, index) => {
+          const nextItem = index < items.length - 1 ? items[index + 1] : null;
+          return (
+            <div key={item.id} className="relative z-10 w-full outline-none">
+              <SortableCard
+                item={item}
+                onClick={() => handleEdit(item.id)}
+                onCardClick={() => handleCardClick(item.id)}
+                onMoveClick={() => setMovingItemId(movingItemId === item.id ? null : item.id)}
+                onGroupToggle={nextItem ? undefined : () => groupWithNext(item.id)}
+                isMoving={movingItemId === item.id}
+              />
+              {nextItem && item.cat !== 'free' && nextItem.cat !== 'free' && (
+                <div className="mt-2 mb-1 w-full">
+                  <TransportBlock fromLoc={item} toLoc={nextItem} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const BoardColumn = ({ dayId, dayLabel, isDimmed, locations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, movingItemId, setMovingItemId }: BoardColumnProps) => {
   const [activeVariant, setActiveVariant] = useState<string>('default');
   const { isOver, setNodeRef } = useDroppable({ id: `col-${dayId}::${activeVariant}` });
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
-  const { updateLocationDay, toggleLocationGroup } = useAppStore();
+  const { updateLocationDay, groupWithNext } = useAppStore();
 
   const dayVariants = useMemo(() => {
     const vars = new Set([...locations.map(l => l.variantId || 'default'), ...additionalVariants, 'default']);
@@ -50,6 +105,44 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations, handleEdit, handleC
       setMovingItemId(null);
     }
   };
+
+  const blocks = useMemo(() => {
+    const arr: any[] = [];
+    let currentGroup: LocationItem[] = [];
+    let currentGroupId: string | null = null;
+
+    filteredLocations.forEach(item => {
+      if (item.groupId) {
+        if (item.groupId === currentGroupId) {
+          currentGroup.push(item);
+        } else {
+          if (currentGroup.length > 0) arr.push({ type: 'group', id: `group-${currentGroupId}`, groupId: currentGroupId, items: currentGroup });
+          currentGroupId = item.groupId;
+          currentGroup = [item];
+        }
+      } else {
+        if (currentGroup.length > 0) {
+          arr.push({ type: 'group', id: `group-${currentGroupId}`, groupId: currentGroupId, items: currentGroup });
+          currentGroup = [];
+          currentGroupId = null;
+        }
+        arr.push({ type: 'single', id: item.id.toString(), item });
+      }
+    });
+    if (currentGroup.length > 0) arr.push({ type: 'group', id: `group-${currentGroupId}`, groupId: currentGroupId, items: currentGroup });
+    return arr;
+  }, [filteredLocations]);
+
+  const sortableIds = useMemo(() => {
+    const ids: string[] = [];
+    blocks.forEach(b => {
+      ids.push(b.id);
+      if (b.type === 'group') {
+        b.items.forEach((i: any) => ids.push(i.id.toString()));
+      }
+    });
+    return ids;
+  }, [blocks]);
 
   return (
     <div className={`flex-none w-[340px] flex flex-col h-full bg-white border ${movingItemId ? 'border-nature-accent ring-2 ring-nature-accent/50' : 'border-gray-100'} rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed && !movingItemId ? 'opacity-40' : ''}`}>
@@ -100,42 +193,46 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations, handleEdit, handleC
           </button>
         )}
 
-        <SortableContext items={filteredLocations.map(l => l.id.toString())}>
-          {filteredLocations.map((item, index) => {
-            const prevItem = index > 0 ? filteredLocations[index - 1] : null;
-            const nextItem = index < filteredLocations.length - 1 ? filteredLocations[index + 1] : null;
-            const nextNonFreeItem = filteredLocations.slice(index + 1).find(l => l.cat !== 'free');
+        <SortableContext items={sortableIds}>
+          {blocks.map((block, index) => {
+            const isGroup = block.type === 'group';
+            const nextBlock = index < blocks.length - 1 ? blocks[index + 1] : null;
 
-            const isGroupStart = item.groupId && (!prevItem || prevItem.groupId !== item.groupId);
-            const isGroupEnd = item.groupId && (!nextItem || nextItem.groupId !== item.groupId);
-            const isGrouped = !!item.groupId;
+            const blockLastItem = isGroup ? block.items[block.items.length - 1] : block.item;
+            const nextBlockFirstItem = nextBlock
+              ? (nextBlock.type === 'group' ? nextBlock.items[0] : nextBlock.item)
+              : null;
+
+            const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && nextBlockFirstItem.cat !== 'free';
 
             return (
-              <div key={item.id} className="relative flex flex-col gap-3">
-                {isGroupStart && (
-                  <div className="absolute -inset-x-2 -inset-y-3 bg-white/60 border-2 border-dashed border-gray-200/60 rounded-[24px] pointer-events-none z-0">
-                    <div className="absolute -top-3 left-4 bg-gray-50 text-gray-400 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border border-gray-200">
-                      Paquete Visual
-                    </div>
+              <div key={block.id} className="relative flex flex-col gap-3">
+                {isGroup ? (
+                  <GroupContainer
+                    groupId={block.groupId}
+                    items={block.items}
+                    handleEdit={handleEdit}
+                    handleCardClick={handleCardClick}
+                    setMovingItemId={setMovingItemId}
+                    movingItemId={movingItemId}
+                  />
+                ) : (
+                  <div className="relative z-10 w-full outline-none">
+                    <SortableCard
+                      item={block.item}
+                      onClick={() => handleEdit(block.item.id)}
+                      onCardClick={() => handleCardClick(block.item.id)}
+                      onMoveClick={() => setMovingItemId(movingItemId === block.item.id ? null : block.item.id)}
+                      onGroupToggle={() => groupWithNext(block.item.id)}
+                      isMoving={movingItemId === block.item.id}
+                    />
                   </div>
                 )}
 
-                <div className={`relative z-10 ${isGrouped ? 'mx-1' : ''}`}>
-                  <SortableCard
-                    item={item}
-                    onClick={() => handleEdit(item.id)}
-                    onCardClick={() => handleCardClick(item.id)}
-                    onMoveClick={() => setMovingItemId(movingItemId === item.id ? null : item.id)}
-                    onGroupToggle={nextItem ? () => toggleLocationGroup(item.id) : undefined}
-                    isGrouped={isGrouped && !isGroupEnd}
-                    isMoving={movingItemId === item.id}
-                  />
-                </div>
-
-                {/* Transport block between adjacent non-free items */}
-                {nextNonFreeItem && item.cat !== 'free' && (
-                  <div className={`relative z-10 ${isGrouped && !isGroupEnd ? 'mx-1 mb-1' : ''}`}>
-                    <TransportBlock fromLoc={item} toLoc={nextNonFreeItem} />
+                {/* Transport block connecting this block to the next block */}
+                {showTransport && (
+                  <div className="relative z-10 mx-1 mb-1 w-full">
+                    <TransportBlock fromLoc={blockLastItem} toLoc={nextBlockFirstItem} />
                   </div>
                 )}
               </div>

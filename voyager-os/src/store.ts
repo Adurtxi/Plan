@@ -69,8 +69,9 @@ interface AppState {
   addLocation: (loc: LocationItem) => Promise<void>;
   updateLocation: (loc: LocationItem) => Promise<void>; // Replaces and expands updateLocationDay
   updateLocationDay: (id: number, day: string, variantId?: string) => Promise<void>; // Kept for backwards compatibility
-  reorderLocation: (activeId: number, overId: number | null, targetDay: string, targetVariant: string) => Promise<void>;
-  toggleLocationGroup: (id: number) => Promise<void>;
+  reorderLocation: (activeId: string | number, overId: string | number | null, targetDay: string, targetVariant: string) => Promise<void>;
+  ungroupLocationGroup: (groupId: string) => Promise<void>;
+  groupWithNext: (id: number) => Promise<void>;
   deleteLocation: (id: number) => Promise<void>;
 
   addTransport: (transport: TransportSegment) => Promise<void>;
@@ -179,27 +180,54 @@ export const useAppStore = create<AppState>((set, get) => ({
     const db = await initDB();
     const locations = await db.getAll('locations');
 
-    // Ensure all items have an order
-    const targetGroup = locations.filter(l => l.day === day && (l.variantId || 'default') === variantId && l.id !== activeId);
-    targetGroup.sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
+    const isGroupDrag = typeof activeId === 'string' && activeId.startsWith('group-');
+    const activeGroupId = isGroupDrag ? (activeId as string).replace('group-', '') : null;
 
-    const activeItem = locations.find(l => l.id === activeId);
-    if (!activeItem) return;
+    // The items being moved
+    const activeItems = isGroupDrag
+      ? locations.filter(l => l.groupId === activeGroupId).sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id))
+      : locations.filter(l => l.id.toString() === activeId.toString());
 
-    // Moving dragging item to new context or pos
-    activeItem.day = day;
-    activeItem.variantId = variantId;
+    if (activeItems.length === 0) return;
+
+    // The items staying in the target destination
+    const targetGroup = locations.filter(l =>
+      l.day === day &&
+      (l.variantId || 'default') === variantId &&
+      !activeItems.find(a => a.id === l.id)
+    ).sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
+
+    const isOverGroup = typeof overId === 'string' && overId.startsWith('group-');
+    const overGroupId = isOverGroup ? (overId as string).replace('group-', '') : null;
+    const overItemData = overId && !isOverGroup ? locations.find(l => l.id.toString() === overId.toString()) : null;
+    const inheritedGroupId = isOverGroup ? overGroupId : overItemData?.groupId;
+
+    // Update their day and variant and group (if single)
+    activeItems.forEach(item => {
+      item.day = day;
+      item.variantId = variantId;
+      if (!isGroupDrag) {
+        item.groupId = inheritedGroupId || undefined;
+      }
+    });
 
     if (overId) {
-      const overIndex = targetGroup.findIndex(l => l.id === overId);
-      if (overIndex >= 0) {
-        // Insert into index
-        targetGroup.splice(overIndex, 0, activeItem);
+
+      let insertIndex = -1;
+      if (isOverGroup) {
+        // If dropping OVER a group, insert before the first element of that group
+        insertIndex = targetGroup.findIndex(l => l.groupId === overGroupId);
       } else {
-        targetGroup.push(activeItem);
+        insertIndex = targetGroup.findIndex(l => l.id.toString() === overId.toString());
+      }
+
+      if (insertIndex >= 0) {
+        targetGroup.splice(insertIndex, 0, ...activeItems);
+      } else {
+        targetGroup.push(...activeItems);
       }
     } else {
-      targetGroup.push(activeItem);
+      targetGroup.push(...activeItems);
     }
 
     // Rewrite order continuously
@@ -211,7 +239,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().loadData();
   },
 
-  toggleLocationGroup: async (id) => {
+  ungroupLocationGroup: async (groupId) => {
+    const db = await initDB();
+    const locations = await db.getAll('locations');
+
+    for (const l of locations) {
+      if (l.groupId === groupId) {
+        l.groupId = undefined;
+        await db.put('locations', l);
+      }
+    }
+
+    await get().loadData();
+  },
+
+  groupWithNext: async (id) => {
     const db = await initDB();
     const item = await db.get('locations', id);
     if (!item) return;
@@ -233,18 +275,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const nextItem = dayLocs[currentIndex + 1];
 
-    if (item.groupId && item.groupId === nextItem.groupId) {
-      // Ungroup next item by clearing its groupId
-      nextItem.groupId = undefined;
-      await db.put('locations', nextItem);
-    } else {
-      // Group them: give them the same ID (use item's if it exists, otherwise create new)
-      const newGroupId = item.groupId || `group-${Date.now()}`;
-      item.groupId = newGroupId;
-      nextItem.groupId = newGroupId;
-      await db.put('locations', item);
-      await db.put('locations', nextItem);
-    }
+    const newGroupId = nextItem.groupId || item.groupId || `group-${Date.now()}`;
+    item.groupId = newGroupId;
+    nextItem.groupId = newGroupId;
+    await db.put('locations', item);
+    await db.put('locations', nextItem);
 
     await get().loadData();
   },
