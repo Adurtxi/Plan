@@ -38,11 +38,59 @@ export const LocationForm = ({
     if (formId) {
       const existing = locations.find(l => l.id === formId);
       if (existing && existing.reservationStatus) setResStatus(existing.reservationStatus);
+      if (existing && existing.durationMinutes !== undefined) {
+        // Set duration input value if we have a direct reference to it, or rely on form default loading
+        setTimeout(() => {
+          const durInput = document.forms.namedItem('mainForm')?.elements.namedItem('durationMinutes') as HTMLInputElement | null;
+          if (durInput) durInput.value = existing.durationMinutes!.toString();
+        }, 100);
+      }
     } else {
       setResStatus('idea');
       setActiveTab('general');
     }
   }, [formId, locations]);
+
+  // Global paste handler
+  useEffect(() => {
+    if (!isFormPanelOpen) return;
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea') return;
+
+      if (e.clipboardData) {
+        // Handle images
+        if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+          handleFiles(e.clipboardData.files);
+          setActiveTab('assets');
+          return;
+        }
+
+        // Handle text
+        const text = e.clipboardData.getData('text');
+        if (text) {
+          const form = document.getElementById('mainForm') as HTMLFormElement;
+          if (form) {
+            const titleInput = form.elements.namedItem('title') as HTMLInputElement;
+            if (titleInput) {
+              // If it's a URL, maybe it better belongs in link? 
+              // We'll put it in title as requested, unless it's obviously a URL and link is empty
+              const linkInput = form.elements.namedItem('link') as HTMLInputElement;
+              if (text.startsWith('http') && !linkInput.value) {
+                linkInput.value = text;
+              } else {
+                titleInput.value = text;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [isFormPanelOpen, handleFiles]);
 
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     // Inject custom hidden data into form before submit
@@ -136,16 +184,22 @@ export const LocationForm = ({
                 />
               </div>
               <div className="w-1/2">
-                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Cita exacta (Opcional)</label>
+                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Inicio (Opcional)</label>
                 <input name="datetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all" />
               </div>
             </div>
-            {formCat === 'hotel' && (
-              <div>
-                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Check-Out (Hotel)</label>
+
+            <div className="flex gap-4">
+              <div className="w-1/2">
+                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Fin / Check-Out</label>
                 <input name="checkOutDatetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all" />
               </div>
-            )}
+              <div className="w-1/2">
+                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración (Minutos)</label>
+                <input name="durationMinutes" type="number" min="0" step="5" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 py-3 text-sm outline-none transition-all" placeholder="Ej. 60" />
+              </div>
+            </div>
+
             <div>
               <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas Logísticas</label>
               <textarea name="notes" rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all" placeholder="Recordar entradas, dress code..."></textarea>

@@ -6,7 +6,7 @@ import { Edit2, CheckCircle2, AlertCircle, Clock, Lightbulb } from 'lucide-react
 import type { LocationItem } from '../../types';
 import { CAT_ICONS } from '../../constants';
 
-export const CardVisual = memo(({ item, onClick, onMoveClick, isMoving, isOverlay }: { item: LocationItem, onClick?: () => void, onMoveClick?: () => void, isMoving?: boolean, isOverlay?: boolean }) => {
+export const CardVisual = memo(({ item, onClick, onCardClick, onMoveClick, onGroupToggle, isGrouped, isMoving, isOverlay }: { item: LocationItem, onClick?: () => void, onCardClick?: () => void, onMoveClick?: () => void, onGroupToggle?: () => void, isGrouped?: boolean, isMoving?: boolean, isOverlay?: boolean }) => {
   const getStatusIcon = () => {
     switch (item.reservationStatus) {
       case 'booked': return <CheckCircle2 size={12} className="text-green-500" />;
@@ -22,7 +22,7 @@ export const CardVisual = memo(({ item, onClick, onMoveClick, isMoving, isOverla
     : (item.cost ? `${item.cost}€` : '-');
 
   const content = (
-    <div className={`bento-card p-4 cursor-grab active:cursor-grabbing relative group bg-white border ${item.priority === 'necessary' ? 'border-nature-primary/30 shadow-[0_4px_20px_-4px_rgba(45,90,39,0.15)] ring-1 ring-nature-primary/10' : 'border-gray-100'} ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''} ${isMoving ? 'ring-2 ring-nature-accent shadow-lg scale-[1.02]' : ''}`}>
+    <div onClick={onCardClick} className={`bento-card p-4 cursor-grab active:cursor-grabbing relative group bg-white border ${item.priority === 'necessary' ? 'border-nature-primary/30 shadow-[0_4px_20px_-4px_rgba(45,90,39,0.15)] ring-1 ring-nature-primary/10' : 'border-gray-100'} ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''} ${isMoving ? 'ring-2 ring-nature-accent shadow-lg scale-[1.02]' : ''}`}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           <span className="text-xl text-gray-500 bg-gray-50 p-2 rounded-xl border border-gray-100">{CAT_ICONS[item.cat]}</span>
@@ -43,6 +43,14 @@ export const CardVisual = memo(({ item, onClick, onMoveClick, isMoving, isOverla
           {item.images?.length > 0 && <img src={item.images[0].data} className="w-10 h-10 rounded-xl object-cover ml-3 border border-gray-100 shadow-sm" alt="thumb" />}
         </div>
       </div>
+
+      <div className="flex flex-wrap gap-2 mt-3 items-center">
+        {item.durationMinutes && (
+          <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-nature-mint/30 text-nature-primary flex items-center gap-1">
+            <Clock size={10} /> {item.durationMinutes >= 60 ? `${Math.floor(item.durationMinutes / 60)}h ${item.durationMinutes % 60 ? (item.durationMinutes % 60) + 'm' : ''}` : `${item.durationMinutes}m`}
+          </span>
+        )}
+      </div>
       {(item.priority === 'necessary' && item.reservationStatus === 'pending') && (
         <div className="mt-2 text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-1.5 rounded uppercase tracking-widest flex items-center gap-1 w-fit">
           <AlertCircle size={10} /> Urgente Reservar
@@ -52,6 +60,11 @@ export const CardVisual = memo(({ item, onClick, onMoveClick, isMoving, isOverla
         {onMoveClick && (
           <button onClick={(e) => { e.stopPropagation(); onMoveClick(); }} className={`text-gray-500 shadow-floating border border-gray-100 hover:text-nature-primary hover:scale-110 p-2 rounded-full w-8 h-8 flex items-center justify-center ${isMoving ? 'bg-nature-accent text-white' : 'bg-white'}`} title="Mover">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="19 9 22 12 19 15"></polyline><polyline points="9 19 12 22 15 19"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>
+          </button>
+        )}
+        {onGroupToggle && (
+          <button onClick={(e) => { e.stopPropagation(); onGroupToggle(); }} className={`text-gray-500 shadow-floating border border-gray-100 hover:text-nature-primary hover:scale-110 p-2 rounded-full w-8 h-8 flex items-center justify-center ${isGrouped ? 'bg-nature-mint text-nature-primary' : 'bg-white'}`} title={isGrouped ? "Desagrupar" : "Agrupar"}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
           </button>
         )}
         {onClick && (
@@ -71,7 +84,7 @@ export const CardVisual = memo(({ item, onClick, onMoveClick, isMoving, isOverla
 });
 CardVisual.displayName = 'CardVisual';
 
-export const SortableCard = memo(({ item, onClick, onMoveClick, isMoving }: { item: LocationItem, onClick: () => void, onMoveClick?: () => void, isMoving?: boolean }) => {
+export const SortableCard = memo(({ item, onClick, onCardClick, onMoveClick, onGroupToggle, isGrouped, isMoving }: { item: LocationItem, onClick: () => void, onCardClick?: () => void, onMoveClick?: () => void, onGroupToggle?: () => void, isGrouped?: boolean, isMoving?: boolean }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id.toString() });
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -80,9 +93,39 @@ export const SortableCard = memo(({ item, onClick, onMoveClick, isMoving }: { it
     zIndex: isDragging ? 999 : 1,
   };
 
+  const isFreeTime = item.cat === 'free';
+
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="outline-none relative">
-      <CardVisual item={item} onClick={onClick} onMoveClick={onMoveClick} isMoving={isMoving} />
+      {isFreeTime ? (
+        <div onClick={onCardClick} className={`my-1 group cursor-grab active:cursor-grabbing hover:bg-gray-100 bg-gray-50/50 border-y border-dashed border-gray-300 py-3 px-4 flex items-center justify-between transition-colors ${isDragging ? 'opacity-50' : ''}`}>
+          <div className="flex gap-2 items-center text-gray-500">
+            <span className="text-xl opacity-80">☕</span>
+            <span className="text-xs font-bold uppercase tracking-widest">{item.title || 'Tiempo Libre'}</span>
+
+            {item.datetime && item.durationMinutes ? (
+              <span className="ml-2 text-[10px] font-bold bg-white px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 flex items-center gap-1">
+                <Clock size={10} />
+                {new Date(item.datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {(() => {
+                  const end = new Date(item.datetime);
+                  end.setMinutes(end.getMinutes() + item.durationMinutes);
+                  return end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                })()}
+              </span>
+            ) : item.durationMinutes ? (
+              <span className="ml-2 text-[10px] font-bold bg-white px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 flex items-center gap-1">
+                <Clock size={10} />
+                {item.durationMinutes >= 60 ? `${Math.floor(item.durationMinutes / 60)}h ${item.durationMinutes % 60 ? (item.durationMinutes % 60) + 'm' : ''}` : `${item.durationMinutes}m`}
+              </span>
+            ) : null}
+          </div>
+          <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-nature-accent transition-colors p-1">
+            <Edit2 size={12} />
+          </button>
+        </div>
+      ) : (
+        <CardVisual item={item} onClick={onClick} onCardClick={onCardClick} onMoveClick={onMoveClick} onGroupToggle={onGroupToggle} isGrouped={isGrouped} isMoving={isMoving} />
+      )}
     </div>
   );
 });

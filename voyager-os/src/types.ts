@@ -1,5 +1,5 @@
 export type Priority = 'optional' | 'necessary';
-export type Category = 'sight' | 'food' | 'hotel' | 'shop' | 'flight' | 'transport';
+export type Category = 'sight' | 'food' | 'hotel' | 'shop' | 'flight' | 'transport' | 'free';
 export type ReservationStatus = 'idea' | 'pending' | 'booked';
 
 export interface ImageFile {
@@ -10,6 +10,13 @@ export interface ImageFile {
 export interface PriceInfo {
   amount: number;
   currency: string;
+}
+
+export interface TripVariant {
+  id: string; // e.g. "default", "plan-B"
+  name: string; // e.g. "Plan Principal"
+  startDate: string | null; // e.g. "2024-05-01"
+  endDate: string | null; // e.g. "2024-05-07"
 }
 
 export interface TransportSegment {
@@ -40,6 +47,11 @@ export interface LocationItem {
   variantId?: string; // e.g. 'default', 'option-A'
   datetime?: string; // ISO string for exact time or check-in
   checkOutDatetime?: string; // For hotels/flights
+  durationMinutes?: number; // Explicit duration in minutes
+  order?: number; // For manual drag and drop sorting within a day
+
+  // Grouping
+  groupId?: string; // For micro-boxing adjacent locations
 
   // Reservation
   reservationStatus?: ReservationStatus;

@@ -8,30 +8,45 @@ import { DAYS } from '../../constants';
 import type { LocationItem } from '../../types';
 
 interface BoardColumnProps {
-  day: string;
+  dayId: string; // The internal id (e.g. 'day-1', '2024-05-01')
+  dayLabel: string; // The display label (e.g. 'Día 1', 'Lunes 15')
   isDimmed: boolean;
   locations: LocationItem[];
   handleEdit: (id: number) => void;
+  handleCardClick: (id: number) => void;
+  handleAddNewToDay?: (day: string, variantId: string) => void;
+  handleAddFreeTimeToDay?: (day: string, variantId: string) => void;
   movingItemId: number | null;
   setMovingItemId: (id: number | null) => void;
 }
 
-const BoardColumn = ({ day, isDimmed, locations, handleEdit, movingItemId, setMovingItemId }: BoardColumnProps) => {
+const BoardColumn = ({ dayId, dayLabel, isDimmed, locations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, movingItemId, setMovingItemId }: BoardColumnProps) => {
   const [activeVariant, setActiveVariant] = useState<string>('default');
-  const { isOver, setNodeRef } = useDroppable({ id: `col-${day}::${activeVariant}` });
+  const { isOver, setNodeRef } = useDroppable({ id: `col-${dayId}::${activeVariant}` });
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
-  const { updateLocationDay } = useAppStore();
+  const { updateLocationDay, toggleLocationGroup } = useAppStore();
 
   const dayVariants = useMemo(() => {
     const vars = new Set([...locations.map(l => l.variantId || 'default'), ...additionalVariants, 'default']);
     return Array.from(vars).sort();
   }, [locations, additionalVariants]);
 
-  const filteredLocations = locations.filter(l => (l.variantId || 'default') === activeVariant);
+  const filteredLocations = useMemo(() => {
+    return locations
+      .filter(l => (l.variantId || 'default') === activeVariant)
+      .sort((a, b) => {
+        if (a.datetime && b.datetime) {
+          return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
+        }
+        if (a.datetime) return -1;
+        if (b.datetime) return 1;
+        return (a.order ?? a.id) - (b.order ?? b.id);
+      });
+  }, [locations, activeVariant]);
 
   const handleMoveHere = () => {
     if (movingItemId) {
-      updateLocationDay(movingItemId, day, activeVariant);
+      updateLocationDay(movingItemId, dayId, activeVariant);
       setMovingItemId(null);
     }
   };
@@ -40,7 +55,7 @@ const BoardColumn = ({ day, isDimmed, locations, handleEdit, movingItemId, setMo
     <div className={`flex-none w-[340px] flex flex-col h-full bg-white border ${movingItemId ? 'border-nature-accent ring-2 ring-nature-accent/50' : 'border-gray-100'} rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed && !movingItemId ? 'opacity-40' : ''}`}>
       <div className="p-5 pb-3 border-b border-gray-50 flex flex-col">
         <div className="flex justify-between items-end mb-3">
-          <span className="font-serif text-2xl text-nature-primary font-medium">{day}</span>
+          <span className="font-serif text-2xl text-nature-primary font-medium">{dayLabel}</span>
           <span className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Itinerario</span>
         </div>
 
@@ -59,6 +74,23 @@ const BoardColumn = ({ day, isDimmed, locations, handleEdit, movingItemId, setMo
             if (newVar) { setAdditionalVariants(prev => [...prev, newVar]); setActiveVariant(newVar); }
           }} className="px-3 text-gray-400 hover:text-nature-primary transition-colors">+</button>
         </div>
+
+        {handleAddNewToDay && (
+          <div className="flex gap-2 w-full mt-3">
+            <button onClick={() => handleAddNewToDay(dayId, activeVariant)} className="flex-1 bg-nature-mint/30 hover:bg-nature-mint/50 border border-nature-primary/20 text-nature-primary py-2 rounded-xl border border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Actividad
+            </button>
+            <button onClick={() => {
+              if (handleAddFreeTimeToDay) {
+                handleAddFreeTimeToDay(dayId, activeVariant);
+              }
+            }} className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 py-2 rounded-xl border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1" title="Añadir Hueco Libre">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              Libre
+            </button>
+          </div>
+        )}
       </div>
 
       <div ref={setNodeRef} className={`flex-1 overflow-y-auto p-4 custom-scroll ${isOver ? 'bg-nature-mint/30' : 'bg-gray-50/30'} flex flex-col gap-3 transition-colors relative`}>
@@ -69,50 +101,46 @@ const BoardColumn = ({ day, isDimmed, locations, handleEdit, movingItemId, setMo
         )}
 
         <SortableContext items={filteredLocations.map(l => l.id.toString())}>
-          {(() => {
-            const clusters: LocationItem[][] = [];
-            let currentCluster: LocationItem[] = [];
+          {filteredLocations.map((item, index) => {
+            const prevItem = index > 0 ? filteredLocations[index - 1] : null;
+            const nextItem = index < filteredLocations.length - 1 ? filteredLocations[index + 1] : null;
+            const nextNonFreeItem = filteredLocations.slice(index + 1).find(l => l.cat !== 'free');
 
-            filteredLocations.forEach((loc) => {
-              if (currentCluster.length === 0) {
-                currentCluster.push(loc);
-              } else {
-                const prev = currentCluster[currentCluster.length - 1];
-                if (loc.slot && loc.slot === prev.slot) {
-                  currentCluster.push(loc);
-                } else {
-                  clusters.push(currentCluster);
-                  currentCluster = [loc];
-                }
-              }
-            });
-            if (currentCluster.length > 0) Object.freeze(clusters.push(currentCluster));
+            const isGroupStart = item.groupId && (!prevItem || prevItem.groupId !== item.groupId);
+            const isGroupEnd = item.groupId && (!nextItem || nextItem.groupId !== item.groupId);
+            const isGrouped = !!item.groupId;
 
-            return clusters.map((cluster, cIndex) => (
-              <div key={`cluster-${cIndex}`} className="relative flex flex-col gap-3">
-                {/* Visual Cluster Container if more than 1 item */}
-                <div className={`flex flex-col gap-2 ${cluster.length > 1 ? 'bg-black/5 p-2 rounded-3xl border border-black/5 relative' : ''}`}>
-                  {cluster.length > 1 && (
-                    <div className="absolute -left-2 top-4 bottom-4 w-1 bg-nature-accent/30 rounded-full" />
-                  )}
-                  {cluster.map((item) => (
-                    <SortableCard
-                      key={item.id}
-                      item={item}
-                      onClick={() => handleEdit(item.id)}
-                      onMoveClick={() => setMovingItemId(movingItemId === item.id ? null : item.id)}
-                      isMoving={movingItemId === item.id}
-                    />
-                  ))}
+            return (
+              <div key={item.id} className="relative flex flex-col gap-3">
+                {isGroupStart && (
+                  <div className="absolute -inset-x-2 -inset-y-3 bg-white/60 border-2 border-dashed border-gray-200/60 rounded-[24px] pointer-events-none z-0">
+                    <div className="absolute -top-3 left-4 bg-gray-50 text-gray-400 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border border-gray-200">
+                      Paquete Visual
+                    </div>
+                  </div>
+                )}
+
+                <div className={`relative z-10 ${isGrouped ? 'mx-1' : ''}`}>
+                  <SortableCard
+                    item={item}
+                    onClick={() => handleEdit(item.id)}
+                    onCardClick={() => handleCardClick(item.id)}
+                    onMoveClick={() => setMovingItemId(movingItemId === item.id ? null : item.id)}
+                    onGroupToggle={nextItem ? () => toggleLocationGroup(item.id) : undefined}
+                    isGrouped={isGrouped && !isGroupEnd}
+                    isMoving={movingItemId === item.id}
+                  />
                 </div>
 
-                {/* Transport block between clusters */}
-                {cIndex < clusters.length - 1 && (
-                  <TransportBlock fromLoc={cluster[cluster.length - 1]} toLoc={clusters[cIndex + 1][0]} />
+                {/* Transport block between adjacent non-free items */}
+                {nextNonFreeItem && item.cat !== 'free' && (
+                  <div className={`relative z-10 ${isGrouped && !isGroupEnd ? 'mx-1 mb-1' : ''}`}>
+                    <TransportBlock fromLoc={item} toLoc={nextNonFreeItem} />
+                  </div>
                 )}
               </div>
-            ));
-          })()}
+            );
+          })}
         </SortableContext>
 
         {filteredLocations.length === 0 && !movingItemId && (
@@ -127,11 +155,14 @@ const BoardColumn = ({ day, isDimmed, locations, handleEdit, movingItemId, setMo
 
 interface ScheduleBoardProps {
   handleEdit: (id: number) => void;
+  handleCardClick: (id: number) => void;
+  handleAddNewToDay?: (day: string, variantId: string) => void;
+  handleAddFreeTimeToDay?: (day: string, variantId: string) => void;
   viewMode?: 'split-horizontal' | 'split-vertical' | 'map-only' | 'board-only';
 }
 
-export const ScheduleBoard = ({ handleEdit, viewMode }: ScheduleBoardProps) => {
-  const { locations, filterDay } = useAppStore();
+export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode }: ScheduleBoardProps) => {
+  const { locations, filterDay, tripVariants, activeGlobalVariantId } = useAppStore();
   const [movingItemId, setMovingItemId] = useState<number | null>(null);
 
   // If clicking outside when moving, cancel
@@ -142,11 +173,33 @@ export const ScheduleBoard = ({ handleEdit, viewMode }: ScheduleBoardProps) => {
   };
 
   const displayDays = useMemo(() => {
-    if (viewMode === 'split-vertical') {
-      return filterDay !== 'all' ? [filterDay] : [];
+    // Determine dynamic days based on active variant
+    let dynamicDays: { id: string, label: string }[] = [];
+    const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
+
+    if (activeVar && activeVar.startDate && activeVar.endDate) {
+      const start = new Date(activeVar.startDate);
+      const end = new Date(activeVar.endDate);
+      let i = 1;
+
+      const copyDate = new Date(start);
+      while (copyDate <= end) {
+        const id = `day-${i}`;
+        const label = copyDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+        dynamicDays.push({ id, label });
+
+        copyDate.setDate(copyDate.getDate() + 1);
+        i++;
+      }
+    } else {
+      dynamicDays = DAYS.map(d => ({ id: d, label: d }));
     }
-    return DAYS;
-  }, [viewMode, filterDay]);
+
+    if (viewMode === 'split-vertical') {
+      return filterDay !== 'all' ? dynamicDays.filter(d => d.id === filterDay) : [];
+    }
+    return dynamicDays;
+  }, [viewMode, filterDay, tripVariants, activeGlobalVariantId]);
 
   return (
     <div className="h-full w-full overflow-x-auto p-6 pb-12 bg-nature-bg custom-scroll transition-colors relative" onClick={handleBgClick}>
@@ -162,13 +215,17 @@ export const ScheduleBoard = ({ handleEdit, viewMode }: ScheduleBoardProps) => {
         </div>
       ) : (
         <div className="flex gap-6 h-full min-w-max pb-4">
-          {displayDays.map(day => (
+          {displayDays.map(dayObj => (
             <BoardColumn
-              key={day}
-              day={day}
-              isDimmed={filterDay !== 'all' && filterDay !== day}
-              locations={locations.filter(l => l.day === day)}
+              key={dayObj.id}
+              dayId={dayObj.id}
+              dayLabel={dayObj.label}
+              isDimmed={filterDay !== 'all' && filterDay !== dayObj.id}
+              locations={locations.filter(l => l.day === dayObj.id)}
               handleEdit={handleEdit}
+              handleCardClick={handleCardClick}
+              handleAddNewToDay={handleAddNewToDay}
+              handleAddFreeTimeToDay={handleAddFreeTimeToDay}
               movingItemId={movingItemId}
               setMovingItemId={setMovingItemId}
             />

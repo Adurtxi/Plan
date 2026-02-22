@@ -7,10 +7,11 @@ import { useAppStore } from '../../store';
 
 interface IdeaInboxProps {
   handleEdit: (id: number) => void;
+  handleCardClick: (id: number) => void;
   handleAddNew: () => void;
 }
 
-export const IdeaInbox = ({ handleEdit, handleAddNew }: IdeaInboxProps) => {
+export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInboxProps) => {
   const { locations } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -63,7 +64,7 @@ export const IdeaInbox = ({ handleEdit, handleAddNew }: IdeaInboxProps) => {
             </div>
           ) : (
             <SortableContext items={unassigned.map(l => l.id.toString())}>
-              {unassigned.map(item => <SortableCard key={item.id} item={item} onClick={() => handleEdit(item.id)} />)}
+              {unassigned.map(item => <SortableCard key={item.id} item={item} onClick={() => handleEdit(item.id)} onCardClick={() => handleCardClick(item.id)} />)}
             </SortableContext>
           )}
         </div>

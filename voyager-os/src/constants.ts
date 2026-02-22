@@ -1,2 +1,2 @@
-export const CAT_ICONS = { sight: "📷", food: "🍽️", hotel: "🛏️", shop: "🛍️", flight: "✈️", transport: "🚕" };
+export const CAT_ICONS = { sight: "📷", food: "🍽️", hotel: "🛏️", shop: "🛍️", flight: "✈️", transport: "🚕", free: "☕" };
 export const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];

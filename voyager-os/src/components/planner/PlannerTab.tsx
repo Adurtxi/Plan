@@ -1,21 +1,24 @@
 import React, { useState, useMemo } from 'react';
-import { Polyline } from 'react-leaflet';
+import { Polyline, Tooltip } from 'react-leaflet';
 import { DndContext, closestCenter, type DragEndEvent, type DragStartEvent, useSensor, useSensors, PointerSensor, DragOverlay } from '@dnd-kit/core';
 import { LocationForm } from './LocationForm';
+import { FreeTimeSheet } from './FreeTimeSheet';
 import { MapView } from './MapView';
 import { ScheduleBoard } from './ScheduleBoard';
 import { DetailModal } from '../modals/DetailModal';
+import { TripSettingsModal } from './TripSettingsModal';
+import { TimeConflictModal, type TimeConflictAction } from '../modals/TimeConflictModal';
 import { IdeaInbox } from './IdeaInbox';
 import { MobileTimelineView } from './MobileTimelineView';
 import { useAppStore } from '../../store';
 import { useResponsive } from '../../hooks/useResponsive';
 import { CardVisual } from '../ui/SortableCard';
-import type { Category, Priority, ReservationStatus } from '../../types';
+import type { Category, Priority, ReservationStatus, LocationItem } from '../../types';
 
 
 
 export const PlannerTab = () => {
-  const { locations, filterDay, transports, updateLocationDay, addLocation, setSelectedLocationId } = useAppStore();
+  const { locations, filterDay, transports, reorderLocation, addLocation, updateLocation, setSelectedLocationId } = useAppStore();
   const { isMobile } = useResponsive();
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -28,6 +31,19 @@ export const PlannerTab = () => {
   const [formSlot, setFormSlot] = useState<string>('Mañana');
   const [formCurrency, setFormCurrency] = useState<string>('EUR');
   const [isFormPanelOpen, setIsFormPanelOpen] = useState(false);
+  const [isFreeTimeSheetOpen, setIsFreeTimeSheetOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [conflictModalData, setConflictModalData] = useState<{
+    isOpen: boolean;
+    activeTitle: string;
+    overTitle: string;
+    overDatetime: string;
+    overDuration: number;
+    pendingReorder: () => void;
+    activeItemLoc: LocationItem;
+  } | null>(null);
+  const [preselectedDay, setPreselectedDay] = useState<string>('unassigned');
+  const [preselectedVariant, setPreselectedVariant] = useState<string>('default');
 
   const [isAddMode, setIsAddMode] = useState(false);
 
@@ -48,6 +64,7 @@ export const PlannerTab = () => {
 
     let targetDay = '';
     let targetVariant = '';
+    let overLocId: number | null = null;
     const overId = over.id.toString();
 
     // Comprobamos si soltamos en una columna o sobre otra tarjeta de ubicación
@@ -60,18 +77,66 @@ export const PlannerTab = () => {
       if (overLoc) {
         targetDay = overLoc.day;
         targetVariant = overLoc.variantId || 'default';
+        overLocId = overLoc.id;
       }
     }
 
     if (targetDay) {
-      updateLocationDay(Number(active.id), targetDay, targetVariant);
+      if (overLocId === null && active.id.toString() === overId && !overId.startsWith('col-')) {
+        // Drop in place on itself do nothing
+      } else {
+        const activeItem = locations.find(l => l.id.toString() === active.id.toString());
+        const overItem = overLocId ? locations.find(l => l.id === overLocId) : null;
+
+        // Time conflict check
+        if (activeItem && overItem && overItem.datetime && !activeItem.datetime) {
+          // Soltando una tarjeta SIN hora, detrás de una tarjeta CON hora.
+          setConflictModalData({
+            isOpen: true,
+            activeTitle: activeItem.title || activeItem.cat,
+            overTitle: overItem.title || overItem.cat,
+            overDatetime: overItem.datetime,
+            overDuration: overItem.durationMinutes || 60, // Fallback 1h
+            activeItemLoc: activeItem,
+            pendingReorder: () => reorderLocation(Number(active.id), overLocId, targetDay, targetVariant)
+          });
+        } else {
+          // Flujo normal
+          reorderLocation(Number(active.id), overLocId, targetDay, targetVariant);
+        }
+      }
     }
+  };
+
+  const handleResolveConflict = (action: TimeConflictAction, calculatedDatetime?: string) => {
+    if (!conflictModalData) return;
+
+    if (action === 'inherit' && calculatedDatetime) {
+      // Aplicamos la hora calculada y luego reordenamos
+      updateLocation({ ...conflictModalData.activeItemLoc, datetime: calculatedDatetime });
+      conflictModalData.pendingReorder();
+    } else if (action === 'keep-unscheduled') {
+      // Simplemente reordenamos sin tocar la hora
+      conflictModalData.pendingReorder();
+    }
+    // Si cancela, no hacemos nada y cerramos.
+
+    setConflictModalData(null);
   };
 
   const handleEdit = (id: number) => {
     const loc = locations.find(l => l.id === id);
     if (!loc) return;
-    setFormId(loc.id); setTempImages(loc.images); setFormPriority(loc.priority); setFormCat(loc.cat);
+    setFormId(loc.id);
+
+    if (loc.cat === 'free') {
+      setIsFreeTimeSheetOpen(true);
+      setSelectedLocationId(null);
+      setIsAddMode(false);
+      return;
+    }
+
+    setTempImages(loc.images); setFormPriority(loc.priority); setFormCat(loc.cat);
     setFormSlot(loc.slot || 'Mañana'); setFormCurrency(loc.newPrice?.currency || 'EUR');
     setTimeout(() => {
       const form = document.getElementById('mainForm') as HTMLFormElement;
@@ -84,6 +149,9 @@ export const PlannerTab = () => {
         if (loc.checkOutDatetime) (form.elements.namedItem('checkOutDatetime') as HTMLInputElement).value = loc.checkOutDatetime;
         if (loc.bookingRef) (form.elements.namedItem('bookingRef') as HTMLInputElement).value = loc.bookingRef;
         if (loc.newPrice?.amount) (form.elements.namedItem('priceAmount') as HTMLInputElement).value = loc.newPrice.amount.toString();
+
+        const durInput = form.elements.namedItem('durationMinutes') as HTMLInputElement;
+        if (durInput) durInput.value = loc.durationMinutes ? loc.durationMinutes.toString() : '';
       }
       setIsFormPanelOpen(true); setSelectedLocationId(null); setIsAddMode(false);
     }, 0);
@@ -91,8 +159,26 @@ export const PlannerTab = () => {
 
   const resetForm = () => {
     setFormId(null); setTempImages([]); setFormPriority('optional'); setFormCat('sight');
-    setFormSlot('Mañana'); setFormCurrency('EUR');
+    setFormSlot('Mañana'); setFormCurrency('EUR'); setPreselectedDay('unassigned'); setPreselectedVariant('default');
     (document.getElementById('mainForm') as HTMLFormElement)?.reset();
+  };
+
+  const handleAddNewToDay = (day: string, variantId: string) => {
+    resetForm();
+    setPreselectedDay(day);
+    setPreselectedVariant(variantId);
+    setIsFormPanelOpen(true);
+    setSelectedLocationId(null);
+    setIsAddMode(false);
+  };
+
+  const handleAddFreeTimeToDay = (day: string, variantId: string) => {
+    resetForm();
+    setPreselectedDay(day);
+    setPreselectedVariant(variantId);
+    setIsFreeTimeSheetOpen(true);
+    setSelectedLocationId(null);
+    setIsAddMode(false);
   };
 
   const handleAddLocation = (e: React.FormEvent<HTMLFormElement>) => {
@@ -106,8 +192,9 @@ export const PlannerTab = () => {
     else if (m1) coords = { lat: parseFloat(m1[1]), lng: parseFloat(m1[2]) };
     if (!coords && !formId) { alert("Enlace inválido. Requiere coordenadas."); return; }
 
-    let finalCoords = coords; let finalDay = 'unassigned';
-    let finalVariant = 'default';
+    let finalCoords = coords;
+    let finalDay = preselectedDay;
+    let finalVariant = preselectedVariant;
     if (formId) {
       const existing = locations.find(l => l.id === formId);
       if (existing) {
@@ -172,7 +259,7 @@ export const PlannerTab = () => {
 
   const routePolylines = useMemo(() => {
     if (filterDay === 'all' || filterDay === 'unassigned') return null;
-    const dayItems = locations.filter(l => l.day === filterDay && l.coords && (l.variantId || 'default') === 'default');
+    const dayItems = locations.filter(l => l.day === filterDay && l.coords && (l.variantId || 'default') === 'default' && l.cat !== 'free');
 
     if (dayItems.length > 1) {
       return (
@@ -188,10 +275,23 @@ export const PlannerTab = () => {
               ? segment.polyline!
               : [[item.coords!.lat, item.coords!.lng], [nextItem.coords!.lat, nextItem.coords!.lng]] as [number, number][];
 
+            // Calculate midpoint for tooltip
+            let midPoint: [number, number] | null = null;
+            if (latlngs.length > 0) {
+              const midIndex = Math.floor(latlngs.length / 2);
+              midPoint = latlngs[midIndex];
+            }
+
             return (
               <React.Fragment key={transportId}>
                 <Polyline positions={latlngs} color="white" weight={10} opacity={0.5} lineCap="round" lineJoin="round" eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }} />
-                <Polyline positions={latlngs} color={hasPolyline ? (segment.mode === 'car' ? '#3b82f6' : '#2D5A27') : "#9ca3af"} weight={4} dashArray={hasPolyline ? undefined : "10, 10"} opacity={1} eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }} />
+                <Polyline positions={latlngs} color={hasPolyline ? (segment.mode === 'car' ? '#3b82f6' : '#2D5A27') : "#9ca3af"} weight={4} dashArray={hasPolyline ? undefined : "10, 10"} opacity={1} eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }}>
+                  {midPoint && segment?.durationCalculated && (
+                    <Tooltip position={midPoint} permanent direction="center" className="bg-white/90 backdrop-blur border-none shadow-md text-nature-primary font-bold text-[10px] px-2 py-1 rounded-full relative z-[500] pointer-events-none mt-0 ml-0 before:hidden" opacity={1}>
+                      {segment.durationCalculated >= 60 ? `${Math.floor(segment.durationCalculated / 60)}h ${segment.durationCalculated % 60 ? (segment.durationCalculated % 60) + 'm' : ''}` : `${segment.durationCalculated}m`}
+                    </Tooltip>
+                  )}
+                </Polyline>
               </React.Fragment>
             );
           })}
@@ -233,6 +333,7 @@ export const PlannerTab = () => {
         <div className="flex-1 flex flex-col relative w-full overflow-hidden bg-nature-bg">
           <IdeaInbox
             handleEdit={handleEdit}
+            handleCardClick={setSelectedLocationId}
             handleAddNew={() => { resetForm(); setIsFormPanelOpen(true); setSelectedLocationId(null); setIsAddMode(false); }}
           />
 
@@ -246,6 +347,31 @@ export const PlannerTab = () => {
             handleAddLocation={handleAddLocation} handleFiles={handleFiles} resetForm={resetForm}
             locations={locations} handleEdit={handleEdit}
           />
+
+          <FreeTimeSheet
+            isOpen={isFreeTimeSheetOpen}
+            onClose={() => { setIsFreeTimeSheetOpen(false); resetForm(); }}
+            formId={formId}
+            day={preselectedDay}
+            variantId={preselectedVariant}
+            onSave={() => { setIsFreeTimeSheetOpen(false); resetForm(); }}
+          />
+
+          <TripSettingsModal
+            isOpen={isSettingsModalOpen}
+            onClose={() => setIsSettingsModalOpen(false)}
+          />
+
+          {conflictModalData && (
+            <TimeConflictModal
+              isOpen={conflictModalData.isOpen}
+              activeTitle={conflictModalData.activeTitle}
+              overTitle={conflictModalData.overTitle}
+              overDatetime={conflictModalData.overDatetime}
+              overDuration={conflictModalData.overDuration}
+              onResolve={handleResolveConflict}
+            />
+          )}
 
           <div className={`flex flex-1 w-full h-full overflow-hidden ${viewMode === 'split-horizontal' ? 'flex-col' :
             viewMode === 'split-vertical' ? 'flex-row' :
@@ -271,13 +397,15 @@ export const PlannerTab = () => {
                 viewMode === 'split-vertical' ? 'w-[400px] shrink-0 h-full' :
                   'w-full flex-1'
                 } overflow-hidden transition-all duration-300 relative`}>
-                <ScheduleBoard handleEdit={handleEdit} viewMode={viewMode} />
+                <ScheduleBoard handleEdit={handleEdit} handleCardClick={setSelectedLocationId} handleAddNewToDay={handleAddNewToDay} handleAddFreeTimeToDay={handleAddFreeTimeToDay} viewMode={viewMode} />
               </div>
             )}
 
             {/* Global View Selector (Always visible) */}
             <div className="absolute bottom-6 right-6 z-[600]">
               <div className="bg-white/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-white">
+                <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50 mr-2" title="Ajustes del Viaje (Fechas y Variantes)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+                <div className="w-px h-6 bg-gray-200 mr-2"></div>
                 <button onClick={() => setViewMode('split-horizontal')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-horizontal' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Mapa Arriba"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
                 <button onClick={() => setViewMode('split-vertical')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-vertical' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Mapa Izquierda"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
                 <button onClick={() => setViewMode('map-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'map-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Solo Mapa"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>

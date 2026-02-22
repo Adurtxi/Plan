@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { Navigation2, Car, Train, Map, Loader2 } from 'lucide-react';
 import { useAppStore } from '../../store';
 import type { LocationItem, TransportSegment } from '../../types';
@@ -13,6 +13,7 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
   const { transports, addTransport } = useAppStore();
   const [isCalculating, setIsCalculating] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [hasAttemptedAutoCalc, setHasAttemptedAutoCalc] = useState(false);
 
   const transportId = `${fromLoc.id}-${toLoc.id}`;
   const segment = transports.find(t => t.id === transportId);
@@ -43,6 +44,13 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
     }
   };
 
+  useEffect(() => {
+    if (!segment && fromLoc.coords && toLoc.coords && !isCalculating && !hasAttemptedAutoCalc) {
+      setHasAttemptedAutoCalc(true);
+      handleCalculate('walk'); // Start with a default conservative mode
+    }
+  }, [segment, fromLoc.coords, toLoc.coords, isCalculating, hasAttemptedAutoCalc]);
+
   return (
     <div className="flex items-center justify-center -my-2 z-10 relative group">
       <div className="absolute left-1/2 -top-4 bottom-0 w-[2px] bg-gray-200 group-hover:bg-nature-primary/50 transition-colors -z-10" />
@@ -55,13 +63,13 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
         >
           {isCalculating ? <Loader2 size={10} className="animate-spin" /> : (
             <>
-              {mode === 'walk' && <Map size={10} />}
-              {mode === 'car' && <Car size={10} />}
-              {mode === 'transit' && <Train size={10} />}
-              {mode === 'flight' && <Navigation2 size={10} className="rotate-45" />}
+              {(!duration || mode === 'walk') && <Map size={10} />}
+              {duration && mode === 'car' && <Car size={10} />}
+              {duration && mode === 'transit' && <Train size={10} />}
+              {duration && mode === 'flight' && <Navigation2 size={10} className="rotate-45" />}
             </>
           )}
-          <span>{duration ? `${duration} min${mode === 'transit' ? ' (manual)' : ''}` : 'Calcular Ruta'}</span>
+          <span>{duration ? `${duration} min${mode === 'transit' ? ' (manual)' : ''}` : null}</span>
         </button>
 
         {showOptions && (
