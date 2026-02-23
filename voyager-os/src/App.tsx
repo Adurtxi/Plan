@@ -6,6 +6,8 @@ import { PlannerTab } from './components/planner/PlannerTab';
 import { ChecklistTab } from './components/checklist/ChecklistTab';
 import { SmartSummaryTable } from './components/planner/SmartSummaryTable';
 import { LightboxModal } from './components/modals/LightboxModal';
+import { GlobalDialog } from './components/modals/GlobalDialog';
+import { ToastContainer } from './components/ui/ToastContainer';
 import { setupLeaflet } from './lib/leafletSetup';
 import 'leaflet/dist/leaflet.css';
 
@@ -32,6 +34,8 @@ export default function App() {
         {activeTab === 'checklist' && <ChecklistTab />}
       </motion.div>
       <LightboxModal />
+      <GlobalDialog />
+      <ToastContainer />
     </div>
   );
 }

@@ -1,12 +1,40 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
-import { Edit2, CheckCircle2, AlertCircle, Clock, Lightbulb } from 'lucide-react';
+import { Edit2, CheckCircle2, AlertCircle, Clock, Lightbulb, Lock, GripVertical, MoreVertical, LogOut, ArrowRightCircle } from 'lucide-react';
 import type { LocationItem } from '../../types';
 import { CAT_ICONS } from '../../constants';
+import { useAppStore } from '../../store';
 
-export const CardVisual = memo(({ item, onClick, onCardClick, onMoveClick, onGroupToggle, isMoving, isOverlay }: { item: LocationItem, onClick?: () => void, onCardClick?: () => void, onMoveClick?: () => void, onGroupToggle?: () => void, isMoving?: boolean, isOverlay?: boolean }) => {
+export const CardVisual = memo(({
+  item,
+  onClick,
+  onCardClick,
+  isOverlay,
+  isOver,
+  dragListeners,
+  dragAttributes,
+  onRequestMove,
+  isMovingMode
+}: {
+  item: LocationItem,
+  onClick?: () => void,
+  onCardClick?: () => void,
+  isOverlay?: boolean,
+  isOver?: boolean,
+  dragListeners?: any,
+  dragAttributes?: any,
+  onRequestMove?: () => void,
+  isMovingMode?: boolean
+}) => {
+  const { showDialog, updateLocation, extractFromGroup } = useAppStore();
+  const [showMenu, setShowMenu] = useState(false);
+
+  const formatDuration = (mins: number) => {
+    return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60 ? (mins % 60) + 'm' : ''}` : `${mins}m`;
+  };
+
   const getStatusIcon = () => {
     switch (item.reservationStatus) {
       case 'booked': return <CheckCircle2 size={12} className="text-green-500" />;
@@ -16,21 +44,32 @@ export const CardVisual = memo(({ item, onClick, onCardClick, onMoveClick, onGro
     }
   };
 
-  const formattedTime = item.datetime ? new Date(item.datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  const timeToFilter = item.derivedDatetime || item.datetime;
+  const formattedTime = timeToFilter ? new Date(timeToFilter).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
   const displayPrice = item.newPrice?.amount
     ? `${item.newPrice.amount.toFixed(2)} ${item.newPrice.currency === 'EUR' ? '€' : item.newPrice.currency}`
     : (item.cost ? `${item.cost}€` : '-');
 
   const content = (
-    <div onClick={onCardClick} className={`bento-card p-4 cursor-grab active:cursor-grabbing relative group bg-white border ${item.priority === 'necessary' ? 'border-nature-primary/30 shadow-[0_4px_20px_-4px_rgba(45,90,39,0.15)] ring-1 ring-nature-primary/10' : 'border-gray-100'} ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''} ${isMoving ? 'ring-2 ring-nature-accent shadow-lg scale-[1.02]' : ''}`}>
+    <div onClick={onCardClick} className={`bento-card p-4 cursor-pointer relative group bg-white border ${item.priority === 'necessary' ? 'border-nature-primary/30 shadow-[0_4px_20px_-4px_rgba(45,90,39,0.15)] ring-1 ring-nature-primary/10' : 'border-gray-100'} ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''} ${isOver ? 'ring-2 ring-nature-accent bg-nature-mint/10 scale-[1.02] shadow-lg' : 'hover:border-gray-200'} ${isMovingMode ? 'opacity-40 pointer-events-none grayscale-[50%]' : ''} transition-all`}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
+          {dragListeners && !isMovingMode && (
+            <div
+              {...dragListeners}
+              {...dragAttributes}
+              className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-nature-primary p-1 -ml-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical size={16} />
+            </div>
+          )}
           <span className="text-xl text-gray-500 bg-gray-50 p-2 rounded-xl border border-gray-100">{CAT_ICONS[item.cat]}</span>
           <div className="flex flex-col">
             <h3 className="text-sm font-bold text-nature-text truncate max-w-[120px]">{item.title || item.notes.split("\n")[0] || "Ubicación"}</h3>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">
-                {formattedTime ? <span className="flex items-center gap-1"><Clock size={10} /> {formattedTime}</span> : item.slot || "S/H"}
+                {formattedTime ? <span className="flex items-center gap-1"><Clock size={10} /> {formattedTime} {item.isPinnedTime && <Lock size={8} className="text-nature-primary opacity-50" />}</span> : item.slot || "S/H"}
               </span>
               {getStatusIcon()}
             </div>
@@ -45,32 +84,78 @@ export const CardVisual = memo(({ item, onClick, onCardClick, onMoveClick, onGro
       </div>
 
       <div className="flex flex-wrap gap-2 mt-3 items-center">
-        {item.durationMinutes && (
-          <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-nature-mint/30 text-nature-primary flex items-center gap-1">
-            <Clock size={10} /> {item.durationMinutes >= 60 ? `${Math.floor(item.durationMinutes / 60)}h ${item.durationMinutes % 60 ? (item.durationMinutes % 60) + 'm' : ''}` : `${item.durationMinutes}m`}
-          </span>
+        {item.durationMinutes ? (
+          <button onClick={(e) => {
+            e.stopPropagation();
+            showDialog({
+              type: 'prompt',
+              title: 'Editar Duración',
+              message: `Nueva duración para ${item.title || item.notes.split("\n")[0] || 'esta actividad'} (en minutos):`,
+              inputPlaceholder: 'Ej. 60, 90, 120...',
+              confirmText: 'Guardar',
+              onConfirm: (val) => {
+                const mins = parseInt(val || '0', 10);
+                if (!isNaN(mins) && mins >= 0) updateLocation({ ...item, durationMinutes: mins });
+              }
+            });
+          }} className="text-[10px] font-bold px-2 py-1 rounded-md bg-nature-mint/30 hover:bg-nature-mint/60 border border-nature-primary/10 text-nature-primary flex items-center gap-1 transition-colors z-20" title="Click para editar duración">
+            <Clock size={10} /> {formatDuration(item.durationMinutes)}
+          </button>
+        ) : (
+          <button onClick={(e) => {
+            e.stopPropagation();
+            showDialog({
+              type: 'prompt',
+              title: 'Añadir Duración',
+              message: `Duración para ${item.title || item.notes.split("\n")[0] || 'esta actividad'} (en minutos):`,
+              inputPlaceholder: 'Ej. 60...',
+              confirmText: 'Guardar',
+              onConfirm: (val) => {
+                const mins = parseInt(val || '0', 10);
+                if (!isNaN(mins) && mins >= 0) updateLocation({ ...item, durationMinutes: mins });
+              }
+            });
+          }} className="text-[10px] font-bold px-2 py-1 rounded-md bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-200 text-gray-400 flex items-center gap-1 transition-colors z-20 opacity-0 group-hover:opacity-100">
+            + <Clock size={10} /> Añadir Duración
+          </button>
         )}
       </div>
+
       {(item.priority === 'necessary' && item.reservationStatus === 'pending') && (
         <div className="mt-2 text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-1.5 rounded uppercase tracking-widest flex items-center gap-1 w-fit">
           <AlertCircle size={10} /> Urgente Reservar
         </div>
       )}
-      <div className="absolute -top-3 -right-3 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all z-10 w-auto">
-        {onMoveClick && (
-          <button onClick={(e) => { e.stopPropagation(); onMoveClick(); }} className={`text-gray-500 shadow-floating border border-gray-100 hover:text-nature-primary hover:scale-110 p-2 rounded-full w-8 h-8 flex items-center justify-center ${isMoving ? 'bg-nature-accent text-white' : 'bg-white'}`} title="Mover">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="19 9 22 12 19 15"></polyline><polyline points="9 19 12 22 15 19"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>
-          </button>
-        )}
-        {onGroupToggle && (
-          <button onClick={(e) => { e.stopPropagation(); onGroupToggle(); }} className="text-gray-500 bg-white shadow-floating border border-gray-100 hover:text-nature-primary hover:scale-110 p-2 rounded-full w-8 h-8 flex items-center justify-center" title="Unir al siguiente">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10" /><path d="M13 13v9l5-5" /></svg>
-          </button>
-        )}
-        {onClick && (
-          <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="text-gray-500 bg-white shadow-floating border border-gray-100 hover:text-nature-primary hover:scale-110 p-2 rounded-full w-8 h-8 flex items-center justify-center" title="Editar">
-            <Edit2 size={12} />
-          </button>
+
+      {/* Action Menu Trigger */}
+      <div className="absolute -top-3 -right-3 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all z-30 w-auto">
+        {!isMovingMode && onClick && (
+          <div className="relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              onBlur={() => setTimeout(() => setShowMenu(false), 200)}
+              className="text-gray-500 bg-white shadow-floating border border-gray-100 hover:text-nature-primary p-2 rounded-full w-8 h-8 flex items-center justify-center"
+            >
+              <MoreVertical size={14} />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 top-10 w-40 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 text-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+                <button onClick={() => { onClick(); setShowMenu(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-gray-700">
+                  <Edit2 size={14} /> Editar
+                </button>
+                {onRequestMove && (
+                  <button onClick={() => { onRequestMove(); setShowMenu(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-gray-700">
+                    <ArrowRightCircle size={14} /> Mover a...
+                  </button>
+                )}
+                {item.groupId && (
+                  <button onClick={() => { extractFromGroup(item.id); setShowMenu(false); }} className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-2 text-red-600">
+                    <LogOut size={14} /> Sacar del Grupo
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -84,8 +169,8 @@ export const CardVisual = memo(({ item, onClick, onCardClick, onMoveClick, onGro
 });
 CardVisual.displayName = 'CardVisual';
 
-export const SortableCard = memo(({ item, onClick, onCardClick, onMoveClick, onGroupToggle, isMoving }: { item: LocationItem, onClick: () => void, onCardClick?: () => void, onMoveClick?: () => void, onGroupToggle?: () => void, isMoving?: boolean }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id.toString() });
+export const SortableCard = memo(({ item, onClick, onCardClick, onRequestMove, isMovingMode }: { item: LocationItem, onClick: () => void, onCardClick?: () => void, onRequestMove?: () => void, isMovingMode?: boolean }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({ id: item.id.toString(), disabled: isMovingMode });
   const style = {
     transform: CSS.Translate.toString(transform),
     transition,
@@ -94,37 +179,66 @@ export const SortableCard = memo(({ item, onClick, onCardClick, onMoveClick, onG
   };
 
   const isFreeTime = item.cat === 'free';
+  const formatDuration = (mins: number) => mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60 ? (mins % 60) + 'm' : ''}` : `${mins}m`;
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="outline-none relative">
+    <div ref={setNodeRef} style={style} className="outline-none relative">
       {isFreeTime ? (
-        <div onClick={onCardClick} className={`my-1 group cursor-grab active:cursor-grabbing hover:bg-gray-100 bg-gray-50/50 border-y border-dashed border-gray-300 py-3 px-4 flex items-center justify-between transition-colors ${isDragging ? 'opacity-50' : ''}`}>
+        <div onClick={onCardClick} className={`my-1 group hover:bg-gray-100 bg-gray-50/50 border-y border-dashed border-gray-300 py-3 px-4 flex items-center justify-between transition-colors ${isDragging ? 'opacity-50' : ''} ${isMovingMode ? 'opacity-40 grayscale' : ''}`}>
           <div className="flex gap-2 items-center text-gray-500">
+            {!isMovingMode && (
+              <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing hover:text-nature-primary p-1 -ml-2" onClick={e => e.stopPropagation()}>
+                <GripVertical size={14} className="opacity-50" />
+              </div>
+            )}
             <span className="text-xl opacity-80">☕</span>
             <span className="text-xs font-bold uppercase tracking-widest">{item.title || 'Tiempo Libre'}</span>
 
-            {item.datetime && item.durationMinutes ? (
-              <span className="ml-2 text-[10px] font-bold bg-white px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 flex items-center gap-1">
-                <Clock size={10} />
-                {new Date(item.datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {(() => {
-                  const end = new Date(item.datetime);
-                  end.setMinutes(end.getMinutes() + item.durationMinutes);
-                  return end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                })()}
-              </span>
-            ) : item.durationMinutes ? (
-              <span className="ml-2 text-[10px] font-bold bg-white px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 flex items-center gap-1">
-                <Clock size={10} />
-                {item.durationMinutes >= 60 ? `${Math.floor(item.durationMinutes / 60)}h ${item.durationMinutes % 60 ? (item.durationMinutes % 60) + 'm' : ''}` : `${item.durationMinutes}m`}
-              </span>
-            ) : null}
+            {(() => {
+              const displayTime = item.derivedDatetime || item.datetime;
+              if (displayTime && item.durationMinutes) {
+                return (
+                  <span className="ml-2 text-[10px] font-bold bg-white px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 flex items-center gap-1">
+                    <Clock size={10} />
+                    {new Date(displayTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {item.isPinnedTime && <Lock size={8} className="text-nature-primary opacity-50" />}
+                    {" - "}
+                    {(() => {
+                      const end = new Date(displayTime);
+                      end.setMinutes(end.getMinutes() + item.durationMinutes);
+                      return end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    })()}
+                  </span>
+                );
+              } else if (item.durationMinutes) {
+                return (
+                  <span className="ml-2 text-[10px] font-bold bg-white px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 flex items-center gap-1">
+                    <Clock size={10} /> {formatDuration(item.durationMinutes)}
+                  </span>
+                );
+              }
+              return null;
+            })()}
           </div>
-          <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-nature-accent transition-colors p-1">
-            <Edit2 size={12} />
-          </button>
+          {!isMovingMode && (
+            <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-nature-accent transition-colors p-1">
+              <Edit2 size={12} />
+            </button>
+          )}
         </div>
       ) : (
-        <CardVisual item={item} onClick={onClick} onCardClick={onCardClick} onMoveClick={onMoveClick} onGroupToggle={onGroupToggle} isMoving={isMoving} />
+        <div className="w-full h-full block">
+          <CardVisual
+            item={item}
+            onClick={onClick}
+            onCardClick={onCardClick}
+            isOver={isOver && !isDragging}
+            dragListeners={listeners}
+            dragAttributes={attributes}
+            onRequestMove={onRequestMove}
+            isMovingMode={isMovingMode}
+          />
+        </div>
       )}
     </div>
   );

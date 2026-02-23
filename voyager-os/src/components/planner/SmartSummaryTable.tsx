@@ -3,7 +3,14 @@ import { useAppStore } from '../../store';
 import { AlertTriangle, CheckCircle, Info, Plane, Hotel, Navigation } from 'lucide-react';
 
 export const SmartSummaryTable = () => {
-  const { locations } = useAppStore();
+  const { locations, setActiveTab, setSelectedLocationId } = useAppStore();
+
+  const handleGoToReserve = (id: number) => {
+    setActiveTab('planner');
+    setTimeout(() => {
+      setSelectedLocationId(id);
+    }, 100);
+  };
 
   const analytics = useMemo(() => {
     let totalCost = 0;
@@ -43,7 +50,16 @@ export const SmartSummaryTable = () => {
       }
     }
 
-    return { totalCost, pendingReservations, heuristicAlerts };
+    const totalCostObj = locations.filter(l => l.day !== 'unassigned' && (l.variantId || 'default') === 'default').reduce((acc, loc) => {
+      const amount = loc.newPrice?.amount || parseFloat(loc.cost) || 0;
+      const currency = loc.newPrice?.currency || acc.currency;
+      return { amount: acc.amount + amount, currency };
+    }, { amount: 0, currency: 'EUR' });
+
+    totalCost = totalCostObj.amount;
+    const currencySymbol = totalCostObj.currency === 'USD' ? '$' : totalCostObj.currency === 'GBP' ? '£' : totalCostObj.currency === 'JPY' ? '¥' : '€';
+
+    return { totalCost, currencySymbol, pendingReservations, heuristicAlerts };
   }, [locations]);
 
   return (
@@ -61,7 +77,7 @@ export const SmartSummaryTable = () => {
             <span className="text-xs font-bold tracking-widest text-gray-400 uppercase flex items-center gap-2"><CheckCircle size={14} /> Estado Total</span>
             <div className="mt-4">
               <span className="text-4xl font-serif text-nature-primary">{analytics.totalCost.toFixed(2)}</span>
-              <span className="text-xl text-gray-400 ml-1">€</span>
+              <span className="text-xl text-gray-400 ml-1">{analytics.currencySymbol}</span>
             </div>
           </div>
 
@@ -95,11 +111,11 @@ export const SmartSummaryTable = () => {
                     {p.cat === 'flight' ? <Plane size={14} /> : p.cat === 'hotel' ? <Hotel size={14} /> : <Navigation size={14} />}
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-red-900">Urgente: {p.notes.split('\n')[0] || 'Actividad sin nombre'}</h4>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-red-400 mt-0.5">{p.day} • {p.slot}</p>
+                    <h4 className="text-sm font-bold text-red-900">Urgente: {p.title || p.notes.split('\n')[0] || p.cat}</h4>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-red-400 mt-0.5">{p.day} • {p.slot || 'S/H'}</p>
                   </div>
                 </div>
-                <button className="text-xs bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-red-600 transition-colors">
+                <button onClick={() => handleGoToReserve(p.id)} className="text-xs bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-red-600 active:scale-95 transition-all">
                   Ir a Reservar
                 </button>
               </div>

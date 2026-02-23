@@ -9,7 +9,7 @@ interface TripSettingsModalProps {
 }
 
 export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) => {
-  const { tripVariants, activeGlobalVariantId, setActiveGlobalVariantId, addTripVariant, updateTripVariant, deleteTripVariant } = useAppStore();
+  const { tripVariants, activeGlobalVariantId, setActiveGlobalVariantId, addTripVariant, updateTripVariant, deleteTripVariant, showDialog, addToast } = useAppStore();
 
   const activeVariant = tripVariants.find(v => v.id === activeGlobalVariantId);
   const [editingVariant, setEditingVariant] = useState<TripVariant | null>(null);
@@ -36,16 +36,25 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
 
   const handleSave = () => {
     updateTripVariant(editingVariant);
+    addToast('Ajustes de viaje guardados', 'success');
     onClose();
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("¿Seguro que quieres eliminar esta variante del plan?")) {
-      deleteTripVariant(id);
-      if (activeGlobalVariantId === id) {
-        setActiveGlobalVariantId('default');
+    showDialog({
+      type: 'confirm',
+      title: 'Eliminar variante',
+      message: '¿Seguro que quieres eliminar esta ruta o variante del plan global? Se perderán las referencias.',
+      confirmText: 'Sí, eliminar',
+      isDestructive: true,
+      onConfirm: () => {
+        deleteTripVariant(id);
+        if (activeGlobalVariantId === id) {
+          setActiveGlobalVariantId('default');
+        }
+        addToast('Variante global eliminada', 'info');
       }
-    }
+    });
   };
 
   return (

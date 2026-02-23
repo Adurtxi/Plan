@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Polyline, Tooltip } from 'react-leaflet';
-import { DndContext, closestCenter, type DragEndEvent, type DragStartEvent, useSensor, useSensors, PointerSensor, DragOverlay } from '@dnd-kit/core';
+import { DndContext, closestCenter, type DragEndEvent, type DragStartEvent, useSensor, useSensors, PointerSensor, TouchSensor, DragOverlay } from '@dnd-kit/core';
 import { LocationForm } from './LocationForm';
 import { FreeTimeSheet } from './FreeTimeSheet';
 import { MapView } from './MapView';
@@ -13,16 +13,17 @@ import { MobileTimelineView } from './MobileTimelineView';
 import { useAppStore } from '../../store';
 import { useResponsive } from '../../hooks/useResponsive';
 import { CardVisual } from '../ui/SortableCard';
+import { DAYS } from '../../constants';
 import type { Category, Priority, ReservationStatus, LocationItem } from '../../types';
 
-
-
 export const PlannerTab = () => {
-  const { locations, filterDay, transports, reorderLocation, addLocation, updateLocation, setSelectedLocationId } = useAppStore();
+  const { locations, optimisticLocations, setOptimisticLocations, clearOptimisticLocations, filterDay, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations } = useAppStore();
   const { isMobile } = useResponsive();
 
+  const displayLocations = optimisticLocations || locations;
+
   const [activeId, setActiveId] = useState<string | null>(null);
-  const activeItem = useMemo(() => locations.find(l => l.id.toString() === activeId), [activeId, locations]);
+  const activeItem = useMemo(() => displayLocations.find(l => l.id.toString() === activeId), [activeId, displayLocations]);
 
   const [formId, setFormId] = useState<number | null>(null);
   const [tempImages, setTempImages] = useState<{ data: string, name: string }[]>([]);
@@ -33,6 +34,9 @@ export const PlannerTab = () => {
   const [isFormPanelOpen, setIsFormPanelOpen] = useState(false);
   const [isFreeTimeSheetOpen, setIsFreeTimeSheetOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  const [moveToDayModal, setMoveToDayModal] = useState<{ isOpen: boolean, itemId: number | null }>({ isOpen: false, itemId: null });
+
   const [conflictModalData, setConflictModalData] = useState<{
     isOpen: boolean;
     activeTitle: string;
@@ -42,6 +46,7 @@ export const PlannerTab = () => {
     pendingReorder: () => void;
     activeItemLoc: LocationItem;
   } | null>(null);
+
   const [preselectedDay, setPreselectedDay] = useState<string>('unassigned');
   const [preselectedVariant, setPreselectedVariant] = useState<string>('default');
 
@@ -49,31 +54,97 @@ export const PlannerTab = () => {
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 }, // Previene arrastrar al hacer clic normal
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
     })
   );
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
+    setOptimisticLocations(JSON.parse(JSON.stringify(locations)));
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragOver = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    if (!optimisticLocations) return;
+
+    const activeIdStr = active.id.toString();
+    const overIdStr = over.id.toString();
+
+    if (activeIdStr.startsWith('group-')) return;
+
+    const newLocs = [...optimisticLocations];
+    const activeIndex = newLocs.findIndex(l => l.id.toString() === activeIdStr);
+    const overIndex = newLocs.findIndex(l => l.id.toString() === overIdStr);
+    if (activeIndex === -1 || overIndex === -1) return;
+
+    const activeLoc = newLocs[activeIndex];
+    const overLoc = newLocs[overIndex];
+
+    if (activeLoc.day !== overLoc.day || (activeLoc.variantId || 'default') !== (overLoc.variantId || 'default')) return;
+
+    newLocs.splice(activeIndex, 1);
+    const newOverIndex = newLocs.findIndex(l => l.id.toString() === overIdStr);
+    newLocs.splice(newOverIndex >= 0 ? newOverIndex : overIndex, 0, activeLoc);
+
+    setOptimisticLocations(newLocs);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
+    clearOptimisticLocations();
+
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
     const activeIdStr = active.id.toString();
     const overIdStr = over.id.toString();
 
-    let targetDay = '';
-    let targetVariant = '';
+    const isGroupDrag = activeIdStr.startsWith('group-');
     let overLocId: number | null = null;
+
+    if (!overIdStr.startsWith('col-') && !overIdStr.startsWith('group-')) {
+      const overLoc = locations.find(l => l.id.toString() === overIdStr);
+      if (overLoc) overLocId = overLoc.id;
+    }
+
+    const activeItemLoc = isGroupDrag ? null : locations.find(l => l.id.toString() === activeIdStr);
+    const overItemLoc = overLocId ? locations.find(l => l.id === overLocId) : null;
+
+    // MAGIA GEOMÉTRICA: Detección de Fusión (Arrastrar para agrupar)
+    const activeRect = active.rect.current.translated;
+    const overRect = over.rect;
+
+    if (activeRect && overRect && !isGroupDrag && overItemLoc && !overIdStr.startsWith('col-') && !overIdStr.startsWith('group-')) {
+      const activeTop = activeRect.top;
+      const activeBottom = activeTop + activeRect.height;
+      const overTop = overRect.top;
+      const overBottom = overTop + overRect.height;
+
+      const overlap = Math.max(0, Math.min(activeBottom, overBottom) - Math.max(activeTop, overTop));
+      const overlapPercentage = overlap / Math.min(activeRect.height, overRect.height);
+
+      if (overlapPercentage > 0.6) {
+        mergeLocations(Number(activeIdStr), overItemLoc.id);
+        return;
+      }
+    }
+
+    let targetDay = '';
+    let targetVariant = 'default';
     let passOverId: string | number | null = null;
 
     if (overIdStr.startsWith('col-')) {
       const parts = overIdStr.replace('col-', '').split('::');
       targetDay = parts[0];
       targetVariant = parts[1] || 'default';
+      passOverId = null;
     } else if (overIdStr.startsWith('group-')) {
       const groupId = overIdStr.replace('group-', '');
       const groupItem = locations.find(l => l.groupId === groupId);
@@ -87,56 +158,48 @@ export const PlannerTab = () => {
       if (overLoc) {
         targetDay = overLoc.day;
         targetVariant = overLoc.variantId || 'default';
-        overLocId = overLoc.id;
         passOverId = overLoc.id;
       }
     }
 
-    if (targetDay) {
-      if (passOverId === null && activeIdStr === overIdStr && !overIdStr.startsWith('col-')) {
-        // Drop in place on itself do nothing
-      } else {
-        const isGroupDrag = activeIdStr.startsWith('group-');
-        const activeItemCopy = isGroupDrag ? null : locations.find(l => l.id.toString() === activeIdStr);
-        const overItem = overLocId ? locations.find(l => l.id === overLocId) : null;
+    if (!targetDay) return;
 
-        // Time conflict check
-        if (activeItemCopy && overItem && overItem.datetime && !activeItemCopy.datetime) {
-          setConflictModalData({
-            isOpen: true,
-            activeTitle: activeItemCopy.title || activeItemCopy.cat,
-            overTitle: overItem.title || overItem.cat,
-            overDatetime: overItem.datetime,
-            overDuration: overItem.durationMinutes || 60, // Fallback 1h
-            activeItemLoc: activeItemCopy,
-            pendingReorder: () => reorderLocation(Number(active.id), passOverId, targetDay, targetVariant)
-          });
-        } else {
-          // Flujo normal
-          reorderLocation(isGroupDrag ? activeIdStr : Number(activeIdStr), passOverId, targetDay, targetVariant);
+    if (!isGroupDrag && activeItemLoc && overItemLoc && overItemLoc.datetime && !activeItemLoc.datetime) {
+      setConflictModalData({
+        isOpen: true,
+        activeTitle: activeItemLoc.title || activeItemLoc.cat,
+        overTitle: overItemLoc.title || overItemLoc.cat,
+        overDatetime: overItemLoc.datetime,
+        overDuration: overItemLoc.durationMinutes || 60,
+        activeItemLoc,
+        pendingReorder: () => {
+          reorderLocation(Number(activeIdStr), passOverId, targetDay, targetVariant);
         }
-      }
+      });
+      return;
     }
+
+    reorderLocation(
+      isGroupDrag ? activeIdStr : Number(activeIdStr),
+      passOverId,
+      targetDay,
+      targetVariant
+    );
   };
 
   const handleResolveConflict = (action: TimeConflictAction, calculatedDatetime?: string) => {
     if (!conflictModalData) return;
-
     if (action === 'inherit' && calculatedDatetime) {
-      // Aplicamos la hora calculada y luego reordenamos
       updateLocation({ ...conflictModalData.activeItemLoc, datetime: calculatedDatetime });
       conflictModalData.pendingReorder();
     } else if (action === 'keep-unscheduled') {
-      // Simplemente reordenamos sin tocar la hora
       conflictModalData.pendingReorder();
     }
-    // Si cancela, no hacemos nada y cerramos.
-
     setConflictModalData(null);
   };
 
   const handleEdit = (id: number) => {
-    const loc = locations.find(l => l.id === id);
+    const loc = displayLocations.find(l => l.id === id);
     if (!loc) return;
     setFormId(loc.id);
 
@@ -160,6 +223,9 @@ export const PlannerTab = () => {
         if (loc.checkOutDatetime) (form.elements.namedItem('checkOutDatetime') as HTMLInputElement).value = loc.checkOutDatetime;
         if (loc.bookingRef) (form.elements.namedItem('bookingRef') as HTMLInputElement).value = loc.bookingRef;
         if (loc.newPrice?.amount) (form.elements.namedItem('priceAmount') as HTMLInputElement).value = loc.newPrice.amount.toString();
+
+        const pinnedInput = form.elements.namedItem('isPinnedTime') as HTMLInputElement;
+        if (pinnedInput) pinnedInput.checked = !!loc.isPinnedTime;
 
         const durInput = form.elements.namedItem('durationMinutes') as HTMLInputElement;
         if (durInput) durInput.value = loc.durationMinutes ? loc.durationMinutes.toString() : '';
@@ -219,25 +285,54 @@ export const PlannerTab = () => {
     const priceAmount = rawAmount ? parseFloat(rawAmount) : 0;
     const priceCurrency = (formData.get('priceCurrency') as string) || 'EUR';
 
-    addLocation({
-      id: formId || Date.now(),
-      title: formData.get('title') as string || undefined,
-      link,
-      coords: finalCoords,
-      priority: formPriority,
-      cat: formCat,
-      cost: formData.get('cost') as string || '0',
-      newPrice: { amount: priceAmount, currency: priceCurrency },
-      slot: formData.get('slot') as string,
-      datetime: formData.get('datetime') as string || undefined,
-      checkOutDatetime: formData.get('checkOutDatetime') as string || undefined,
-      notes: formData.get('notes') as string,
-      images: tempImages,
-      day: finalDay,
-      variantId: finalVariant,
-      reservationStatus: (formData.get('reservationStatus') as ReservationStatus) || 'idea',
-      bookingRef: formData.get('bookingRef') as string || undefined
-    });
+    const isPinnedTime = formData.get('isPinnedTime') === 'on';
+
+    if (formId) {
+      const existing = locations.find(l => l.id === formId);
+      if (existing) {
+        updateLocation({
+          ...existing,
+          title: formData.get('title') as string || undefined,
+          link,
+          coords: finalCoords,
+          priority: formPriority,
+          cat: formCat,
+          cost: formData.get('cost') as string || '0',
+          newPrice: { amount: priceAmount, currency: priceCurrency },
+          slot: formData.get('slot') as string,
+          datetime: formData.get('datetime') as string || undefined,
+          isPinnedTime,
+          checkOutDatetime: formData.get('checkOutDatetime') as string || undefined,
+          notes: formData.get('notes') as string,
+          images: tempImages.length > 0 ? tempImages : existing.images,
+          day: finalDay,
+          variantId: finalVariant,
+          reservationStatus: (formData.get('reservationStatus') as ReservationStatus) || 'idea',
+          bookingRef: formData.get('bookingRef') as string || undefined
+        });
+      }
+    } else {
+      addLocation({
+        id: Date.now(),
+        title: formData.get('title') as string || undefined,
+        link,
+        coords: finalCoords,
+        priority: formPriority,
+        cat: formCat,
+        cost: formData.get('cost') as string || '0',
+        newPrice: { amount: priceAmount, currency: priceCurrency },
+        slot: formData.get('slot') as string,
+        datetime: formData.get('datetime') as string || undefined,
+        isPinnedTime,
+        checkOutDatetime: formData.get('checkOutDatetime') as string || undefined,
+        notes: formData.get('notes') as string,
+        images: tempImages,
+        day: finalDay,
+        variantId: finalVariant,
+        reservationStatus: (formData.get('reservationStatus') as ReservationStatus) || 'idea',
+        bookingRef: formData.get('bookingRef') as string || undefined
+      });
+    }
 
     resetForm(); setIsFormPanelOpen(false); setIsAddMode(false);
   };
@@ -261,16 +356,14 @@ export const PlannerTab = () => {
     });
   };
 
-
   const handleRouteClick = (e: any, _fromId: number, toId: number) => {
     e.originalEvent.stopPropagation();
-    // Para simplificar, abrimos el Detalle del destino (toId) al hacer clic en la ruta
     setSelectedLocationId(toId);
   };
 
   const routePolylines = useMemo(() => {
     if (filterDay === 'all' || filterDay === 'unassigned') return null;
-    const dayItems = locations.filter(l => l.day === filterDay && l.coords && (l.variantId || 'default') === 'default' && l.cat !== 'free');
+    const dayItems = displayLocations.filter(l => l.day === filterDay && l.coords && (l.variantId || 'default') === 'default' && l.cat !== 'free');
 
     if (dayItems.length > 1) {
       return (
@@ -286,7 +379,6 @@ export const PlannerTab = () => {
               ? segment.polyline!
               : [[item.coords!.lat, item.coords!.lng], [nextItem.coords!.lat, nextItem.coords!.lng]] as [number, number][];
 
-            // Calculate midpoint for tooltip
             let midPoint: [number, number] | null = null;
             if (latlngs.length > 0) {
               const midIndex = Math.floor(latlngs.length / 2);
@@ -313,33 +405,58 @@ export const PlannerTab = () => {
   }, [locations, filterDay, transports, setSelectedLocationId]);
 
   const handleMapClick = (lat: number, lng: number) => {
-    if (!isAddMode) {
-      // Si no estamos en modo añadir, no abrimos el panel para no interferir
-      return;
-    }
-
+    if (!isAddMode) return;
     resetForm();
     setIsFormPanelOpen(true);
     setSelectedLocationId(null);
     setTimeout(() => {
       const form = document.getElementById('mainForm') as HTMLFormElement;
       if (form) {
-        // Pre-fill the link field with the coordinates so the form can parse it naturally
         (form.elements.namedItem('link') as HTMLInputElement).value = `@${lat},${lng}`;
       }
     }, 0);
   };
 
-  // NEW: layout mode state
   type ViewMode = 'split-horizontal' | 'split-vertical' | 'map-only' | 'board-only';
   const [viewMode, setViewMode] = useState<ViewMode>('split-horizontal');
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo]);
+
+  const availableDays = useMemo(() => {
+    let daysList = [...DAYS];
+    const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
+    if (activeVar && activeVar.startDate && activeVar.endDate) {
+      const start = new Date(activeVar.startDate);
+      const end = new Date(activeVar.endDate);
+      let i = 1;
+      const copyDate = new Date(start);
+      daysList = [];
+      while (copyDate <= end) {
+        daysList.push(`day-${i}`);
+        copyDate.setDate(copyDate.getDate() + 1);
+        i++;
+      }
+    }
+    return [...daysList, 'unassigned'];
+  }, [tripVariants, activeGlobalVariantId]);
 
   if (isMobile) {
     return <MobileTimelineView />;
   }
 
+  const movingItemData = locations.find(l => l.id === movingItemId);
+
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
       <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 flex flex-col relative w-full overflow-hidden bg-nature-bg">
           <IdeaInbox
@@ -384,15 +501,32 @@ export const PlannerTab = () => {
             />
           )}
 
-          <div className={`flex flex-1 w-full h-full overflow-hidden ${viewMode === 'split-horizontal' ? 'flex-col' :
-            viewMode === 'split-vertical' ? 'flex-row' :
-              'flex-col' // fallbacks for single views will just hide the other component
-            }`}>
+          {moveToDayModal.isOpen && (
+            <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+                <h3 className="text-lg font-bold text-nature-primary mb-4">Mover Actividad</h3>
+                <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto custom-scroll">
+                  {availableDays.map(day => (
+                    <button
+                      key={day}
+                      onClick={() => {
+                        if (moveToDayModal.itemId) moveToDay(moveToDayModal.itemId, day, 'default');
+                        setMoveToDayModal({ isOpen: false, itemId: null });
+                      }}
+                      className="text-left px-4 py-3 bg-gray-50 hover:bg-nature-mint/30 rounded-xl text-sm font-bold text-gray-700 transition-colors"
+                    >
+                      {day === 'unassigned' ? '📥 Buzón de Ideas' : day.replace('-', ' ')}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => setMoveToDayModal({ isOpen: false, itemId: null })} className="mt-4 w-full py-2 text-center text-sm text-gray-400 hover:text-gray-600">Cancelar</button>
+              </div>
+            </div>
+          )}
+
+          <div className={`flex flex-1 w-full h-full overflow-hidden ${viewMode === 'split-horizontal' ? 'flex-col' : viewMode === 'split-vertical' ? 'flex-row' : 'flex-col'}`}>
             {viewMode !== 'board-only' && (
-              <div className={`${viewMode === 'map-only' ? 'w-full h-full' :
-                viewMode === 'split-vertical' ? 'flex-1 h-full border-r border-gray-200' :
-                  'w-full h-[55%] border-b border-gray-200'
-                } shrink-0 transition-all duration-300 relative`}>
+              <div className={`${viewMode === 'map-only' ? 'w-full h-full' : viewMode === 'split-vertical' ? 'flex-1 h-full border-r border-gray-200' : 'w-full h-[55%] border-b border-gray-200'} shrink-0 transition-all duration-300 relative`}>
                 <MapView
                   routePolylines={routePolylines}
                   setIsFormPanelOpen={setIsFormPanelOpen}
@@ -404,23 +538,41 @@ export const PlannerTab = () => {
             )}
 
             {viewMode !== 'map-only' && (
-              <div className={`${viewMode === 'board-only' ? 'w-full h-full' :
-                viewMode === 'split-vertical' ? 'w-[400px] shrink-0 h-full' :
-                  'w-full flex-1'
-                } overflow-hidden transition-all duration-300 relative`}>
-                <ScheduleBoard handleEdit={handleEdit} handleCardClick={setSelectedLocationId} handleAddNewToDay={handleAddNewToDay} handleAddFreeTimeToDay={handleAddFreeTimeToDay} viewMode={viewMode} />
+              <div className={`${viewMode === 'board-only' ? 'w-full h-full' : viewMode === 'split-vertical' ? 'w-[400px] shrink-0 h-full' : 'w-full flex-1'} overflow-hidden transition-all duration-300 relative`}>
+                <ScheduleBoard
+                  handleEdit={handleEdit}
+                  handleCardClick={setSelectedLocationId}
+                  handleAddNewToDay={handleAddNewToDay}
+                  handleAddFreeTimeToDay={handleAddFreeTimeToDay}
+                  viewMode={viewMode}
+                  onRequestMove={(id) => setMovingItemId(id)}
+                />
               </div>
             )}
 
-            {/* Global View Selector (Always visible) */}
+            {/* BARRA FLOTANTE MODO MOVER AQUÍ */}
+            {movingItemId && movingItemData && (
+              <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-full shadow-2xl z-[1000] flex items-center gap-5 border-4 border-nature-primary animate-in slide-in-from-bottom-10">
+                <div className="flex items-center gap-3">
+                  <span className="animate-pulse text-2xl">✨</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-nature-mint font-bold uppercase tracking-widest">Modo Edición Rápida</span>
+                    <span className="text-sm font-medium">Selecciona un hueco punteado para colocar: <b className="text-white">{movingItemData.title || 'esta actividad'}</b></span>
+                  </div>
+                </div>
+                <div className="w-px h-8 bg-gray-700 mx-2"></div>
+                <button onClick={() => setMovingItemId(null)} className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-wider bg-gray-800 px-4 py-2 rounded-full transition-colors">Cancelar</button>
+              </div>
+            )}
+
             <div className="absolute bottom-6 right-6 z-[600]">
               <div className="bg-white/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-white">
-                <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50 mr-2" title="Ajustes del Viaje (Fechas y Variantes)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+                <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50 mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
                 <div className="w-px h-6 bg-gray-200 mr-2"></div>
-                <button onClick={() => setViewMode('split-horizontal')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-horizontal' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Mapa Arriba"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
-                <button onClick={() => setViewMode('split-vertical')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-vertical' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Mapa Izquierda"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
-                <button onClick={() => setViewMode('map-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'map-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Solo Mapa"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>
-                <button onClick={() => setViewMode('board-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'board-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`} title="Solo Tablero"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                <button onClick={() => setViewMode('split-horizontal')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-horizontal' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
+                <button onClick={() => setViewMode('split-vertical')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-vertical' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
+                <button onClick={() => setViewMode('map-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'map-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>
+                <button onClick={() => setViewMode('board-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'board-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
               </div>
             </div>
           </div>

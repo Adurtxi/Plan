@@ -32,6 +32,8 @@ export const LocationForm = ({
 }: LocationFormProps) => {
   const [activeTab, setActiveTab] = useState<'general' | 'time' | 'finance' | 'assets'>('general');
   const [resStatus, setResStatus] = useState<ReservationStatus>('idea');
+  const [durHours, setDurHours] = useState<number | string>('');
+  const [durMins, setDurMins] = useState<number | string>('');
 
   // Load existing status when editing
   useEffect(() => {
@@ -39,15 +41,17 @@ export const LocationForm = ({
       const existing = locations.find(l => l.id === formId);
       if (existing && existing.reservationStatus) setResStatus(existing.reservationStatus);
       if (existing && existing.durationMinutes !== undefined) {
-        // Set duration input value if we have a direct reference to it, or rely on form default loading
-        setTimeout(() => {
-          const durInput = document.forms.namedItem('mainForm')?.elements.namedItem('durationMinutes') as HTMLInputElement | null;
-          if (durInput) durInput.value = existing.durationMinutes!.toString();
-        }, 100);
+        setDurHours(Math.floor(existing.durationMinutes / 60) || '');
+        setDurMins(existing.durationMinutes % 60 || '');
+      } else {
+        setDurHours('');
+        setDurMins('');
       }
     } else {
       setResStatus('idea');
       setActiveTab('general');
+      setDurHours('');
+      setDurMins('');
     }
   }, [formId, locations]);
 
@@ -99,6 +103,13 @@ export const LocationForm = ({
     inputStatus.name = 'reservationStatus';
     inputStatus.value = resStatus;
     e.currentTarget.appendChild(inputStatus);
+
+    const totalMins = (Number(durHours || 0) * 60) + Number(durMins || 0);
+    const inputDur = document.createElement('input');
+    inputDur.type = 'hidden';
+    inputDur.name = 'durationMinutes';
+    inputDur.value = totalMins > 0 ? totalMins.toString() : '';
+    e.currentTarget.appendChild(inputDur);
 
     handleAddLocation(e);
   };
@@ -184,7 +195,13 @@ export const LocationForm = ({
                 />
               </div>
               <div className="w-1/2">
-                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Inicio (Opcional)</label>
+                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 flex items-center justify-between">
+                  <span>Inicio (Opcional)</span>
+                  <label className="flex items-center gap-1 cursor-pointer" title="Fijar esta hora exacta (No recálcular)">
+                    <input type="checkbox" name="isPinnedTime" className="accent-nature-primary w-3 h-3" />
+                    <span className="normal-case text-[9px] text-nature-primary opacity-80">Fijar Hora</span>
+                  </label>
+                </label>
                 <input name="datetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all" />
               </div>
             </div>
@@ -195,8 +212,12 @@ export const LocationForm = ({
                 <input name="checkOutDatetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all" />
               </div>
               <div className="w-1/2">
-                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración (Minutos)</label>
-                <input name="durationMinutes" type="number" min="0" step="5" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 py-3 text-sm outline-none transition-all" placeholder="Ej. 60" />
+                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración</label>
+                <div className="flex bg-gray-50 border border-gray-100 focus-within:border-nature-mint focus-within:bg-white rounded-xl overflow-hidden transition-all">
+                  <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
+                  <div className="w-px bg-gray-200 my-2"></div>
+                  <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
+                </div>
               </div>
             </div>
 

@@ -46,6 +46,8 @@ export interface LocationItem {
   day: string; // Legacy 'day-1', 'unassigned' etc
   variantId?: string; // e.g. 'default', 'option-A'
   datetime?: string; // ISO string for exact time or check-in
+  isPinnedTime?: boolean; // If true, the system will not auto-recalculate this item's start time
+  derivedDatetime?: string; // Calculated field for UI display (not saved to DB)
   checkOutDatetime?: string; // For hotels/flights
   durationMinutes?: number; // Explicit duration in minutes
   order?: number; // For manual drag and drop sorting within a day

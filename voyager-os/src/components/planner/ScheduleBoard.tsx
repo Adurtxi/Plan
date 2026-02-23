@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { SortableCard } from '../ui/SortableCard';
 import { TransportBlock } from './TransportBlock';
@@ -9,19 +9,18 @@ import { DAYS } from '../../constants';
 import type { LocationItem } from '../../types';
 
 interface BoardColumnProps {
-  dayId: string; // The internal id (e.g. 'day-1', '2024-05-01')
-  dayLabel: string; // The display label (e.g. 'Día 1', 'Lunes 15')
+  dayId: string;
+  dayLabel: string;
   isDimmed: boolean;
   locations: LocationItem[];
   handleEdit: (id: number) => void;
   handleCardClick: (id: number) => void;
   handleAddNewToDay?: (day: string, variantId: string) => void;
   handleAddFreeTimeToDay?: (day: string, variantId: string) => void;
-  movingItemId: number | null;
-  setMovingItemId: (id: number | null) => void;
+  onRequestMove?: (id: number) => void;
 }
 
-const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, setMovingItemId, movingItemId }: { groupId: string, items: LocationItem[], handleEdit: any, handleCardClick: any, setMovingItemId: any, movingItemId: any }) => {
+const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequestMove }: { groupId: string, items: LocationItem[], handleEdit: any, handleCardClick: any, onRequestMove: any }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `group-${groupId}`,
   });
@@ -33,81 +32,192 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, setMoving
     zIndex: isDragging ? 999 : 1,
   };
 
-  const { ungroupLocationGroup, groupWithNext } = useAppStore();
+  const { ungroupLocationGroup } = useAppStore();
 
   return (
-    <div ref={setNodeRef} style={style} className="bg-white/60 border-2 border-dashed border-gray-200/60 rounded-[24px] p-2 pt-8 pb-3 relative group/container mt-4 mb-2 shadow-sm transition-all hover:bg-white/80">
+    <div ref={setNodeRef} style={style} className="relative group/container mt-2 mb-3">
       <div
         {...attributes}
         {...listeners}
-        className="absolute -top-3 left-4 bg-gray-50 text-gray-500 hover:text-nature-primary text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-gray-200 cursor-grab active:cursor-grabbing hover:bg-white transition-colors flex items-center gap-2 shadow-sm"
+        className="bg-gray-800 text-white rounded-t-xl px-4 py-2 w-max cursor-grab active:cursor-grabbing flex items-center gap-2 relative z-10 font-bold uppercase tracking-wider text-[10px] shadow-sm ml-4"
       >
-        <span className="opacity-50">⣿</span> Paquete Visible
+        <span className="opacity-50">⣿</span> Grupo de Actividades
+        <button onClick={(e) => { e.stopPropagation(); ungroupLocationGroup(groupId); }} className="ml-2 bg-white/10 hover:bg-red-500 hover:text-white rounded px-1.5 py-0.5 text-[9px] transition-colors border border-white/10 opacity-0 group-hover/container:opacity-100">
+          DESAGRUPAR
+        </button>
       </div>
 
-      <button onClick={() => ungroupLocationGroup(groupId)} className="absolute -top-3 right-4 bg-white text-gray-400 hover:text-red-500 hover:border-red-200 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border border-gray-100 opacity-0 group-hover/container:opacity-100 transition-all shadow-sm z-20">
-        Desagrupar
-      </button>
-
-      <div className="flex flex-col gap-3">
-        {items.map((item, index) => {
-          const nextItem = index < items.length - 1 ? items[index + 1] : null;
-          return (
-            <div key={item.id} className="relative z-10 w-full outline-none">
-              <SortableCard
-                item={item}
-                onClick={() => handleEdit(item.id)}
-                onCardClick={() => handleCardClick(item.id)}
-                onMoveClick={() => setMovingItemId(movingItemId === item.id ? null : item.id)}
-                onGroupToggle={nextItem ? undefined : () => groupWithNext(item.id)}
-                isMoving={movingItemId === item.id}
-              />
-              {nextItem && item.cat !== 'free' && nextItem.cat !== 'free' && (
-                <div className="mt-2 mb-1 w-full">
-                  <TransportBlock fromLoc={item} toLoc={nextItem} />
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div className="bg-gray-100/80 border border-gray-200/80 rounded-[28px] rounded-tl-sm p-3 relative z-0 shadow-inner flex flex-col gap-2 ring-1 ring-white inset-0">
+        <SortableContext items={items.map((i) => i.id.toString())} strategy={verticalListSortingStrategy}>
+          {items.map((item, index) => {
+            const nextItem = index < items.length - 1 ? items[index + 1] : null;
+            return (
+              <div key={item.id} className="relative">
+                <SortableCard
+                  item={item}
+                  onClick={() => handleEdit(item.id)}
+                  onCardClick={() => handleCardClick(item.id)}
+                  onRequestMove={() => onRequestMove(item.id)}
+                />
+                {nextItem && item.cat !== 'free' && nextItem.cat !== 'free' && (
+                  <div className="mt-1 mb-0.5 w-full scale-[0.98] opacity-90">
+                    <TransportBlock fromLoc={item} toLoc={nextItem} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </SortableContext>
       </div>
     </div>
   );
 };
 
-const BoardColumn = ({ dayId, dayLabel, isDimmed, locations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, movingItemId, setMovingItemId }: BoardColumnProps) => {
+const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove }: BoardColumnProps) => {
   const [activeVariant, setActiveVariant] = useState<string>('default');
   const { isOver, setNodeRef } = useDroppable({ id: `col-${dayId}::${activeVariant}` });
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
-  const { updateLocationDay, groupWithNext } = useAppStore();
+  const optimisticLocations = useAppStore(s => s.optimisticLocations);
+  const { showDialog, addToast, transports, tripVariants, activeGlobalVariantId } = useAppStore();
 
   const dayVariants = useMemo(() => {
-    const vars = new Set([...locations.map(l => l.variantId || 'default'), ...additionalVariants, 'default']);
+    const vars = new Set([...propLocations.map(l => l.variantId || 'default'), ...additionalVariants, 'default']);
     return Array.from(vars).sort();
-  }, [locations, additionalVariants]);
+  }, [propLocations, additionalVariants]);
 
   const filteredLocations = useMemo(() => {
-    return locations
-      .filter(l => (l.variantId || 'default') === activeVariant)
-      .sort((a, b) => {
-        if (a.datetime && b.datetime) {
-          return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
-        }
-        if (a.datetime) return -1;
-        if (b.datetime) return 1;
-        return (a.order ?? a.id) - (b.order ?? b.id);
-      });
-  }, [locations, activeVariant]);
+    const allLocations = optimisticLocations || propLocations;
+    const rawFiltered = allLocations
+      .filter(l => l.day === dayId && (l.variantId || 'default') === activeVariant)
+      .sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
 
-  const handleMoveHere = () => {
-    if (movingItemId) {
-      updateLocationDay(movingItemId, dayId, activeVariant);
-      setMovingItemId(null);
+    let baseDate = new Date();
+    baseDate.setHours(9, 0, 0, 0);
+
+    const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
+    if (activeVar && activeVar.startDate) {
+      const dayIndex = parseInt(dayId.split('-')[1]) || 1;
+      baseDate = new Date(activeVar.startDate);
+      if (!isNaN(baseDate.getTime())) {
+        baseDate.setDate(baseDate.getDate() + (dayIndex - 1));
+        baseDate.setHours(9, 0, 0, 0);
+      }
     }
-  };
 
-  const blocks = useMemo(() => {
-    const arr: any[] = [];
+    let currentTime = new Date(baseDate);
+
+    return rawFiltered.map((loc, index) => {
+      let finalTime = new Date(currentTime);
+      if (loc.isPinnedTime && loc.datetime) {
+        const pinnedTime = new Date(loc.datetime);
+        finalTime.setHours(pinnedTime.getHours(), pinnedTime.getMinutes(), 0, 0);
+      }
+
+      const duration = loc.durationMinutes || 60;
+      let transportTime = 0;
+
+      const nextLoc = index < rawFiltered.length - 1 ? rawFiltered[index + 1] : null;
+      if (nextLoc) {
+        const transportId = `${loc.id}-${nextLoc.id}`;
+        const segment = transports.find(t => t.id === transportId);
+        if (segment && segment.durationCalculated) {
+          transportTime = segment.durationCalculated;
+        }
+      }
+
+      currentTime = new Date(finalTime.getTime() + (duration + transportTime) * 60000);
+      return { ...loc, derivedDatetime: finalTime.toISOString() };
+    });
+  }, [dayId, activeVariant, transports, tripVariants, activeGlobalVariantId]);
+
+  const { locationList, groupElements } = useMemo(() => {
+    const list: LocationItem[] = [];
+    const elements: any[] = [];
+    let currentGroup: LocationItem[] = [];
+    let currentGroupId: string | null = null;
+
+    filteredLocations.forEach(item => {
+      list.push(item);
+      if (item.groupId) {
+        if (item.groupId === currentGroupId) {
+          currentGroup.push(item);
+        } else {
+          if (currentGroup.length > 0) {
+            elements.push({ type: 'group', groupId: currentGroupId!, items: currentGroup });
+          }
+          currentGroupId = item.groupId;
+          currentGroup = [item];
+        }
+      } else {
+        if (currentGroup.length > 0) {
+          elements.push({ type: 'group', groupId: currentGroupId!, items: currentGroup });
+          currentGroup = [];
+          currentGroupId = null;
+        }
+        elements.push({ type: 'item', item });
+      }
+    });
+    if (currentGroup.length > 0) {
+      elements.push({ type: 'group', groupId: currentGroupId!, items: currentGroup });
+    }
+
+    const groupElements = elements.map((block, index) => {
+      const nextBlock = index < elements.length - 1 ? elements[index + 1] : null;
+      const nextBlockFirstItem = nextBlock
+        ? ((nextBlock as any).type === 'group' ? (nextBlock as any).items[0] : (nextBlock as any).item)
+        : null;
+
+      if (block.type === 'group') {
+        const groupBlock = block;
+        const blockLastItem = groupBlock.items[groupBlock.items.length - 1];
+        const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && nextBlockFirstItem.cat !== 'free';
+
+        return (
+          <div key={`group-${groupBlock.groupId}`} className="relative flex flex-col gap-3">
+            <GroupContainer
+              groupId={groupBlock.groupId}
+              items={groupBlock.items}
+              handleEdit={handleEdit}
+              handleCardClick={handleCardClick}
+              onRequestMove={onRequestMove}
+            />
+            {showTransport && (
+              <div className="relative z-10 mx-1 mb-1 w-full">
+                <TransportBlock fromLoc={blockLastItem} toLoc={nextBlockFirstItem} />
+              </div>
+            )}
+          </div>
+        );
+      } else {
+        const itemBlock = block;
+        const blockLastItem = itemBlock.item;
+        const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && nextBlockFirstItem.cat !== 'free';
+
+        return (
+          <div key={itemBlock.item.id} className="relative flex flex-col gap-3">
+            <div className="relative z-10 w-full outline-none">
+              <SortableCard
+                item={itemBlock.item}
+                onClick={() => handleEdit(itemBlock.item.id)}
+                onCardClick={() => handleCardClick(itemBlock.item.id)}
+                onRequestMove={() => onRequestMove && onRequestMove(itemBlock.item.id)}
+              />
+            </div>
+            {showTransport && (
+              <div className="relative z-10 mx-1 mb-1 w-full">
+                <TransportBlock fromLoc={blockLastItem} toLoc={nextBlockFirstItem} />
+              </div>
+            )}
+          </div>
+        );
+      }
+    });
+
+    return { locationList: list, groupElements };
+  }, [filteredLocations, handleEdit, handleCardClick, onRequestMove]);
+
+  const sortableItemsIds = useMemo(() => {
+    const ids: string[] = [];
     let currentGroup: LocationItem[] = [];
     let currentGroupId: string | null = null;
 
@@ -116,36 +226,25 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations, handleEdit, handleC
         if (item.groupId === currentGroupId) {
           currentGroup.push(item);
         } else {
-          if (currentGroup.length > 0) arr.push({ type: 'group', id: `group-${currentGroupId}`, groupId: currentGroupId, items: currentGroup });
+          if (currentGroup.length > 0) ids.push(`group-${currentGroupId}`);
           currentGroupId = item.groupId;
           currentGroup = [item];
         }
       } else {
         if (currentGroup.length > 0) {
-          arr.push({ type: 'group', id: `group-${currentGroupId}`, groupId: currentGroupId, items: currentGroup });
+          ids.push(`group-${currentGroupId}`);
           currentGroup = [];
           currentGroupId = null;
         }
-        arr.push({ type: 'single', id: item.id.toString(), item });
+        ids.push(item.id.toString());
       }
     });
-    if (currentGroup.length > 0) arr.push({ type: 'group', id: `group-${currentGroupId}`, groupId: currentGroupId, items: currentGroup });
-    return arr;
+    if (currentGroup.length > 0) ids.push(`group-${currentGroupId}`);
+    return ids;
   }, [filteredLocations]);
 
-  const sortableIds = useMemo(() => {
-    const ids: string[] = [];
-    blocks.forEach(b => {
-      ids.push(b.id);
-      if (b.type === 'group') {
-        b.items.forEach((i: any) => ids.push(i.id.toString()));
-      }
-    });
-    return ids;
-  }, [blocks]);
-
   return (
-    <div className={`flex-none w-[340px] flex flex-col h-full bg-white border ${movingItemId ? 'border-nature-accent ring-2 ring-nature-accent/50' : 'border-gray-100'} rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed && !movingItemId ? 'opacity-40' : ''}`}>
+    <div className={`flex-none w-[340px] flex flex-col h-full bg-white border border-gray-100 rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed ? 'opacity-40' : ''}`}>
       <div className="p-5 pb-3 border-b border-gray-50 flex flex-col">
         <div className="flex justify-between items-end mb-3">
           <span className="font-serif text-2xl text-nature-primary font-medium">{dayLabel}</span>
@@ -163,8 +262,20 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations, handleEdit, handleC
             </button>
           ))}
           <button onClick={() => {
-            const newVar = prompt('Nombre de la nueva variante: (ej. option-B, Lluvia, etc)');
-            if (newVar) { setAdditionalVariants(prev => [...prev, newVar]); setActiveVariant(newVar); }
+            showDialog({
+              type: 'prompt',
+              title: 'Nueva Variante',
+              message: 'Introduce el nombre de la nueva variante temporal de este día.',
+              inputPlaceholder: 'Ej. Plan B Lluvia...',
+              confirmText: 'Añadir',
+              onConfirm: (newVar) => {
+                if (newVar && newVar.trim()) {
+                  setAdditionalVariants(prev => [...prev, newVar.trim()]);
+                  setActiveVariant(newVar.trim());
+                  addToast(`Variante de día "${newVar.trim()}" creada`, 'success');
+                }
+              }
+            });
           }} className="px-3 text-gray-400 hover:text-nature-primary transition-colors">+</button>
         </div>
 
@@ -187,63 +298,16 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations, handleEdit, handleC
       </div>
 
       <div ref={setNodeRef} className={`flex-1 overflow-y-auto p-4 custom-scroll ${isOver ? 'bg-nature-mint/30' : 'bg-gray-50/30'} flex flex-col gap-3 transition-colors relative`}>
-        {movingItemId && (
-          <button onClick={handleMoveHere} className="w-full py-3 bg-nature-accent/10 border-2 border-dashed border-nature-accent/50 text-nature-accent rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-nature-accent hover:text-white transition-all">
-            Mover Aquí
-          </button>
-        )}
-
-        <SortableContext items={sortableIds}>
-          {blocks.map((block, index) => {
-            const isGroup = block.type === 'group';
-            const nextBlock = index < blocks.length - 1 ? blocks[index + 1] : null;
-
-            const blockLastItem = isGroup ? block.items[block.items.length - 1] : block.item;
-            const nextBlockFirstItem = nextBlock
-              ? (nextBlock.type === 'group' ? nextBlock.items[0] : nextBlock.item)
-              : null;
-
-            const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && nextBlockFirstItem.cat !== 'free';
-
-            return (
-              <div key={block.id} className="relative flex flex-col gap-3">
-                {isGroup ? (
-                  <GroupContainer
-                    groupId={block.groupId}
-                    items={block.items}
-                    handleEdit={handleEdit}
-                    handleCardClick={handleCardClick}
-                    setMovingItemId={setMovingItemId}
-                    movingItemId={movingItemId}
-                  />
-                ) : (
-                  <div className="relative z-10 w-full outline-none">
-                    <SortableCard
-                      item={block.item}
-                      onClick={() => handleEdit(block.item.id)}
-                      onCardClick={() => handleCardClick(block.item.id)}
-                      onMoveClick={() => setMovingItemId(movingItemId === block.item.id ? null : block.item.id)}
-                      onGroupToggle={() => groupWithNext(block.item.id)}
-                      isMoving={movingItemId === block.item.id}
-                    />
-                  </div>
-                )}
-
-                {/* Transport block connecting this block to the next block */}
-                {showTransport && (
-                  <div className="relative z-10 mx-1 mb-1 w-full">
-                    <TransportBlock fromLoc={blockLastItem} toLoc={nextBlockFirstItem} />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </SortableContext>
-
-        {filteredLocations.length === 0 && !movingItemId && (
-          <div className="m-auto text-center space-y-2 opacity-50">
-            <p className="text-xs text-gray-500 font-medium">Arrastra actividades aquí</p>
+        {locationList.length === 0 ? (
+          <div className="m-auto text-center space-y-3 opacity-50 border-2 border-dashed border-gray-200 rounded-3xl p-8 bg-white flex flex-col items-center justify-center w-full min-h-[160px]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Día Libre</p>
+            <p className="text-[10px] text-gray-400 leading-relaxed max-w-[150px]">Arrastra actividades aquí desde el buzón o crea nuevas</p>
           </div>
+        ) : (
+          <SortableContext items={sortableItemsIds} strategy={verticalListSortingStrategy}>
+            {groupElements}
+          </SortableContext>
         )}
       </div>
     </div>
@@ -256,21 +320,13 @@ interface ScheduleBoardProps {
   handleAddNewToDay?: (day: string, variantId: string) => void;
   handleAddFreeTimeToDay?: (day: string, variantId: string) => void;
   viewMode?: 'split-horizontal' | 'split-vertical' | 'map-only' | 'board-only';
+  onRequestMove?: (id: number) => void;
 }
 
-export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode }: ScheduleBoardProps) => {
+export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove }: ScheduleBoardProps) => {
   const { locations, filterDay, tripVariants, activeGlobalVariantId } = useAppStore();
-  const [movingItemId, setMovingItemId] = useState<number | null>(null);
-
-  // If clicking outside when moving, cancel
-  const handleBgClick = (e: React.MouseEvent) => {
-    if (movingItemId && e.target === e.currentTarget) {
-      setMovingItemId(null);
-    }
-  };
 
   const displayDays = useMemo(() => {
-    // Determine dynamic days based on active variant
     let dynamicDays: { id: string, label: string }[] = [];
     const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
 
@@ -299,9 +355,7 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
   }, [viewMode, filterDay, tripVariants, activeGlobalVariantId]);
 
   return (
-    <div className="h-full w-full overflow-x-auto p-6 pb-12 bg-nature-bg custom-scroll transition-colors relative" onClick={handleBgClick}>
-      {movingItemId && <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-nature-accent text-white px-6 py-2 rounded-full font-bold shadow-lg animate-fade-in z-50">Selecciona el día donde quieres mover la actividad</div>}
-
+    <div className="h-full w-full overflow-x-auto p-6 pb-12 bg-nature-bg custom-scroll transition-colors relative">
       {viewMode === 'split-vertical' && filterDay === 'all' ? (
         <div className="flex flex-col items-center justify-center h-full text-center p-8 opacity-60">
           <div className="w-16 h-16 rounded-full bg-nature-primary/10 flex items-center justify-center mb-4 text-nature-primary">
@@ -323,8 +377,7 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
               handleCardClick={handleCardClick}
               handleAddNewToDay={handleAddNewToDay}
               handleAddFreeTimeToDay={handleAddFreeTimeToDay}
-              movingItemId={movingItemId}
-              setMovingItemId={setMovingItemId}
+              onRequestMove={onRequestMove}
             />
           ))}
         </div>

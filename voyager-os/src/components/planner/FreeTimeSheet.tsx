@@ -16,7 +16,8 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
 
   const [title, setTitle] = useState('Tiempo Libre');
   const [datetime, setDatetime] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState<number | ''>('');
+  const [durHours, setDurHours] = useState<number | string>('');
+  const [durMins, setDurMins] = useState<number | string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -25,12 +26,19 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
         if (item) {
           setTitle(item.title || 'Tiempo Libre');
           setDatetime(item.datetime || '');
-          setDurationMinutes(item.durationMinutes || '');
+          if (item.durationMinutes !== undefined) {
+            setDurHours(Math.floor(item.durationMinutes / 60) || '');
+            setDurMins(item.durationMinutes % 60 || '');
+          } else {
+            setDurHours('');
+            setDurMins('');
+          }
         }
       } else {
         setTitle('Tiempo Libre');
         setDatetime('');
-        setDurationMinutes('');
+        setDurHours('');
+        setDurMins('');
       }
     }
   }, [isOpen, formId, locations]);
@@ -38,7 +46,8 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const finalDuration = durationMinutes === '' ? undefined : Number(durationMinutes);
+    const totalMins = (Number(durHours || 0) * 60) + Number(durMins || 0);
+    const finalDuration = totalMins > 0 ? totalMins : undefined;
     const finalDatetime = datetime || undefined;
 
     const baseData = {
@@ -127,18 +136,14 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                  <Clock size={12} /> Duración (Min)
+                <label className="block text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-1.5 flex items-center gap-1">
+                  <Clock size={12} /> Duración
                 </label>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={durationMinutes}
-                  onChange={(e) => setDurationMinutes(e.target.value ? Number(e.target.value) : '')}
-                  placeholder="Ej. 120"
-                  className="w-full bg-gray-50 border-0 rounded-xl p-3 text-sm focus:ring-2 focus:ring-nature-primary/20 placeholder-gray-400"
-                />
+                <div className="flex bg-gray-50 border-0 focus-within:ring-2 focus-within:ring-nature-primary/20 rounded-xl overflow-hidden transition-all h-[44px]">
+                  <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent px-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
+                  <div className="w-px bg-gray-200 my-2"></div>
+                  <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent px-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
+                </div>
               </div>
             </div>
 
