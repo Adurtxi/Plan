@@ -33,7 +33,7 @@ const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
 const MapUpdater = ({ locations, filterDay, activeVariantId }: { locations: LocationItem[], filterDay: string, activeVariantId: string }) => {
   const map = useMap();
   useEffect(() => {
-    const visibleLocations = locations.filter(loc => loc.coords && loc.day !== 'unassigned' && (filterDay === 'all' || loc.day === filterDay) && (filterDay === 'all' || (loc.variantId || 'default') === activeVariantId));
+    const visibleLocations = locations.filter(loc => loc.coords && loc.day !== 'unassigned' && (filterDay === 'all' || loc.day === filterDay) && (loc.variantId || 'default') === activeVariantId);
     if (visibleLocations.length > 0) {
       const bounds = L.latLngBounds(visibleLocations.map(loc => [loc.coords!.lat, loc.coords!.lng]));
       map.fitBounds(bounds, { padding: [50, 50] });
@@ -116,7 +116,7 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
           onMapClick(lat, lng);
         }} />}
         {routePolylines}
-        {locations.filter(l => l.coords && l.day !== 'unassigned' && (filterDay === 'all' || l.day === filterDay) && (filterDay === 'all' || (l.variantId || 'default') === activeGlobalVariantId)).map(loc => (
+        {locations.filter(l => l.coords && l.day !== 'unassigned' && (filterDay === 'all' || l.day === filterDay) && (l.variantId || 'default') === activeGlobalVariantId).map(loc => (
           <Marker key={loc.id} position={[loc.coords!.lat, loc.coords!.lng]} icon={createCustomMarker(loc)} eventHandlers={{ click: () => setSelectedLocationId(loc.id) }}>
             <Popup className="font-serif font-bold text-[#333]">{loc.title || loc.notes?.split("\n")[0] || "Ubicación"}</Popup>
           </Marker>
