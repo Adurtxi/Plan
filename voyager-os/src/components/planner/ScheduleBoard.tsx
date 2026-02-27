@@ -1,12 +1,24 @@
 import { useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ArrowDown } from 'lucide-react';
 import { SortableCard } from '../ui/SortableCard';
 import { TransportBlock } from './TransportBlock';
 import { useAppStore } from '../../store';
 import { DAYS } from '../../constants';
 import type { LocationItem } from '../../types';
+
+/* ── MoveSlot: clickable drop-zone shown between cards when moving ── */
+const MoveSlot = ({ onClick, label }: { onClick: () => void; label?: string }) => (
+  <button
+    onClick={onClick}
+    className="w-full my-1 py-3 border-2 border-dashed border-nature-primary/40 rounded-2xl bg-nature-mint/20 hover:bg-nature-mint/50 hover:border-nature-primary hover:scale-[1.02] transition-all flex items-center justify-center gap-2 text-nature-primary text-xs font-bold uppercase tracking-widest cursor-pointer group/slot animate-pulse hover:animate-none"
+  >
+    <ArrowDown size={14} className="opacity-60 group-hover/slot:opacity-100 transition-opacity" />
+    {label || 'Colocar aquí'}
+  </button>
+);
 
 interface BoardColumnProps {
   dayId: string;
@@ -18,9 +30,12 @@ interface BoardColumnProps {
   handleAddNewToDay?: (day: string, variantId: string) => void;
   handleAddFreeTimeToDay?: (day: string, variantId: string) => void;
   onRequestMove?: (id: number) => void;
+  mergeTargetId?: number | null;
+  movingItemId?: number | null;
+  executeMoveHere?: (itemId: number, targetDay: string, targetVariant: string, targetGroupId?: string, insertBeforeId?: number | null) => void;
 }
 
-const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequestMove }: { groupId: string, items: LocationItem[], handleEdit: any, handleCardClick: any, onRequestMove: any }) => {
+const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequestMove, mergeTargetId }: { groupId: string, items: LocationItem[], handleEdit: any, handleCardClick: any, onRequestMove: any, mergeTargetId?: number | null }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `group-${groupId}`,
   });
@@ -48,7 +63,7 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
       </div>
 
       <div className="bg-gray-100/80 border border-gray-200/80 rounded-[28px] rounded-tl-sm p-3 relative z-0 shadow-inner flex flex-col gap-2 ring-1 ring-white inset-0">
-        <SortableContext items={items.map((i) => i.id.toString())} strategy={verticalListSortingStrategy}>
+        <SortableContext items={items.map((i) => i.id.toString())} strategy={() => null}>
           {items.map((item, index) => {
             const nextItem = index < items.length - 1 ? items[index + 1] : null;
             return (
@@ -58,6 +73,7 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
                   onClick={() => handleEdit(item.id)}
                   onCardClick={() => handleCardClick(item.id)}
                   onRequestMove={() => onRequestMove(item.id)}
+                  isMergeTarget={item.id === mergeTargetId}
                 />
                 {nextItem && item.cat !== 'free' && nextItem.cat !== 'free' && (
                   <div className="mt-1 mb-0.5 w-full scale-[0.98] opacity-90">
@@ -73,7 +89,7 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
   );
 };
 
-const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove }: BoardColumnProps) => {
+const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere }: BoardColumnProps) => {
   const [activeVariant, setActiveVariant] = useState<string>('default');
   const { isOver, setNodeRef } = useDroppable({ id: `col-${dayId}::${activeVariant}` });
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
@@ -130,7 +146,10 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
     });
   }, [dayId, activeVariant, transports, tripVariants, activeGlobalVariantId]);
 
-  const { locationList, groupElements } = useMemo(() => {
+  const isMovingMode = !!movingItemId;
+  const movingItemIsHere = filteredLocations.some(l => l.id === movingItemId);
+
+  const { locationList, groupElements, blockMeta } = useMemo(() => {
     const list: LocationItem[] = [];
     const elements: any[] = [];
     let currentGroup: LocationItem[] = [];
@@ -161,6 +180,8 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
       elements.push({ type: 'group', groupId: currentGroupId!, items: currentGroup });
     }
 
+    const blockMeta: { firstItemId: number; lastItemId: number; containsMoving: boolean }[] = [];
+
     const groupElements = elements.map((block, index) => {
       const nextBlock = index < elements.length - 1 ? elements[index + 1] : null;
       const nextBlockFirstItem = nextBlock
@@ -169,8 +190,15 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
 
       if (block.type === 'group') {
         const groupBlock = block;
+        const blockFirstItem = groupBlock.items[0];
         const blockLastItem = groupBlock.items[groupBlock.items.length - 1];
         const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && nextBlockFirstItem.cat !== 'free';
+
+        blockMeta.push({
+          firstItemId: blockFirstItem.id,
+          lastItemId: blockLastItem.id,
+          containsMoving: groupBlock.items.some((i: LocationItem) => i.id === movingItemId),
+        });
 
         return (
           <div key={`group-${groupBlock.groupId}`} className="relative flex flex-col gap-3">
@@ -180,6 +208,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
               handleEdit={handleEdit}
               handleCardClick={handleCardClick}
               onRequestMove={onRequestMove}
+              mergeTargetId={mergeTargetId}
             />
             {showTransport && (
               <div className="relative z-10 mx-1 mb-1 w-full">
@@ -193,6 +222,12 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
         const blockLastItem = itemBlock.item;
         const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && nextBlockFirstItem.cat !== 'free';
 
+        blockMeta.push({
+          firstItemId: itemBlock.item.id,
+          lastItemId: itemBlock.item.id,
+          containsMoving: itemBlock.item.id === movingItemId,
+        });
+
         return (
           <div key={itemBlock.item.id} className="relative flex flex-col gap-3">
             <div className="relative z-10 w-full outline-none">
@@ -201,6 +236,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
                 onClick={() => handleEdit(itemBlock.item.id)}
                 onCardClick={() => handleCardClick(itemBlock.item.id)}
                 onRequestMove={() => onRequestMove && onRequestMove(itemBlock.item.id)}
+                isMergeTarget={itemBlock.item.id === mergeTargetId}
               />
             </div>
             {showTransport && (
@@ -213,8 +249,8 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
       }
     });
 
-    return { locationList: list, groupElements };
-  }, [filteredLocations, handleEdit, handleCardClick, onRequestMove]);
+    return { locationList: list, groupElements, blockMeta };
+  }, [filteredLocations, handleEdit, handleCardClick, onRequestMove, movingItemId]);
 
   const sortableItemsIds = useMemo(() => {
     const ids: string[] = [];
@@ -298,15 +334,47 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
       </div>
 
       <div ref={setNodeRef} className={`flex-1 overflow-y-auto p-4 custom-scroll ${isOver ? 'bg-nature-mint/30' : 'bg-gray-50/30'} flex flex-col gap-3 transition-colors relative`}>
-        {locationList.length === 0 ? (
+        {isMovingMode && !movingItemIsHere && locationList.length === 0 && executeMoveHere ? (
+          /* Empty day — single large move slot */
+          <MoveSlot
+            label="Mover a este día"
+            onClick={() => executeMoveHere(movingItemId!, dayId, activeVariant, undefined, null)}
+          />
+        ) : locationList.length === 0 ? (
           <div className="m-auto text-center space-y-3 opacity-50 border-2 border-dashed border-gray-200 rounded-3xl p-8 bg-white flex flex-col items-center justify-center w-full min-h-[160px]">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
             <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Día Libre</p>
             <p className="text-[10px] text-gray-400 leading-relaxed max-w-[150px]">Arrastra actividades aquí desde el buzón o crea nuevas</p>
           </div>
         ) : (
-          <SortableContext items={sortableItemsIds} strategy={verticalListSortingStrategy}>
-            {groupElements}
+          <SortableContext items={sortableItemsIds} strategy={() => null}>
+            {isMovingMode && executeMoveHere && (() => {
+              const firstBlock = blockMeta[0];
+              const showTopSlot = firstBlock && !firstBlock.containsMoving;
+              return showTopSlot ? (
+                <MoveSlot
+                  onClick={() => executeMoveHere(movingItemId!, dayId, activeVariant, undefined, firstBlock.firstItemId)}
+                />
+              ) : null;
+            })()}
+            {groupElements.map((el, idx) => {
+              const current = blockMeta[idx];
+              const next = blockMeta[idx + 1];
+              // Show slot after this block if neither this nor the next block contains the moving item
+              const showSlot = isMovingMode && executeMoveHere
+                && !current?.containsMoving
+                && (!next || !next.containsMoving);
+              return (
+                <div key={el.key}>
+                  {el}
+                  {showSlot && (
+                    <MoveSlot
+                      onClick={() => executeMoveHere(movingItemId!, dayId, activeVariant, undefined, next?.firstItemId ?? null)}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </SortableContext>
         )}
       </div>
@@ -321,9 +389,12 @@ interface ScheduleBoardProps {
   handleAddFreeTimeToDay?: (day: string, variantId: string) => void;
   viewMode?: 'split-horizontal' | 'split-vertical' | 'map-only' | 'board-only';
   onRequestMove?: (id: number) => void;
+  mergeTargetId?: number | null;
+  movingItemId?: number | null;
+  executeMoveHere?: (itemId: number, targetDay: string, targetVariant: string, targetGroupId?: string, insertBeforeId?: number | null) => void;
 }
 
-export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove }: ScheduleBoardProps) => {
+export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove, mergeTargetId, movingItemId, executeMoveHere }: ScheduleBoardProps) => {
   const { locations, filterDay, tripVariants, activeGlobalVariantId } = useAppStore();
 
   const displayDays = useMemo(() => {
@@ -378,6 +449,9 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
               handleAddNewToDay={handleAddNewToDay}
               handleAddFreeTimeToDay={handleAddFreeTimeToDay}
               onRequestMove={onRequestMove}
+              mergeTargetId={mergeTargetId}
+              movingItemId={movingItemId}
+              executeMoveHere={executeMoveHere}
             />
           ))}
         </div>

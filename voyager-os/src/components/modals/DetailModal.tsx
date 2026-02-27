@@ -137,7 +137,7 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
           </div>
 
           <div className="flex gap-3 mt-auto pt-6 border-t border-gray-100">
-            {!isFreeTime && selectedLocation.link && (
+            {!isFreeTime && selectedLocation.link && selectedLocation.link.startsWith('http') && (
               <a href={selectedLocation.link} target="_blank" rel="noreferrer" className="flex-1 max-w-[140px] text-center py-3 rounded-xl bg-nature-primary text-white font-medium hover:bg-opacity-90 transition-all text-sm">Ver Mapa</a>
             )}
             <button onClick={() => {

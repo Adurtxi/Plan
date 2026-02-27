@@ -150,8 +150,14 @@ export const LocationForm = ({
             </div>
 
             <div>
-              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Google Maps Link</label>
-              <input name="link" type="url" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="https://maps.app.goo.gl/..." required />
+              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Google Maps Link (Opcional)</label>
+              <input name="link" type="url" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="https://maps.app.goo.gl/..." />
+              <input name="mapCoords" type="hidden" />
+            </div>
+
+            <div id="coordsDisplay" className="hidden">
+              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">📍 Coordenadas</label>
+              <input name="coordsReadonly" type="text" readOnly className="w-full bg-nature-mint/20 border border-nature-primary/20 rounded-xl p-4 text-nature-primary outline-none text-xs font-mono cursor-default" />
             </div>
 
             <div className="grid grid-cols-4 gap-3">

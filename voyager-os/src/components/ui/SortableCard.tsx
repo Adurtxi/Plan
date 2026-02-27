@@ -16,7 +16,8 @@ export const CardVisual = memo(({
   dragListeners,
   dragAttributes,
   onRequestMove,
-  isMovingMode
+  isMovingMode,
+  isMergeTarget
 }: {
   item: LocationItem,
   onClick?: () => void,
@@ -26,7 +27,8 @@ export const CardVisual = memo(({
   dragListeners?: any,
   dragAttributes?: any,
   onRequestMove?: () => void,
-  isMovingMode?: boolean
+  isMovingMode?: boolean,
+  isMergeTarget?: boolean
 }) => {
   const { showDialog, updateLocation, extractFromGroup } = useAppStore();
   const [showMenu, setShowMenu] = useState(false);
@@ -51,7 +53,12 @@ export const CardVisual = memo(({
     : (item.cost ? `${item.cost}€` : '-');
 
   const content = (
-    <div onClick={onCardClick} className={`bento-card p-4 cursor-pointer relative group bg-white border ${item.priority === 'necessary' ? 'border-nature-primary/30 shadow-[0_4px_20px_-4px_rgba(45,90,39,0.15)] ring-1 ring-nature-primary/10' : 'border-gray-100'} ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''} ${isOver ? 'ring-2 ring-nature-accent bg-nature-mint/10 scale-[1.02] shadow-lg' : 'hover:border-gray-200'} ${isMovingMode ? 'opacity-40 pointer-events-none grayscale-[50%]' : ''} transition-all`}>
+    <div onClick={onCardClick} className={`bento-card p-4 cursor-pointer relative group bg-white border ${item.priority === 'necessary' ? 'border-nature-primary/30 shadow-[0_4px_20px_-4px_rgba(45,90,39,0.15)] ring-1 ring-nature-primary/10' : 'border-gray-100'} ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''} ${isMergeTarget ? 'ring-2 ring-nature-primary animate-pulse scale-[1.03] shadow-xl border-nature-primary/50 bg-nature-mint/10' : isOver ? 'ring-2 ring-nature-accent bg-nature-mint/10 scale-[1.02] shadow-lg' : 'hover:border-gray-200'} ${isMovingMode ? 'opacity-40 pointer-events-none grayscale-[50%]' : ''} transition-all`}>
+      {isMergeTarget && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-nature-primary text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg z-50 whitespace-nowrap animate-bounce">
+          📦 Soltar para agrupar
+        </div>
+      )}
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           {dragListeners && !isMovingMode && (
@@ -169,7 +176,7 @@ export const CardVisual = memo(({
 });
 CardVisual.displayName = 'CardVisual';
 
-export const SortableCard = memo(({ item, onClick, onCardClick, onRequestMove, isMovingMode }: { item: LocationItem, onClick: () => void, onCardClick?: () => void, onRequestMove?: () => void, isMovingMode?: boolean }) => {
+export const SortableCard = memo(({ item, onClick, onCardClick, onRequestMove, isMovingMode, isMergeTarget }: { item: LocationItem, onClick: () => void, onCardClick?: () => void, onRequestMove?: () => void, isMovingMode?: boolean, isMergeTarget?: boolean }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({ id: item.id.toString(), disabled: isMovingMode });
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -237,6 +244,7 @@ export const SortableCard = memo(({ item, onClick, onCardClick, onRequestMove, i
             dragAttributes={attributes}
             onRequestMove={onRequestMove}
             isMovingMode={isMovingMode}
+            isMergeTarget={isMergeTarget}
           />
         </div>
       )}

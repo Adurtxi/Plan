@@ -30,15 +30,15 @@ const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
   return L.divIcon({ html, className: 'custom-marker-container', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -45] });
 };
 
-const MapUpdater = ({ locations, filterDay }: { locations: LocationItem[], filterDay: string }) => {
+const MapUpdater = ({ locations, filterDay, activeVariantId }: { locations: LocationItem[], filterDay: string, activeVariantId: string }) => {
   const map = useMap();
   useEffect(() => {
-    const visibleLocations = locations.filter(loc => loc.coords && loc.day !== 'unassigned' && (filterDay === 'all' || loc.day === filterDay) && (loc.variantId || 'default') === 'default');
+    const visibleLocations = locations.filter(loc => loc.coords && loc.day !== 'unassigned' && (filterDay === 'all' || loc.day === filterDay) && (filterDay === 'all' || (loc.variantId || 'default') === activeVariantId));
     if (visibleLocations.length > 0) {
       const bounds = L.latLngBounds(visibleLocations.map(loc => [loc.coords!.lat, loc.coords!.lng]));
       map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [locations, filterDay, map]);
+  }, [locations, filterDay, activeVariantId, map]);
   return null;
 };
 
@@ -95,7 +95,7 @@ const MapCursorHandler = ({ isAddMode }: { isAddMode: boolean }) => {
 };
 
 export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddMode, setIsAddMode }: MapViewProps) => {
-  const { locations, filterDay, setFilterDay, setSelectedLocationId } = useAppStore();
+  const { locations, filterDay, setFilterDay, setSelectedLocationId, activeGlobalVariantId } = useAppStore();
   const [mapType, setMapType] = useState<'m' | 's'>('m'); // 'm' for Map, 's' for Satellite
   const [tempMarker, setTempMarker] = useState<{ lat: number, lng: number } | null>(null);
 
@@ -110,15 +110,15 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
         <MapResizeHandler />
         <MapCursorHandler isAddMode={isAddMode} />
         <TileLayer url={`http://{s}.google.com/vt/lyrs=${mapType}&x={x}&y={y}&z={z}&hl=es`} subdomains={['mt0', 'mt1', 'mt2', 'mt3']} attribution="&copy; Google" maxZoom={20} />
-        <MapUpdater locations={locations} filterDay={filterDay} />
+        <MapUpdater locations={locations} filterDay={filterDay} activeVariantId={activeGlobalVariantId} />
         {onMapClick && <MapClickHandler isAddMode={isAddMode} onMapClick={(lat, lng) => {
           setTempMarker({ lat, lng });
           onMapClick(lat, lng);
         }} />}
         {routePolylines}
-        {locations.filter(l => l.coords && l.day !== 'unassigned' && (filterDay === 'all' || l.day === filterDay) && (l.variantId || 'default') === 'default').map(loc => (
+        {locations.filter(l => l.coords && l.day !== 'unassigned' && (filterDay === 'all' || l.day === filterDay) && (filterDay === 'all' || (l.variantId || 'default') === activeGlobalVariantId)).map(loc => (
           <Marker key={loc.id} position={[loc.coords!.lat, loc.coords!.lng]} icon={createCustomMarker(loc)} eventHandlers={{ click: () => setSelectedLocationId(loc.id) }}>
-            <Popup className="font-serif font-bold text-[#333]">{loc.notes.split("\n")[0] || "Ubicación"}</Popup>
+            <Popup className="font-serif font-bold text-[#333]">{loc.title || loc.notes?.split("\n")[0] || "Ubicación"}</Popup>
           </Marker>
         ))}
         {tempMarker && (

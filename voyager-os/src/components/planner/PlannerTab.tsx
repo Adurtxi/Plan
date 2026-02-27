@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Polyline, Tooltip } from 'react-leaflet';
 import { DndContext, closestCenter, type DragEndEvent, type DragStartEvent, useSensor, useSensors, PointerSensor, TouchSensor, DragOverlay } from '@dnd-kit/core';
 import { LocationForm } from './LocationForm';
@@ -17,7 +17,7 @@ import { DAYS } from '../../constants';
 import type { Category, Priority, ReservationStatus, LocationItem } from '../../types';
 
 export const PlannerTab = () => {
-  const { locations, optimisticLocations, setOptimisticLocations, clearOptimisticLocations, filterDay, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations } = useAppStore();
+  const { locations, optimisticLocations, clearOptimisticLocations, filterDay, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations, executeMoveHere } = useAppStore();
   const { isMobile } = useResponsive();
 
   const displayLocations = optimisticLocations || locations;
@@ -51,6 +51,9 @@ export const PlannerTab = () => {
   const [preselectedVariant, setPreselectedVariant] = useState<string>('default');
 
   const [isAddMode, setIsAddMode] = useState(false);
+  const [mergeTargetId, setMergeTargetId] = useState<number | null>(null);
+  const mergeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dwellOverIdRef = useRef<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -66,34 +69,47 @@ export const PlannerTab = () => {
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
-    setOptimisticLocations(JSON.parse(JSON.stringify(locations)));
+    // Clear any merge state
+    setMergeTargetId(null);
+    dwellOverIdRef.current = null;
+    if (mergeTimerRef.current) { clearTimeout(mergeTimerRef.current); mergeTimerRef.current = null; }
   };
 
   const handleDragOver = (event: any) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    if (!optimisticLocations) return;
+    if (!over || active.id === over.id) {
+      // Left the target — reset dwell
+      if (mergeTimerRef.current) { clearTimeout(mergeTimerRef.current); mergeTimerRef.current = null; }
+      dwellOverIdRef.current = null;
+      setMergeTargetId(null);
+      return;
+    }
 
     const activeIdStr = active.id.toString();
     const overIdStr = over.id.toString();
 
     if (activeIdStr.startsWith('group-')) return;
 
-    const newLocs = [...optimisticLocations];
-    const activeIndex = newLocs.findIndex(l => l.id.toString() === activeIdStr);
-    const overIndex = newLocs.findIndex(l => l.id.toString() === overIdStr);
-    if (activeIndex === -1 || overIndex === -1) return;
-
-    const activeLoc = newLocs[activeIndex];
-    const overLoc = newLocs[overIndex];
-
-    if (activeLoc.day !== overLoc.day || (activeLoc.variantId || 'default') !== (overLoc.variantId || 'default')) return;
-
-    newLocs.splice(activeIndex, 1);
-    const newOverIndex = newLocs.findIndex(l => l.id.toString() === overIdStr);
-    newLocs.splice(newOverIndex >= 0 ? newOverIndex : overIndex, 0, activeLoc);
-
-    setOptimisticLocations(newLocs);
+    // --- Dwell timer for merge intent ---
+    const isOverCard = !overIdStr.startsWith('col-') && !overIdStr.startsWith('group-');
+    if (isOverCard) {
+      if (dwellOverIdRef.current !== overIdStr) {
+        // Moved to a different card — reset timer
+        if (mergeTimerRef.current) { clearTimeout(mergeTimerRef.current); mergeTimerRef.current = null; }
+        setMergeTargetId(null);
+        dwellOverIdRef.current = overIdStr;
+        mergeTimerRef.current = setTimeout(() => {
+          const overNum = Number(overIdStr);
+          if (!isNaN(overNum)) setMergeTargetId(overNum);
+        }, 800);
+      }
+      // If same card, keep timer running
+    } else {
+      // Over a column or group container — reset merge
+      if (mergeTimerRef.current) { clearTimeout(mergeTimerRef.current); mergeTimerRef.current = null; }
+      dwellOverIdRef.current = null;
+      setMergeTargetId(null);
+    }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -101,7 +117,13 @@ export const PlannerTab = () => {
     clearOptimisticLocations();
 
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      // Clear merge state on any drop
+      setMergeTargetId(null);
+      dwellOverIdRef.current = null;
+      if (mergeTimerRef.current) { clearTimeout(mergeTimerRef.current); mergeTimerRef.current = null; }
+      return;
+    }
 
     const activeIdStr = active.id.toString();
     const overIdStr = over.id.toString();
@@ -117,24 +139,19 @@ export const PlannerTab = () => {
     const activeItemLoc = isGroupDrag ? null : locations.find(l => l.id.toString() === activeIdStr);
     const overItemLoc = overLocId ? locations.find(l => l.id === overLocId) : null;
 
-    // MAGIA GEOMÉTRICA: Detección de Fusión (Arrastrar para agrupar)
-    const activeRect = active.rect.current.translated;
-    const overRect = over.rect;
-
-    if (activeRect && overRect && !isGroupDrag && overItemLoc && !overIdStr.startsWith('col-') && !overIdStr.startsWith('group-')) {
-      const activeTop = activeRect.top;
-      const activeBottom = activeTop + activeRect.height;
-      const overTop = overRect.top;
-      const overBottom = overTop + overRect.height;
-
-      const overlap = Math.max(0, Math.min(activeBottom, overBottom) - Math.max(activeTop, overTop));
-      const overlapPercentage = overlap / Math.min(activeRect.height, overRect.height);
-
-      if (overlapPercentage > 0.6) {
-        mergeLocations(Number(activeIdStr), overItemLoc.id);
-        return;
-      }
+    // MERGE: Only merge if dwell timer fired (mergeTargetId is set)
+    if (!isGroupDrag && mergeTargetId && overItemLoc && overItemLoc.id === mergeTargetId) {
+      mergeLocations(Number(activeIdStr), mergeTargetId);
+      setMergeTargetId(null);
+      dwellOverIdRef.current = null;
+      if (mergeTimerRef.current) { clearTimeout(mergeTimerRef.current); mergeTimerRef.current = null; }
+      return;
     }
+
+    // Clear merge state
+    setMergeTargetId(null);
+    dwellOverIdRef.current = null;
+    if (mergeTimerRef.current) { clearTimeout(mergeTimerRef.current); mergeTimerRef.current = null; }
 
     let targetDay = '';
     let targetVariant = 'default';
@@ -215,7 +232,7 @@ export const PlannerTab = () => {
     setTimeout(() => {
       const form = document.getElementById('mainForm') as HTMLFormElement;
       if (form) {
-        (form.elements.namedItem('link') as HTMLInputElement).value = loc.link;
+        (form.elements.namedItem('link') as HTMLInputElement).value = loc.link || '';
         (form.elements.namedItem('title') as HTMLInputElement).value = loc.title || '';
         (form.elements.namedItem('cost') as HTMLInputElement).value = loc.cost;
         (form.elements.namedItem('notes') as HTMLTextAreaElement).value = loc.notes;
@@ -229,6 +246,16 @@ export const PlannerTab = () => {
 
         const durInput = form.elements.namedItem('durationMinutes') as HTMLInputElement;
         if (durInput) durInput.value = loc.durationMinutes ? loc.durationMinutes.toString() : '';
+
+        // Show coords if available
+        if (loc.coords) {
+          const mapCoordsInput = form.elements.namedItem('mapCoords') as HTMLInputElement;
+          if (mapCoordsInput) mapCoordsInput.value = `${loc.coords.lat},${loc.coords.lng}`;
+          const coordsDisplay = document.getElementById('coordsDisplay');
+          if (coordsDisplay) coordsDisplay.classList.remove('hidden');
+          const coordsReadonly = form.elements.namedItem('coordsReadonly') as HTMLInputElement;
+          if (coordsReadonly) coordsReadonly.value = `${loc.coords.lat.toFixed(6)}, ${loc.coords.lng.toFixed(6)}`;
+        }
       }
       setIsFormPanelOpen(true); setSelectedLocationId(null); setIsAddMode(false);
     }, 0);
@@ -238,6 +265,9 @@ export const PlannerTab = () => {
     setFormId(null); setTempImages([]); setFormPriority('optional'); setFormCat('sight');
     setFormSlot('Mañana'); setFormCurrency('EUR'); setPreselectedDay('unassigned'); setPreselectedVariant('default');
     (document.getElementById('mainForm') as HTMLFormElement)?.reset();
+    // Hide coords display
+    const coordsDisplay = document.getElementById('coordsDisplay');
+    if (coordsDisplay) coordsDisplay.classList.add('hidden');
   };
 
   const handleAddNewToDay = (day: string, variantId: string) => {
@@ -261,13 +291,24 @@ export const PlannerTab = () => {
   const handleAddLocation = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const link = formData.get('link') as string;
+    const link = (formData.get('link') as string) || '';
     let coords = null;
+    // Try extracting coords from link
     const m1 = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
     const m2 = link.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
     if (m2) coords = { lat: parseFloat(m2[1]), lng: parseFloat(m2[2]) };
     else if (m1) coords = { lat: parseFloat(m1[1]), lng: parseFloat(m1[2]) };
-    if (!coords && !formId) { alert("Enlace inválido. Requiere coordenadas."); return; }
+    // Fallback: read coords from hidden mapCoords field (set by map click)
+    if (!coords) {
+      const mapCoordsVal = formData.get('mapCoords') as string;
+      if (mapCoordsVal) {
+        const parts = mapCoordsVal.split(',');
+        if (parts.length === 2) {
+          coords = { lat: parseFloat(parts[0]), lng: parseFloat(parts[1]) };
+        }
+      }
+    }
+    if (!coords && !formId) { alert("Se requieren coordenadas. Usa un enlace de Maps o clica en el mapa."); return; }
 
     let finalCoords = coords;
     let finalDay = preselectedDay;
@@ -362,59 +403,76 @@ export const PlannerTab = () => {
   };
 
   const routePolylines = useMemo(() => {
-    if (filterDay === 'all' || filterDay === 'unassigned') return null;
-    const dayItems = displayLocations.filter(l => l.day === filterDay && l.coords && (l.variantId || 'default') === 'default' && l.cat !== 'free');
+    if (filterDay === 'unassigned') return null;
 
-    if (dayItems.length > 1) {
-      return (
-        <>
-          {dayItems.map((item, idx) => {
-            if (idx === dayItems.length - 1) return null;
-            const nextItem = dayItems[idx + 1];
-            const transportId = `${item.id}-${nextItem.id}`;
-            const segment = transports.find(t => t.id === transportId);
+    const renderRoutesForDay = (dayItems: LocationItem[]) => {
+      if (dayItems.length <= 1) return null;
+      return dayItems.map((item, idx) => {
+        if (idx === dayItems.length - 1) return null;
+        const nextItem = dayItems[idx + 1];
+        const transportId = `${item.id}-${nextItem.id}`;
+        const segment = transports.find(t => t.id === transportId);
 
-            const hasPolyline = segment?.polyline && segment.polyline.length > 0;
-            const latlngs = hasPolyline
-              ? segment.polyline!
-              : [[item.coords!.lat, item.coords!.lng], [nextItem.coords!.lat, nextItem.coords!.lng]] as [number, number][];
+        const hasPolyline = segment?.polyline && segment.polyline.length > 0;
+        const latlngs = hasPolyline
+          ? segment.polyline!
+          : [[item.coords!.lat, item.coords!.lng], [nextItem.coords!.lat, nextItem.coords!.lng]] as [number, number][];
 
-            let midPoint: [number, number] | null = null;
-            if (latlngs.length > 0) {
-              const midIndex = Math.floor(latlngs.length / 2);
-              midPoint = latlngs[midIndex];
-            }
+        let midPoint: [number, number] | null = null;
+        if (latlngs.length > 0) {
+          const midIndex = Math.floor(latlngs.length / 2);
+          midPoint = latlngs[midIndex];
+        }
 
-            return (
-              <React.Fragment key={transportId}>
-                <Polyline positions={latlngs} color="white" weight={10} opacity={0.5} lineCap="round" lineJoin="round" eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }} />
-                <Polyline positions={latlngs} color={hasPolyline ? (segment.mode === 'car' ? '#3b82f6' : '#2D5A27') : "#9ca3af"} weight={4} dashArray={hasPolyline ? undefined : "10, 10"} opacity={1} eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }}>
-                  {midPoint && segment?.durationCalculated && (
-                    <Tooltip position={midPoint} permanent direction="center" className="bg-white/90 backdrop-blur border-none shadow-md text-nature-primary font-bold text-[10px] px-2 py-1 rounded-full relative z-[500] pointer-events-none mt-0 ml-0 before:hidden" opacity={1}>
-                      {segment.durationCalculated >= 60 ? `${Math.floor(segment.durationCalculated / 60)}h ${segment.durationCalculated % 60 ? (segment.durationCalculated % 60) + 'm' : ''}` : `${segment.durationCalculated}m`}
-                    </Tooltip>
-                  )}
-                </Polyline>
-              </React.Fragment>
-            );
-          })}
-        </>
-      );
+        return (
+          <React.Fragment key={transportId}>
+            <Polyline positions={latlngs} color="white" weight={10} opacity={0.5} lineCap="round" lineJoin="round" eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }} />
+            <Polyline positions={latlngs} color={hasPolyline ? (segment.mode === 'car' ? '#3b82f6' : '#2D5A27') : "#9ca3af"} weight={4} dashArray={hasPolyline ? undefined : "10, 10"} opacity={1} eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }}>
+              {midPoint && segment?.durationCalculated && (
+                <Tooltip position={midPoint} permanent direction="center" className="bg-white/90 backdrop-blur border-none shadow-md text-nature-primary font-bold text-[10px] px-2 py-1 rounded-full relative z-[500] pointer-events-none mt-0 ml-0 before:hidden" opacity={1}>
+                  {segment.durationCalculated >= 60 ? `${Math.floor(segment.durationCalculated / 60)}h ${segment.durationCalculated % 60 ? (segment.durationCalculated % 60) + 'm' : ''}` : `${segment.durationCalculated}m`}
+                </Tooltip>
+              )}
+            </Polyline>
+          </React.Fragment>
+        );
+      });
+    };
+
+    if (filterDay === 'all') {
+      // Show routes for all days in the active variant
+      const allDays = [...new Set(displayLocations.filter(l => l.day !== 'unassigned' && l.coords && l.cat !== 'free' && (l.variantId || 'default') === activeGlobalVariantId).map(l => l.day))];
+      const allRoutes = allDays.map(day => {
+        const dayItems = displayLocations.filter(l => l.day === day && l.coords && (l.variantId || 'default') === activeGlobalVariantId && l.cat !== 'free').sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
+        return renderRoutesForDay(dayItems);
+      }).filter(Boolean);
+      return allRoutes.length > 0 ? <>{allRoutes}</> : null;
     }
-    return null;
-  }, [locations, filterDay, transports, setSelectedLocationId]);
+
+    // Specific day: filter by active variant
+    const dayItems = displayLocations.filter(l => l.day === filterDay && l.coords && (l.variantId || 'default') === activeGlobalVariantId && l.cat !== 'free').sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
+    const routes = renderRoutesForDay(dayItems);
+    return routes ? <>{routes}</> : null;
+  }, [locations, filterDay, transports, activeGlobalVariantId, displayLocations]);
+
+  const showCoordsInForm = (lat: number, lng: number) => {
+    const form = document.getElementById('mainForm') as HTMLFormElement;
+    if (form) {
+      const mapCoordsInput = form.elements.namedItem('mapCoords') as HTMLInputElement;
+      if (mapCoordsInput) mapCoordsInput.value = `${lat},${lng}`;
+      const coordsDisplay = document.getElementById('coordsDisplay');
+      if (coordsDisplay) coordsDisplay.classList.remove('hidden');
+      const coordsReadonly = form.elements.namedItem('coordsReadonly') as HTMLInputElement;
+      if (coordsReadonly) coordsReadonly.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    }
+  };
 
   const handleMapClick = (lat: number, lng: number) => {
     if (!isAddMode) return;
     resetForm();
     setIsFormPanelOpen(true);
     setSelectedLocationId(null);
-    setTimeout(() => {
-      const form = document.getElementById('mainForm') as HTMLFormElement;
-      if (form) {
-        (form.elements.namedItem('link') as HTMLInputElement).value = `@${lat},${lng}`;
-      }
-    }, 0);
+    setTimeout(() => showCoordsInForm(lat, lng), 0);
   };
 
   type ViewMode = 'split-horizontal' | 'split-vertical' | 'map-only' | 'board-only';
@@ -546,6 +604,9 @@ export const PlannerTab = () => {
                   handleAddFreeTimeToDay={handleAddFreeTimeToDay}
                   viewMode={viewMode}
                   onRequestMove={(id) => setMovingItemId(id)}
+                  mergeTargetId={mergeTargetId}
+                  movingItemId={movingItemId}
+                  executeMoveHere={executeMoveHere}
                 />
               </div>
             )}
