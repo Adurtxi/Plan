@@ -59,7 +59,7 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className={`absolute top-20 left-6 z-[400] bg-white/90 backdrop-blur-md text-nature-primary p-3 rounded-full shadow-lg border border-white hover:bg-white transition-all ${isOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
+        className={`absolute top-6 left-6 z-[400] bg-white/90 backdrop-blur-md text-nature-primary p-3 rounded-full shadow-lg border border-white hover:bg-white transition-all ${isOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
         title="Buzón de Ideas"
       >
         <div className="relative">

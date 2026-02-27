@@ -94,7 +94,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
   const { isOver, setNodeRef } = useDroppable({ id: `col-${dayId}::${activeVariant}` });
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
   const optimisticLocations = useAppStore(s => s.optimisticLocations);
-  const { showDialog, addToast, transports, tripVariants, activeGlobalVariantId } = useAppStore();
+  const { showDialog, addToast, transports, tripVariants, activeGlobalVariantId, toggleFilterDay, filterDays } = useAppStore();
 
   const dayVariants = useMemo(() => {
     const vars = new Set([...propLocations.map(l => l.variantId || 'default'), ...additionalVariants, 'default']);
@@ -283,7 +283,13 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
     <div className={`flex-none w-[340px] flex flex-col h-full bg-white border border-gray-100 rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed ? 'opacity-40' : ''}`}>
       <div className="p-5 pb-3 border-b border-gray-50 flex flex-col">
         <div className="flex justify-between items-end mb-3">
-          <span className="font-serif text-2xl text-nature-primary font-medium">{dayLabel}</span>
+          <button
+            onClick={() => toggleFilterDay(dayId)}
+            className={`font-serif text-2xl font-medium transition-colors ${filterDays.includes(dayId) ? 'text-nature-primary' : 'text-gray-400 hover:text-nature-primary'}`}
+            title="Clic para filtrar por este día"
+          >
+            {dayLabel}
+          </button>
           <span className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Itinerario</span>
         </div>
 
@@ -395,7 +401,7 @@ interface ScheduleBoardProps {
 }
 
 export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove, mergeTargetId, movingItemId, executeMoveHere }: ScheduleBoardProps) => {
-  const { locations, filterDay, tripVariants, activeGlobalVariantId } = useAppStore();
+  const { locations, filterDays, toggleFilterDay, tripVariants, activeGlobalVariantId } = useAppStore();
 
   const displayDays = useMemo(() => {
     let dynamicDays: { id: string, label: string }[] = [];
@@ -420,14 +426,14 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
     }
 
     if (viewMode === 'split-vertical') {
-      return filterDay !== 'all' ? dynamicDays.filter(d => d.id === filterDay) : [];
+      return filterDays.length > 0 ? dynamicDays.filter(d => filterDays.includes(d.id)) : [];
     }
     return dynamicDays;
-  }, [viewMode, filterDay, tripVariants, activeGlobalVariantId]);
+  }, [viewMode, filterDays, tripVariants, activeGlobalVariantId]);
 
   return (
     <div className="h-full w-full overflow-x-auto p-6 pb-12 bg-nature-bg custom-scroll transition-colors relative">
-      {viewMode === 'split-vertical' && filterDay === 'all' ? (
+      {viewMode === 'split-vertical' && filterDays.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full text-center p-8 opacity-60">
           <div className="w-16 h-16 rounded-full bg-nature-primary/10 flex items-center justify-center mb-4 text-nature-primary">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -436,24 +442,59 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
           <p className="text-sm text-gray-500 max-w-xs">Elige un día en el filtro del mapa para ver su itinerario aquí.</p>
         </div>
       ) : (
-        <div className="flex gap-6 h-full min-w-max pb-4">
-          {displayDays.map(dayObj => (
-            <BoardColumn
-              key={dayObj.id}
-              dayId={dayObj.id}
-              dayLabel={dayObj.label}
-              isDimmed={filterDay !== 'all' && filterDay !== dayObj.id}
-              locations={locations.filter(l => l.day === dayObj.id)}
-              handleEdit={handleEdit}
-              handleCardClick={handleCardClick}
-              handleAddNewToDay={handleAddNewToDay}
-              handleAddFreeTimeToDay={handleAddFreeTimeToDay}
-              onRequestMove={onRequestMove}
-              mergeTargetId={mergeTargetId}
-              movingItemId={movingItemId}
-              executeMoveHere={executeMoveHere}
-            />
-          ))}
+        <div className="flex flex-col h-full">
+          {/* Day filter checkbox bar */}
+          <div className="flex items-center gap-2 px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-sm overflow-x-auto custom-scroll shrink-0">
+            <span className="text-[9px] font-bold tracking-widest text-gray-400 uppercase shrink-0">Días</span>
+            {(() => {
+              const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
+              let dayOptions: { id: string; label: string }[] = [];
+              if (activeVar?.startDate && activeVar?.endDate) {
+                const start = new Date(activeVar.startDate);
+                const end = new Date(activeVar.endDate);
+                let i = 1;
+                const d = new Date(start);
+                while (d <= end) {
+                  dayOptions.push({ id: `day-${i}`, label: d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }) });
+                  d.setDate(d.getDate() + 1);
+                  i++;
+                }
+              } else {
+                dayOptions = DAYS.map(d => ({ id: d, label: d }));
+              }
+              return dayOptions.map(opt => {
+                const isActive = filterDays.includes(opt.id);
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => toggleFilterDay(opt.id)}
+                    className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${isActive ? 'bg-nature-primary text-white border-nature-primary shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-nature-primary/30 hover:text-nature-primary'}`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              });
+            })()}
+          </div>
+          <div className="flex gap-6 h-full min-w-max pb-4 overflow-x-auto p-6 pb-12 bg-nature-bg custom-scroll">
+            {displayDays.map(dayObj => (
+              <BoardColumn
+                key={dayObj.id}
+                dayId={dayObj.id}
+                dayLabel={dayObj.label}
+                isDimmed={filterDays.length > 0 && !filterDays.includes(dayObj.id)}
+                locations={locations.filter(l => l.day === dayObj.id)}
+                handleEdit={handleEdit}
+                handleCardClick={handleCardClick}
+                handleAddNewToDay={handleAddNewToDay}
+                handleAddFreeTimeToDay={handleAddFreeTimeToDay}
+                onRequestMove={onRequestMove}
+                mergeTargetId={mergeTargetId}
+                movingItemId={movingItemId}
+                executeMoveHere={executeMoveHere}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>

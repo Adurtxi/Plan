@@ -73,7 +73,7 @@ interface AppState {
   tripVariants: TripVariant[];
   activeGlobalVariantId: string;
   activeTab: 'planner' | 'checklist' | 'analytics';
-  filterDay: string;
+  filterDays: string[];
   selectedLocationId: number | null;
   lightboxImages: ImageFile[] | null;
   lightboxIndex: number;
@@ -128,7 +128,7 @@ interface AppState {
   deleteChecklistItem: (id: number) => Promise<void>;
 
   setActiveTab: (tab: 'planner' | 'checklist' | 'analytics') => void;
-  setFilterDay: (day: string) => void;
+  toggleFilterDay: (day: string) => void;
   setSelectedLocationId: (id: number | null) => void;
   openLightbox: (images: ImageFile[], startIndex?: number) => void;
   setLightboxIndex: (index: number) => void;
@@ -143,7 +143,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   optimisticLocations: null,
   activeGlobalVariantId: 'default',
   activeTab: 'planner',
-  filterDay: 'all',
+  filterDays: [],
   selectedLocationId: null,
   lightboxImages: null,
   lightboxIndex: 0,
@@ -287,7 +287,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().loadData();
   },
 
-  setActiveGlobalVariantId: (id) => set({ activeGlobalVariantId: id, filterDay: 'all' }),
+  setActiveGlobalVariantId: (id) => set({ activeGlobalVariantId: id, filterDays: [] }),
 
   addLocation: async (loc) => {
     get().saveLocationHistory();
@@ -554,7 +554,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setActiveTab: (tab) => set({ activeTab: tab }),
-  setFilterDay: (day) => set({ filterDay: day }),
+  toggleFilterDay: (day) => set(state => ({
+    filterDays: state.filterDays.includes(day)
+      ? state.filterDays.filter(d => d !== day)
+      : [...state.filterDays, day]
+  })),
   setSelectedLocationId: (id) => set({ selectedLocationId: id }),
   openLightbox: (images, startIndex = 0) => set({ lightboxImages: images, lightboxIndex: startIndex }),
   setLightboxIndex: (index) => set({ lightboxIndex: index }),

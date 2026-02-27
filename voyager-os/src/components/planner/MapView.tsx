@@ -5,7 +5,7 @@ import L from 'leaflet';
 import { useAppStore } from '../../store';
 import type { LocationItem } from '../../types';
 import { CAT_ICONS, DAYS } from '../../constants';
-import { CustomSelect } from '../ui/CustomSelect';
+
 
 const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
   const isNecessary = item.priority === 'necessary';
@@ -30,15 +30,15 @@ const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
   return L.divIcon({ html, className: 'custom-marker-container', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -45] });
 };
 
-const MapUpdater = ({ locations, filterDay, activeVariantId }: { locations: LocationItem[], filterDay: string, activeVariantId: string }) => {
+const MapUpdater = ({ locations, filterDays, activeVariantId }: { locations: LocationItem[], filterDays: string[], activeVariantId: string }) => {
   const map = useMap();
   useEffect(() => {
-    const visibleLocations = locations.filter(loc => loc.coords && loc.day !== 'unassigned' && (filterDay === 'all' || loc.day === filterDay) && (loc.variantId || 'default') === activeVariantId);
+    const visibleLocations = locations.filter(loc => loc.coords && loc.day !== 'unassigned' && (filterDays.length === 0 || filterDays.includes(loc.day)) && (loc.variantId || 'default') === activeVariantId);
     if (visibleLocations.length > 0) {
       const bounds = L.latLngBounds(visibleLocations.map(loc => [loc.coords!.lat, loc.coords!.lng]));
       map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [locations, filterDay, activeVariantId, map]);
+  }, [locations, filterDays, activeVariantId, map]);
   return null;
 };
 
@@ -73,6 +73,7 @@ interface MapViewProps {
   onMapClick?: (lat: number, lng: number) => void;
   isAddMode: boolean;
   setIsAddMode: (mode: boolean) => void;
+  showDaySelector?: boolean;
 }
 
 // Internal component to forcefully override the cursor on the Leaflet container
@@ -94,8 +95,8 @@ const MapCursorHandler = ({ isAddMode }: { isAddMode: boolean }) => {
   return null;
 };
 
-export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddMode, setIsAddMode }: MapViewProps) => {
-  const { locations, filterDay, setFilterDay, setSelectedLocationId, activeGlobalVariantId } = useAppStore();
+export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddMode, setIsAddMode, showDaySelector = false }: MapViewProps) => {
+  const { locations, filterDays, toggleFilterDay, setSelectedLocationId, activeGlobalVariantId, tripVariants } = useAppStore();
   const [mapType, setMapType] = useState<'m' | 's'>('m'); // 'm' for Map, 's' for Satellite
   const [tempMarker, setTempMarker] = useState<{ lat: number, lng: number } | null>(null);
 
@@ -110,13 +111,13 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
         <MapResizeHandler />
         <MapCursorHandler isAddMode={isAddMode} />
         <TileLayer url={`http://{s}.google.com/vt/lyrs=${mapType}&x={x}&y={y}&z={z}&hl=es`} subdomains={['mt0', 'mt1', 'mt2', 'mt3']} attribution="&copy; Google" maxZoom={20} />
-        <MapUpdater locations={locations} filterDay={filterDay} activeVariantId={activeGlobalVariantId} />
+        <MapUpdater locations={locations} filterDays={filterDays} activeVariantId={activeGlobalVariantId} />
         {onMapClick && <MapClickHandler isAddMode={isAddMode} onMapClick={(lat, lng) => {
           setTempMarker({ lat, lng });
           onMapClick(lat, lng);
         }} />}
         {routePolylines}
-        {locations.filter(l => l.coords && l.day !== 'unassigned' && (filterDay === 'all' || l.day === filterDay) && (l.variantId || 'default') === activeGlobalVariantId).map(loc => (
+        {locations.filter(l => l.coords && l.day !== 'unassigned' && (filterDays.length === 0 || filterDays.includes(l.day)) && (l.variantId || 'default') === activeGlobalVariantId).map(loc => (
           <Marker key={loc.id} position={[loc.coords!.lat, loc.coords!.lng]} icon={createCustomMarker(loc)} eventHandlers={{ click: () => setSelectedLocationId(loc.id) }}>
             <Popup className="font-serif font-bold text-[#333]">{loc.title || loc.notes?.split("\n")[0] || "Ubicación"}</Popup>
           </Marker>
@@ -143,18 +144,37 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
         <button onClick={() => setIsFormPanelOpen(true)} className="md:hidden bg-nature-primary text-white p-3 rounded-full shadow-lg"><MapPin size={20} /></button>
       </div>
 
-      <div className="absolute top-6 left-6 z-[400] bg-white/90 backdrop-blur-md rounded-xl p-3 shadow-lg flex flex-col gap-1 border border-white">
-        <span className="text-[9px] font-bold tracking-widest text-gray-400 uppercase text-center mb-1">Día</span>
-        <CustomSelect
-          value={filterDay}
-          onChange={setFilterDay}
-          options={[
-            { value: 'all', label: 'Ver Todo' },
-            ...DAYS.map(d => ({ value: d, label: d }))
-          ]}
-          buttonClassName="bg-transparent text-nature-primary font-serif font-bold text-sm"
-        />
-      </div>
+      {showDaySelector && (
+        <div className="absolute top-6 left-6 z-[400] bg-white/90 backdrop-blur-md rounded-xl p-3 shadow-lg flex flex-col gap-1 border border-white">
+          <span className="text-[9px] font-bold tracking-widest text-gray-400 uppercase text-center mb-1">Día</span>
+          {(() => {
+            const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
+            let dayOptions: { value: string; label: string }[] = [];
+            if (activeVar?.startDate && activeVar?.endDate) {
+              const start = new Date(activeVar.startDate);
+              const end = new Date(activeVar.endDate);
+              let i = 1;
+              const d = new Date(start);
+              while (d <= end) {
+                dayOptions.push({ value: `day-${i}`, label: d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) });
+                d.setDate(d.getDate() + 1);
+                i++;
+              }
+            } else {
+              dayOptions = DAYS.map(d => ({ value: d, label: d }));
+            }
+            return dayOptions.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => toggleFilterDay(opt.value)}
+                className={`text-left px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filterDays.includes(opt.value) ? 'bg-nature-primary text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+              >
+                {opt.label}
+              </button>
+            ));
+          })()}
+        </div>
+      )}
 
       <div className="absolute bottom-6 left-6 z-[400] bg-white/80 backdrop-blur px-4 py-2 rounded-full border border-white text-[10px] text-gray-600 shadow-sm pointer-events-none flex gap-4">
         <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-nature-primary"></span>Esencial</div>
