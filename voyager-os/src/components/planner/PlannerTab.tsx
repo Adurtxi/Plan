@@ -17,7 +17,7 @@ import { DAYS } from '../../constants';
 import type { Category, Priority, ReservationStatus, LocationItem } from '../../types';
 
 export const PlannerTab = () => {
-  const { locations, optimisticLocations, clearOptimisticLocations, filterDays, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations, executeMoveHere } = useAppStore();
+  const { locations, optimisticLocations, clearOptimisticLocations, filterDays, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations, executeMoveHere, activeDayVariants } = useAppStore();
   const { isMobile } = useResponsive();
 
   const displayLocations = optimisticLocations || locations;
@@ -308,7 +308,7 @@ export const PlannerTab = () => {
         }
       }
     }
-    if (!coords && !formId) { alert("Se requieren coordenadas. Usa un enlace de Maps o clica en el mapa."); return; }
+    if (!coords && !formId && formCat !== 'logistics') { alert("Se requieren coordenadas. Usa un enlace de Maps o clica en el mapa."); return; }
 
     let finalCoords = coords;
     let finalDay = preselectedDay;
@@ -438,17 +438,20 @@ export const PlannerTab = () => {
     };
 
     // Determine which days to show routes for
-    const allAssigned = displayLocations.filter(l => l.day !== 'unassigned' && l.coords && l.cat !== 'free' && (l.variantId || 'default') === activeGlobalVariantId);
+    const allAssigned = displayLocations.filter(l => l.day !== 'unassigned' && l.coords && l.cat !== 'free' && l.cat !== 'logistics');
     const visibleDays = filterDays.length > 0
       ? [...new Set(allAssigned.filter(l => filterDays.includes(l.day)).map(l => l.day))]
       : [...new Set(allAssigned.map(l => l.day))];
 
     const allRoutes = visibleDays.map(day => {
-      const dayItems = allAssigned.filter(l => l.day === day).sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
+      const dayVariant = activeDayVariants[day] || 'default';
+      const dayItems = allAssigned
+        .filter(l => l.day === day && (l.variantId || 'default') === dayVariant)
+        .sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
       return renderRoutesForDay(dayItems);
     }).filter(Boolean);
     return allRoutes.length > 0 ? <>{allRoutes}</> : null;
-  }, [locations, filterDays, transports, activeGlobalVariantId, displayLocations]);
+  }, [locations, filterDays, transports, activeDayVariants, displayLocations]);
 
   const showCoordsInForm = (lat: number, lng: number) => {
     const form = document.getElementById('mainForm') as HTMLFormElement;
@@ -596,7 +599,7 @@ export const PlannerTab = () => {
                     <button onClick={() => setViewMode('split-horizontal')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-horizontal' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
                     <button onClick={() => setViewMode('split-vertical')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-vertical' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
                     <button onClick={() => setViewMode('map-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'map-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>
-                    <button onClick={() => setViewMode('board-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'board-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                    <button onClick={() => setViewMode('board-only')} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
                   </div>
                 </div>
               </div>

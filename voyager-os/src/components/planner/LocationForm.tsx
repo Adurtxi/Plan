@@ -262,7 +262,10 @@ export const LocationForm = ({
                     { value: 'EUR', label: '€ EUR' },
                     { value: 'USD', label: '$ USD' },
                     { value: 'GBP', label: '£ GBP' },
-                    { value: 'JPY', label: '¥ JPY' }
+                    { value: 'JPY', label: '¥ JPY' },
+                    { value: 'AED', label: 'د.إ AED' },
+                    { value: 'SGD', label: 'S$ SGD' },
+                    { value: 'MYR', label: 'RM MYR' },
                   ]}
                   buttonClassName="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 text-sm font-bold text-nature-text"
                 />

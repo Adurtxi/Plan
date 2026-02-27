@@ -18,7 +18,7 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
 
   const { isOver, setNodeRef } = useDroppable({ id: 'col-unassigned' });
 
-  const unassigned = locations.filter(l => l.day === 'unassigned');
+  const unassigned = locations.filter(l => l.day === 'unassigned' && l.cat !== 'free' && l.cat !== 'logistics');
 
   const assignedByDay = useMemo(() => {
     const assigned = locations.filter(

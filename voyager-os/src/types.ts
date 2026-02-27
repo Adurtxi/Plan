@@ -1,5 +1,7 @@
 export type Priority = 'optional' | 'necessary';
-export type Category = 'sight' | 'food' | 'hotel' | 'shop' | 'flight' | 'transport' | 'free';
+export type Category = 'sight' | 'food' | 'hotel' | 'shop' | 'flight' | 'transport' | 'free' | 'logistics';
+export type LogisticsType = 'hotel-checkin' | 'hotel-checkout' | 'flight-departure' | 'flight-arrival'
+  | 'bus-departure' | 'bus-arrival' | 'airport-wait' | 'transfer';
 export type ReservationStatus = 'idea' | 'pending' | 'booked';
 
 export interface ImageFile {
@@ -60,6 +62,7 @@ export interface LocationItem {
   bookingRef?: string;
 
   slot: string;
+  logisticsType?: LogisticsType;
   notes: string;
   images: ImageFile[];
 }

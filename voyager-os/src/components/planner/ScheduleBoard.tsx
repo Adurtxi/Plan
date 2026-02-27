@@ -6,8 +6,8 @@ import { ArrowDown } from 'lucide-react';
 import { SortableCard } from '../ui/SortableCard';
 import { TransportBlock } from './TransportBlock';
 import { useAppStore } from '../../store';
-import { DAYS } from '../../constants';
-import type { LocationItem } from '../../types';
+import { DAYS, LOGISTICS_TYPES } from '../../constants';
+import type { LocationItem, LogisticsType } from '../../types';
 
 /* ── MoveSlot: clickable drop-zone shown between cards when moving ── */
 const MoveSlot = ({ onClick, label }: { onClick: () => void; label?: string }) => (
@@ -19,6 +19,59 @@ const MoveSlot = ({ onClick, label }: { onClick: () => void; label?: string }) =
     {label || 'Colocar aquí'}
   </button>
 );
+
+/* ── LogisticsQuickAdd: popover to add logistics cards to a day ── */
+const LogisticsQuickAdd = ({ dayId, variantId }: { dayId: string; variantId: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const { addLocation, addToast } = useAppStore();
+
+  const handleAdd = async (type: typeof LOGISTICS_TYPES[number]) => {
+    await addLocation({
+      id: Date.now(),
+      title: type.label,
+      link: '',
+      coords: null,
+      priority: 'necessary' as const,
+      cat: 'logistics' as const,
+      logisticsType: type.value as LogisticsType,
+      cost: '0',
+      slot: 'Mañana',
+      notes: '',
+      images: [],
+      day: dayId,
+      variantId,
+      reservationStatus: 'idea' as const,
+      order: Date.now(),
+    });
+    addToast(`${type.icon} ${type.label} añadido`, 'success');
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 py-1.5 rounded-xl border-dashed text-[10px] font-bold transition-colors flex items-center justify-center gap-1 uppercase tracking-widest"
+      >
+        📋 + Logística
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50 grid grid-cols-2 gap-1 animate-fade-in-up">
+          {LOGISTICS_TYPES.map(type => (
+            <button
+              key={type.value}
+              onClick={() => handleAdd(type)}
+              className="text-left px-2.5 py-2 rounded-lg hover:bg-gray-50 text-xs font-bold text-gray-600 hover:text-nature-primary transition-colors flex items-center gap-2"
+            >
+              <span className="text-base">{type.icon}</span>
+              <span className="truncate">{type.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface BoardColumnProps {
   dayId: string;
@@ -75,7 +128,7 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
                   onRequestMove={() => onRequestMove(item.id)}
                   isMergeTarget={item.id === mergeTargetId}
                 />
-                {nextItem && item.cat !== 'free' && nextItem.cat !== 'free' && (
+                {nextItem && item.cat !== 'free' && item.cat !== 'logistics' && nextItem.cat !== 'free' && nextItem.cat !== 'logistics' && (
                   <div className="mt-1 mb-0.5 w-full scale-[0.98] opacity-90">
                     <TransportBlock fromLoc={item} toLoc={nextItem} />
                   </div>
@@ -90,11 +143,11 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
 };
 
 const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere }: BoardColumnProps) => {
-  const [activeVariant, setActiveVariant] = useState<string>('default');
-  const { isOver, setNodeRef } = useDroppable({ id: `col-${dayId}::${activeVariant}` });
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
   const optimisticLocations = useAppStore(s => s.optimisticLocations);
-  const { showDialog, addToast, transports, tripVariants, activeGlobalVariantId, toggleFilterDay, filterDays } = useAppStore();
+  const { showDialog, addToast, transports, tripVariants, activeGlobalVariantId, toggleFilterDay, filterDays, activeDayVariants, setActiveDayVariant } = useAppStore();
+  const activeVariant = activeDayVariants[dayId] || 'default';
+  const { isOver, setNodeRef } = useDroppable({ id: `col-${dayId}::${activeVariant}` });
 
   const dayVariants = useMemo(() => {
     const vars = new Set([...propLocations.map(l => l.variantId || 'default'), ...additionalVariants, 'default']);
@@ -192,7 +245,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
         const groupBlock = block;
         const blockFirstItem = groupBlock.items[0];
         const blockLastItem = groupBlock.items[groupBlock.items.length - 1];
-        const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && nextBlockFirstItem.cat !== 'free';
+        const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && blockLastItem.cat !== 'logistics' && nextBlockFirstItem.cat !== 'free' && nextBlockFirstItem.cat !== 'logistics';
 
         blockMeta.push({
           firstItemId: blockFirstItem.id,
@@ -220,7 +273,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
       } else {
         const itemBlock = block;
         const blockLastItem = itemBlock.item;
-        const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && nextBlockFirstItem.cat !== 'free';
+        const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && blockLastItem.cat !== 'logistics' && nextBlockFirstItem.cat !== 'free' && nextBlockFirstItem.cat !== 'logistics';
 
         blockMeta.push({
           firstItemId: itemBlock.item.id,
@@ -297,7 +350,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
           {dayVariants.map(v => (
             <button
               key={v}
-              onClick={() => setActiveVariant(v)}
+              onClick={() => setActiveDayVariant(dayId, v)}
               className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${activeVariant === v ? 'bg-white text-nature-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
             >
               {v === 'default' ? 'Ruta 1' : v.replace('option-', 'Ruta ')}
@@ -313,7 +366,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
               onConfirm: (newVar) => {
                 if (newVar && newVar.trim()) {
                   setAdditionalVariants(prev => [...prev, newVar.trim()]);
-                  setActiveVariant(newVar.trim());
+                  setActiveDayVariant(dayId, newVar.trim());
                   addToast(`Variante de día "${newVar.trim()}" creada`, 'success');
                 }
               }
@@ -322,19 +375,22 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
         </div>
 
         {handleAddNewToDay && (
-          <div className="flex gap-2 w-full mt-3">
-            <button onClick={() => handleAddNewToDay(dayId, activeVariant)} className="flex-1 bg-nature-mint/30 hover:bg-nature-mint/50 border border-nature-primary/20 text-nature-primary py-2 rounded-xl border border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              Actividad
-            </button>
-            <button onClick={() => {
-              if (handleAddFreeTimeToDay) {
-                handleAddFreeTimeToDay(dayId, activeVariant);
-              }
-            }} className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 py-2 rounded-xl border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1" title="Añadir Hueco Libre">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              Libre
-            </button>
+          <div className="flex flex-col gap-2 w-full mt-3">
+            <div className="flex gap-2">
+              <button onClick={() => handleAddNewToDay(dayId, activeVariant)} className="flex-1 bg-nature-mint/30 hover:bg-nature-mint/50 border border-nature-primary/20 text-nature-primary py-2 rounded-xl border border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Actividad
+              </button>
+              <button onClick={() => {
+                if (handleAddFreeTimeToDay) {
+                  handleAddFreeTimeToDay(dayId, activeVariant);
+                }
+              }} className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 py-2 rounded-xl border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1" title="Añadir Hueco Libre">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Libre
+              </button>
+            </div>
+            <LogisticsQuickAdd dayId={dayId} variantId={activeVariant} />
           </div>
         )}
       </div>

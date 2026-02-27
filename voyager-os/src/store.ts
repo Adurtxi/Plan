@@ -74,6 +74,8 @@ interface AppState {
   activeGlobalVariantId: string;
   activeTab: 'planner' | 'checklist' | 'analytics';
   filterDays: string[];
+  activeDayVariants: Record<string, string>;
+  setActiveDayVariant: (dayId: string, variantId: string) => void;
   selectedLocationId: number | null;
   lightboxImages: ImageFile[] | null;
   lightboxIndex: number;
@@ -144,6 +146,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeGlobalVariantId: 'default',
   activeTab: 'planner',
   filterDays: [],
+  activeDayVariants: {},
+  setActiveDayVariant: (dayId, variantId) => set(state => ({ activeDayVariants: { ...state.activeDayVariants, [dayId]: variantId } })),
   selectedLocationId: null,
   lightboxImages: null,
   lightboxIndex: 0,

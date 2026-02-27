@@ -10,7 +10,7 @@ interface TransportBlockProps {
 }
 
 export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => {
-  const { transports, addTransport } = useAppStore();
+  const { transports, addTransport, addToast } = useAppStore();
   const [isCalculating, setIsCalculating] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [hasAttemptedAutoCalc, setHasAttemptedAutoCalc] = useState(false);
@@ -20,6 +20,18 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
 
   const mode = segment?.mode || 'walk';
   const duration = segment?.durationCalculated || segment?.durationOverride;
+
+  // Haversine distance in meters between two coords
+  const haversineDistance = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+    const R = 6371000;
+    const toRad = (deg: number) => deg * Math.PI / 180;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const sinLat = Math.sin(dLat / 2);
+    const sinLng = Math.sin(dLng / 2);
+    const h = sinLat * sinLat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinLng * sinLng;
+    return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+  };
 
   const handleCalculate = async (selectedMode: TransportSegment['mode']) => {
     setIsCalculating(true);
@@ -47,7 +59,13 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
   useEffect(() => {
     if (!segment && fromLoc.coords && toLoc.coords && !isCalculating && !hasAttemptedAutoCalc) {
       setHasAttemptedAutoCalc(true);
-      handleCalculate('walk'); // Start with a default conservative mode
+      const dist = haversineDistance(fromLoc.coords, toLoc.coords);
+      const autoMode = dist > 3000 ? 'car' : 'walk';
+      handleCalculate(autoMode);
+      addToast(
+        autoMode === 'car' ? `Ruta en coche 🚗 (${(dist / 1000).toFixed(1)}km)` : `Ruta andando 🚶 (${Math.round(dist)}m)`,
+        'info'
+      );
     }
   }, [segment, fromLoc.coords, toLoc.coords, isCalculating, hasAttemptedAutoCalc]);
 

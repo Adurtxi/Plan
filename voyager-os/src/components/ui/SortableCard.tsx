@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
 import { Edit2, CheckCircle2, AlertCircle, Clock, Lightbulb, Lock, GripVertical, MoreVertical, LogOut, ArrowRightCircle } from 'lucide-react';
 import type { LocationItem } from '../../types';
-import { CAT_ICONS } from '../../constants';
+import { CAT_ICONS, LOGISTICS_ICONS } from '../../constants';
 import { useAppStore } from '../../store';
 
 export const CardVisual = memo(({
@@ -186,6 +186,7 @@ export const SortableCard = memo(({ item, onClick, onCardClick, onRequestMove, i
   };
 
   const isFreeTime = item.cat === 'free';
+  const isLogistics = item.cat === 'logistics';
   const formatDuration = (mins: number) => mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60 ? (mins % 60) + 'm' : ''}` : `${mins}m`;
 
   return (
@@ -229,6 +230,43 @@ export const SortableCard = memo(({ item, onClick, onCardClick, onRequestMove, i
           </div>
           {!isMovingMode && (
             <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-nature-accent transition-colors p-1">
+              <Edit2 size={12} />
+            </button>
+          )}
+        </div>
+      ) : isLogistics ? (
+        <div onClick={onCardClick} className={`my-1 group bg-blue-50/50 border border-dashed border-blue-200 rounded-2xl py-3 px-4 flex items-center justify-between transition-colors hover:bg-blue-50 ${isDragging ? 'opacity-50' : ''} ${isMovingMode ? 'opacity-40 grayscale' : ''}`}>
+          <div className="flex gap-2 items-center text-blue-700">
+            {!isMovingMode && (
+              <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing hover:text-blue-500 p-1 -ml-2" onClick={e => e.stopPropagation()}>
+                <GripVertical size={14} className="opacity-50" />
+              </div>
+            )}
+            <span className="text-lg">{item.logisticsType ? (LOGISTICS_ICONS[item.logisticsType] || '📋') : '📋'}</span>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold">{item.title || 'Logística'}</span>
+              {(() => {
+                const displayTime = item.derivedDatetime || item.datetime;
+                if (displayTime) {
+                  return (
+                    <span className="text-[10px] text-blue-500 font-bold flex items-center gap-1 mt-0.5">
+                      <Clock size={10} />
+                      {new Date(displayTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {item.isPinnedTime && <Lock size={8} className="opacity-50" />}
+                      {item.durationMinutes && ` · ${formatDuration(item.durationMinutes)}`}
+                    </span>
+                  );
+                }
+                return item.durationMinutes ? (
+                  <span className="text-[10px] text-blue-500 font-bold flex items-center gap-1 mt-0.5">
+                    <Clock size={10} /> {formatDuration(item.durationMinutes)}
+                  </span>
+                ) : null;
+              })()}
+            </div>
+          </div>
+          {!isMovingMode && (
+            <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="opacity-0 group-hover:opacity-100 text-blue-300 hover:text-blue-600 transition-colors p-1">
               <Edit2 size={12} />
             </button>
           )}
