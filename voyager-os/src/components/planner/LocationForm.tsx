@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { X, MapPin, Calendar, CreditCard, Image as ImageIcon } from 'lucide-react';
 import type { Category, Priority, LocationItem, ReservationStatus } from '../../types';
-import { CAT_ICONS } from '../../constants';
+import { getCatGroup, getCatConfig, CAT_LABELS } from '../../constants';
 import { CustomSelect } from '../ui/CustomSelect';
+import { ActivityTypePicker } from './ActivityTypePicker';
 
 interface LocationFormProps {
   isFormPanelOpen: boolean;
@@ -37,6 +38,9 @@ export const LocationForm = ({
   const [durHours, setDurHours] = useState<number | string>('');
   const [durMins, setDurMins] = useState<number | string>('');
 
+  const catGroup = getCatGroup(formCat);
+  const catConfig = getCatConfig(formCat);
+
   // Load existing status when editing
   useEffect(() => {
     if (formId) {
@@ -66,24 +70,20 @@ export const LocationForm = ({
       if (activeTag === 'input' || activeTag === 'textarea') return;
 
       if (e.clipboardData) {
-        // Handle images
         if (e.clipboardData.files && e.clipboardData.files.length > 0) {
           handleFiles(e.clipboardData.files);
           setActiveTab('assets');
           return;
         }
 
-        // Handle text
         const text = e.clipboardData.getData('text');
         if (text) {
           const form = document.getElementById('mainForm') as HTMLFormElement;
           if (form) {
             const titleInput = form.elements.namedItem('title') as HTMLInputElement;
             if (titleInput) {
-              // If it's a URL, maybe it better belongs in link? 
-              // We'll put it in title as requested, unless it's obviously a URL and link is empty
               const linkInput = form.elements.namedItem('link') as HTMLInputElement;
-              if (text.startsWith('http') && !linkInput.value) {
+              if (text.startsWith('http') && linkInput && !linkInput.value) {
                 linkInput.value = text;
               } else {
                 titleInput.value = text;
@@ -99,7 +99,6 @@ export const LocationForm = ({
   }, [isFormPanelOpen, handleFiles]);
 
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    // Inject custom hidden data into form before submit
     const inputStatus = document.createElement('input');
     inputStatus.type = 'hidden';
     inputStatus.name = 'reservationStatus';
@@ -126,104 +125,291 @@ export const LocationForm = ({
     </button>
   );
 
+  // Derive tab labels based on category
+  const formTitle = formId
+    ? `Editar ${CAT_LABELS[formCat] || 'Actividad'}`
+    : `${catGroup === 'transport' ? 'Nuevo Transporte' : catGroup === 'accommodation' ? 'Nuevo Alojamiento' : 'Nueva Actividad'}`;
+
+  const tabLabels = {
+    general: catGroup === 'transport' ? 'Transporte' : catGroup === 'accommodation' ? 'Hotel' : 'Lugar',
+    time: 'Horarios',
+    finance: 'Reserva',
+    assets: catGroup === 'transport' ? 'Billete' : 'Archivos',
+  };
+
   return (
     <div className={`w-full md:w-[480px] shrink-0 bg-white border-r border-gray-100 flex flex-col z-[520] shadow-[10px_0_30px_rgba(0,0,0,0.1)] h-full absolute top-0 bottom-0 left-0 transform ${isFormPanelOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
       <button type="button" onClick={() => setIsFormPanelOpen(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-nature-primary z-50 bg-white/50 rounded-full backdrop-blur transition-colors"><X size={24} /></button>
 
       <div className="p-8 pb-4 bg-gray-50/50">
-        <h2 className="text-3xl font-serif text-nature-primary mb-1">{formId ? 'Editar Actividad' : 'Nueva Actividad'}</h2>
-        <p className="text-xs text-gray-500">Diseña tu experiencia con precisión.</p>
+        <div className="flex items-center gap-3 mb-1">
+          {catConfig && <span className="text-3xl">{catConfig.icon}</span>}
+          <h2 className="text-3xl font-sans text-nature-primary">{formTitle}</h2>
+        </div>
+        <p className="text-xs text-gray-500">
+          {catGroup === 'transport' ? 'Configura los detalles de tu trayecto.' :
+            catGroup === 'accommodation' ? 'Configura tu estancia.' :
+              'Diseña tu experiencia con precisión.'}
+        </p>
       </div>
 
       <div className="flex px-6 border-b border-gray-100 overflow-x-auto no-scrollbar">
-        <TabButton id="general" label="Lugar" icon={MapPin} />
-        <TabButton id="time" label="Horarios" icon={Calendar} />
-        <TabButton id="finance" label="Reserva" icon={CreditCard} />
-        <TabButton id="assets" label="Archivos" icon={ImageIcon} />
+        <TabButton id="general" label={tabLabels.general} icon={MapPin} />
+        <TabButton id="time" label={tabLabels.time} icon={Calendar} />
+        <TabButton id="finance" label={tabLabels.finance} icon={CreditCard} />
+        <TabButton id="assets" label={tabLabels.assets} icon={ImageIcon} />
       </div>
 
       <div className="flex-1 overflow-y-auto p-8 custom-scroll">
         <form id="mainForm" onSubmit={onFormSubmit} className="space-y-8">
 
+          {/* ═══ TAB: GENERAL ═══ */}
           <div className={`${activeTab === 'general' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
+
+            {/* Type Picker */}
+            <ActivityTypePicker value={formCat} onChange={setFormCat} />
+
+            {/* Title */}
             <div>
-              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Título (Opcional)</label>
-              <input name="title" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all font-bold" placeholder="Ej. Visita al Coliseo" />
+              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">
+                {catGroup === 'accommodation' ? 'Nombre del Hotel' : catGroup === 'transport' ? 'Título / Descripción' : 'Título (Opcional)'}
+              </label>
+              <input name="title" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all font-bold"
+                placeholder={catGroup === 'accommodation' ? 'Ej. Hotel Hilton Barcelona' : catGroup === 'transport' ? 'Ej. Vuelo a Madrid' : 'Ej. Visita al Coliseo'} />
             </div>
 
-            <div>
-              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Google Maps Link (Opcional)</label>
-              <input name="link" type="url" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="https://maps.app.goo.gl/..." />
-              <input name="mapCoords" type="hidden" />
-            </div>
+            {/* ── Activity-specific fields ── */}
+            {catGroup === 'activity' && (
+              <>
+                <div>
+                  <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Google Maps Link (Opcional)</label>
+                  <input name="link" type="url" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="https://maps.app.goo.gl/..." />
+                  <input name="mapCoords" type="hidden" />
+                </div>
 
-            <div id="coordsDisplay" className="hidden">
-              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">📍 Coordenadas</label>
-              <input name="coordsReadonly" type="text" readOnly className="w-full bg-nature-mint/20 border border-nature-primary/20 rounded-xl p-4 text-nature-primary outline-none text-xs font-mono cursor-default" />
-            </div>
+                <div id="coordsDisplay" className="hidden">
+                  <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">📍 Coordenadas</label>
+                  <input name="coordsReadonly" type="text" readOnly className="w-full bg-nature-mint/20 border border-nature-primary/20 rounded-xl p-4 text-nature-primary outline-none text-xs font-mono cursor-default" />
+                </div>
 
-            {formCat === 'logistics' && (
+                {formCat === 'food' && (
+                  <div>
+                    <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Tipo de Comida</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {(['breakfast', 'lunch', 'dinner', 'snack', 'tapas'] as const).map(meal => (
+                        <label key={meal} className="cursor-pointer">
+                          <input type="radio" name="mealType" value={meal} className="peer hidden" />
+                          <div className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-bold text-gray-400 peer-checked:bg-nature-accent peer-checked:text-white peer-checked:border-nature-accent transition-all">
+                            {meal === 'breakfast' ? '🌅 Desayuno' : meal === 'lunch' ? '☀️ Almuerzo' : meal === 'dinner' ? '🌙 Cena' : meal === 'snack' ? '🍿 Snack' : '🍺 Tapas'}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {formCat === 'photos' && (
+                  <div>
+                    <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Mejor Momento para Fotos</label>
+                    <input name="bestTimeHint" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="Ej. Golden hour 18:30, amanecer..." />
+                  </div>
+                )}
+
+                {/* Priority */}
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="cursor-pointer">
+                    <input type="radio" name="priority" value="optional" checked={formPriority === 'optional'} onChange={() => setFormPriority('optional')} className="peer hidden" />
+                    <div className="py-3 text-center rounded-xl bg-white border border-gray-200 text-xs font-medium text-gray-400 peer-checked:bg-nature-mint peer-checked:text-nature-primary peer-checked:border-nature-mint transition-all">Opcional</div>
+                  </label>
+                  <label className="cursor-pointer">
+                    <input type="radio" name="priority" value="necessary" checked={formPriority === 'necessary'} onChange={() => setFormPriority('necessary')} className="peer hidden" />
+                    <div className="py-3 text-center rounded-xl bg-white border border-gray-200 text-xs font-medium text-gray-400 peer-checked:bg-nature-primary peer-checked:text-white peer-checked:border-nature-primary transition-all">Esencial</div>
+                  </label>
+                </div>
+              </>
+            )}
+
+            {/* ── Transport-specific fields ── */}
+            {catGroup === 'transport' && (
               <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 space-y-4 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-blue-500 italic text-lg">ℹ️</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-800/40">Detalles de Logística</span>
+                  <span className="text-blue-500 italic text-lg">✈️</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-800/40">Detalles del Transporte</span>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Compañía</label>
+                    <input name="company" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Ej. Ryanair, Alsa..." />
+                  </div>
+                  <div>
+                    <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">
+                      {formCat.startsWith('flight') ? 'Nº Vuelo' : formCat.startsWith('train') ? 'Nº Tren/Línea' : 'Nº Línea'}
+                    </label>
+                    <input name="flightNumber" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="FR1234" />
+                  </div>
+                </div>
+
+                {(formCat.startsWith('flight') || formCat === 'airport-wait') && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Terminal</label>
+                      <input name="terminal" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="T1, T4S..." />
+                    </div>
+                    <div>
+                      <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Puerta</label>
+                      <input name="gate" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="B24" />
+                    </div>
+                  </div>
+                )}
+
+                {(formCat.startsWith('bus') || formCat.startsWith('train')) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Estación</label>
+                      <input name="station" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Estación Sur..." />
+                    </div>
+                    <div>
+                      <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Andén</label>
+                      <input name="platform" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Andén 3" />
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Asiento</label>
+                    <input name="seat" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="12A" />
+                  </div>
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Confirmación / PNR</label>
                     <input name="logisticsConfirmation" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="ABC123" />
                   </div>
-                  <div>
-                    <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Terminal / Andén / Asiento</label>
-                    <input name="logisticsDetail" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="T4, 12A..." />
-                  </div>
                 </div>
+
+                {formCat === 'taxi' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto de Recogida</label>
+                      <input name="pickupPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Hotel lobby..." />
+                    </div>
+                    <div>
+                      <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">App / Servicio</label>
+                      <input name="transportApp" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Uber, Bolt..." />
+                    </div>
+                  </div>
+                )}
+
+                {formCat === 'car-rental' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto Recogida</label>
+                      <input name="pickupPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Aeropuerto T1..." />
+                    </div>
+                    <div>
+                      <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto Devolución</label>
+                      <input name="dropoffPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Ciudad centro..." />
+                    </div>
+                  </div>
+                )}
+
+                {formCat === 'transfer' && (
+                  <div>
+                    <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto de Recogida</label>
+                    <input name="pickupPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Terminal 2 Llegadas..." />
+                  </div>
+                )}
+
+                {(formCat === 'ferry') && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Puerto Salida</label>
+                      <input name="pickupPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Puerto de Barcelona..." />
+                    </div>
+                    <div>
+                      <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Puerto Llegada</label>
+                      <input name="dropoffPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Puerto de Palma..." />
+                    </div>
+                  </div>
+                )}
+
+                {/* Hidden fields for coords and link (transport can optionally have them) */}
+                <input name="link" type="hidden" />
+                <input name="mapCoords" type="hidden" />
               </div>
             )}
 
-            <div className="grid grid-cols-4 gap-3">
-              {(Object.keys(CAT_ICONS) as Category[]).map(cat => (
-                <label key={cat} className="cursor-pointer group">
-                  <input type="radio" name="cat" value={cat} checked={formCat === cat} onChange={() => setFormCat(cat)} className="peer hidden" />
-                  <div className={`aspect-square flex items-center justify-center bg-white border border-gray-200 rounded-xl text-gray-400 transition-all text-xl drop-shadow-sm peer-checked:text-white ${cat === 'sight' ? 'peer-checked:bg-nature-primary' : cat === 'food' ? 'peer-checked:bg-nature-accent' : cat === 'hotel' ? 'peer-checked:bg-gray-800' : 'peer-checked:bg-nature-textLight'}`}>
-                    {CAT_ICONS[cat as keyof typeof CAT_ICONS]}
-                  </div>
-                  <span className="text-[9px] text-center block mt-2 text-gray-400 uppercase tracking-wide group-hover:text-nature-primary">{cat}</span>
-                </label>
-              ))}
-            </div>
+            {/* ── Accommodation-specific fields ── */}
+            {catGroup === 'accommodation' && (
+              <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-100 space-y-4 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-amber-600 text-lg">🏨</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-800/40">Detalles del Alojamiento</span>
+                </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <label className="cursor-pointer">
-                <input type="radio" name="priority" value="optional" checked={formPriority === 'optional'} onChange={() => setFormPriority('optional')} className="peer hidden" />
-                <div className="py-3 text-center rounded-xl bg-white border border-gray-200 text-xs font-medium text-gray-400 peer-checked:bg-nature-mint peer-checked:text-nature-primary peer-checked:border-nature-mint transition-all">Opcional</div>
-              </label>
-              <label className="cursor-pointer">
-                <input type="radio" name="priority" value="necessary" checked={formPriority === 'necessary'} onChange={() => setFormPriority('necessary')} className="peer hidden" />
-                <div className="py-3 text-center rounded-xl bg-white border border-gray-200 text-xs font-medium text-gray-400 peer-checked:bg-nature-primary peer-checked:text-white peer-checked:border-nature-primary transition-all">Esencial</div>
-              </label>
-            </div>
+                <div>
+                  <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Dirección</label>
+                  <input name="address" type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="C/ Gran Via 123, Barcelona..." />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Nº Habitación</label>
+                    <input name="roomNumber" type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="Suite 401" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Confirmación</label>
+                    <input name="logisticsConfirmation" type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="CONF123" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Google Maps Link (Opcional)</label>
+                  <input name="link" type="url" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="https://maps.app.goo.gl/..." />
+                  <input name="mapCoords" type="hidden" />
+                </div>
+
+                <div id="coordsDisplay" className="hidden">
+                  <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">📍 Coordenadas</label>
+                  <input name="coordsReadonly" type="text" readOnly className="w-full bg-nature-mint/20 border border-nature-primary/20 rounded-xl p-4 text-nature-primary outline-none text-xs font-mono cursor-default" />
+                </div>
+
+                {formCat === 'hotel-checkout' && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="lateCheckout" className="accent-amber-600 w-4 h-4" />
+                    <span className="text-xs font-bold text-amber-700">Late Checkout</span>
+                  </label>
+                )}
+              </div>
+            )}
           </div>
 
+          {/* ═══ TAB: HORARIOS ═══ */}
           <div className={`${activeTab === 'time' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
             <div className="flex gap-4">
-              <div className="w-1/2">
-                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Momento del día</label>
-                <CustomSelect
-                  name="slot"
-                  value={formSlot}
-                  onChange={setFormSlot}
-                  options={[
-                    { value: 'Mañana', label: 'Mañana' },
-                    { value: 'Tarde', label: 'Tarde' },
-                    { value: 'Noche', label: 'Noche' }
-                  ]}
-                  buttonClassName="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-nature-text font-bold"
-                />
-              </div>
-              <div className="w-1/2">
+              {catGroup === 'activity' && (
+                <div className="w-1/2">
+                  <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Momento del día</label>
+                  <CustomSelect
+                    name="slot"
+                    value={formSlot}
+                    onChange={setFormSlot}
+                    options={[
+                      { value: 'Mañana', label: 'Mañana' },
+                      { value: 'Tarde', label: 'Tarde' },
+                      { value: 'Noche', label: 'Noche' }
+                    ]}
+                    buttonClassName="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-nature-text font-bold"
+                  />
+                </div>
+              )}
+              <div className={catGroup === 'activity' ? 'w-1/2' : 'flex-1'}>
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 flex items-center justify-between">
-                  <span>Inicio (Opcional)</span>
+                  <span>
+                    {catGroup === 'transport' ? (formCat.includes('arrival') ? 'Hora Llegada' : 'Hora Salida') :
+                      catGroup === 'accommodation' ? (formCat === 'hotel-checkout' ? 'Hora Check-out' : 'Hora Check-in') :
+                        'Inicio (Opcional)'}
+                  </span>
                   <label className="flex items-center gap-1 cursor-pointer" title="Fijar esta hora exacta (No recálcular)">
                     <input type="checkbox" name="isPinnedTime" className="accent-nature-primary w-3 h-3" />
                     <span className="normal-case text-[9px] text-nature-primary opacity-80">Fijar Hora</span>
@@ -235,7 +421,9 @@ export const LocationForm = ({
 
             <div className="flex gap-4">
               <div className="w-1/2">
-                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Fin / Check-Out</label>
+                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">
+                  {catGroup === 'accommodation' ? (formCat === 'hotel-checkin' ? 'Check-out' : 'Check-in') : 'Fin / Hora Llegada'}
+                </label>
                 <input name="checkOutDatetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all" />
               </div>
               <div className="w-1/2">
@@ -249,14 +437,16 @@ export const LocationForm = ({
             </div>
 
             <div>
-              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas Logísticas</label>
-              <textarea name="notes" rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all" placeholder="Recordar entradas, dress code..."></textarea>
+              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas</label>
+              <textarea name="notes" rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
+                placeholder={catGroup === 'transport' ? 'Info del trayecto, escalas...' : catGroup === 'accommodation' ? 'Wifi, desayuno incluido...' : 'Recordar entradas, dress code...'}></textarea>
             </div>
           </div>
 
+          {/* ═══ TAB: RESERVA ═══ */}
           <div className={`${activeTab === 'finance' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
             <div>
-              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-3 block">Estado de la Actividad</label>
+              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-3 block">Estado</label>
               <div className="flex bg-gray-100 rounded-xl p-1">
                 {(['idea', 'pending', 'booked'] as ReservationStatus[]).map(status => (
                   <button type="button" key={status} onClick={() => setResStatus(status)} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${resStatus === status ? 'bg-white text-nature-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
@@ -270,7 +460,6 @@ export const LocationForm = ({
               <div className="flex-1">
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Coste/Precio</label>
                 <input name="priceAmount" type="number" step="0.01" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-lg font-mono outline-none transition-all" placeholder="0.00" />
-                {/* Legacy cost input hidden to avoid breaking old handlers temporarily */}
                 <input name="cost" type="hidden" value="0" />
               </div>
               <div className="flex-[0.5]">
@@ -299,11 +488,14 @@ export const LocationForm = ({
             </div>
           </div>
 
+          {/* ═══ TAB: ARCHIVOS ═══ */}
           <div className={`${activeTab === 'assets' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
             <label className="cursor-pointer">
               <div className="border-2 border-dashed border-gray-200 hover:border-nature-primary hover:bg-nature-mint/30 bg-gray-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all group shadow-sm hover:shadow-md">
                 <ImageIcon size={32} className="text-gray-300 group-hover:text-nature-primary mb-3 transition-colors" />
-                <p className="text-xs text-gray-400 group-hover:text-nature-primary font-medium">Fotos y Documentos (Billete)</p>
+                <p className="text-xs text-gray-400 group-hover:text-nature-primary font-medium">
+                  {catGroup === 'transport' ? 'Billetes, Boarding Pass, Confirmaciones' : 'Fotos y Documentos'}
+                </p>
                 <input type="file" multiple hidden onChange={(e) => handleFiles(e.target.files)} />
               </div>
             </label>
@@ -342,8 +534,9 @@ export const LocationForm = ({
 
           {/* Sticky footer for submit */}
           <div className="pt-6 sticky bottom-0 bg-white border-t border-gray-50">
-            <button type="submit" className={`w-full ${formId ? 'bg-gray-800' : 'bg-nature-primary'} text-white font-bold tracking-wide py-4 text-sm rounded-xl shadow-[0_10px_20px_-10px_rgba(45,90,39,0.5)] hover:shadow-2xl hover:-translate-y-0.5 transition-all transform active:scale-[0.98]`}>
-              {formId ? 'Confirmar Edición' : 'Añadir Actividad'}
+            <button type="submit" className={`w-full ${formId ? 'bg-gray-800' : 'bg-nature-primary'} text-white font-bold tracking-wide py-4 text-sm rounded-xl shadow-[0_10px_20px_-10px_rgba(45,90,39,0.5)] hover:shadow-2xl hover:-translate-y-0.5 transition-all transform active:scale-[0.98]`}
+              style={!formId && catConfig ? { backgroundColor: catConfig.color } : {}}>
+              {formId ? 'Confirmar Edición' : `Añadir ${CAT_LABELS[formCat] || 'Actividad'}`}
             </button>
             {formId && <button type="button" onClick={resetForm} className="w-full text-xs text-gray-400 hover:text-red-500 py-3 font-bold uppercase tracking-widest mt-2 transition-colors">Cancelar</button>}
           </div>

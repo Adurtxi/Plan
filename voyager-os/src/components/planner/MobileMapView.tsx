@@ -21,7 +21,7 @@ export const MobileMapView = ({ routePolylines }: { routePolylines: React.ReactN
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
       <header className="bg-white px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-3 border-b border-gray-100 z-20 shadow-sm shrink-0">
-        <h1 className="text-2xl font-serif text-nature-primary mb-3">Mapa</h1>
+        <h1 className="text-2xl font-sans text-nature-primary mb-3">Mapa</h1>
         <MobileDaySelector selectedDay={selectedDay} onSelectDay={handleSelectDay} />
       </header>
 

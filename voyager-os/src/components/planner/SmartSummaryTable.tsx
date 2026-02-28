@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../../store';
 import { AlertTriangle, CheckCircle, Info, Plane, Hotel, Navigation } from 'lucide-react';
+import { isTransportCat, isAccommodationCat } from '../../constants';
 
 export const SmartSummaryTable = () => {
   const { locations, setActiveTab, setSelectedLocationId } = useAppStore();
@@ -29,13 +30,13 @@ export const SmartSummaryTable = () => {
       }
 
       // Heuristic 1: Flights without ref
-      if (loc.cat === 'flight' && !loc.bookingRef && loc.reservationStatus === 'booked') {
-        heuristicAlerts.push({ type: 'warn', msg: `Vuelo "${loc.notes.split('\n')[0]}" marcado como reservado pero sin PNR/Referencia.` });
+      if ((loc.cat === 'flight-departure' || loc.cat === 'flight-arrival') && !loc.bookingRef && loc.reservationStatus === 'booked') {
+        heuristicAlerts.push({ type: 'warn', msg: `Vuelo "${loc.title || loc.notes.split('\n')[0]}" marcado como reservado pero sin PNR/Referencia.` });
       }
     });
 
     // Cross-Variant Analysis (Example: If hotel in A is cheaper than B)
-    const hotels = locations.filter(l => l.cat === 'hotel');
+    const hotels = locations.filter(l => isAccommodationCat(l.cat));
     if (hotels.length > 1) {
       const hA = hotels.find(h => h.variantId === 'default');
       const hB = hotels.find(h => h.variantId !== 'default');
@@ -67,7 +68,7 @@ export const SmartSummaryTable = () => {
       <div className="max-w-5xl mx-auto space-y-12">
 
         <header>
-          <h1 className="text-4xl font-serif text-nature-primary mb-2">Resumen y Análisis</h1>
+          <h1 className="text-4xl font-sans text-nature-primary mb-2">Resumen y Análisis</h1>
           <p className="text-gray-500">Motor inteligente de decisiones y finanzas de tu viaje.</p>
         </header>
 
@@ -76,14 +77,14 @@ export const SmartSummaryTable = () => {
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between">
             <span className="text-xs font-bold tracking-widest text-gray-400 uppercase flex items-center gap-2"><CheckCircle size={14} /> Estado Total</span>
             <div className="mt-4">
-              <span className="text-4xl font-serif text-nature-primary">{analytics.totalCost.toFixed(2)}</span>
+              <span className="text-4xl font-sans text-nature-primary">{analytics.totalCost.toFixed(2)}</span>
               <span className="text-xl text-gray-400 ml-1">{analytics.currencySymbol}</span>
             </div>
           </div>
 
           <div className={`p-6 rounded-3xl border shadow-sm flex flex-col justify-between ${analytics.pendingReservations.length > 0 ? 'bg-amber-50 border-amber-100 text-amber-900' : 'bg-green-50 border-green-100 text-green-900'}`}>
             <span className="text-xs font-bold tracking-widest uppercase flex items-center gap-2"><AlertTriangle size={14} /> Pendiente de Reserva</span>
-            <div className="mt-4 text-3xl font-serif">
+            <div className="mt-4 text-3xl font-sans">
               {analytics.pendingReservations.length} <span className="text-lg opacity-70">vitales</span>
             </div>
           </div>
@@ -91,8 +92,8 @@ export const SmartSummaryTable = () => {
 
         {/* Actionable Alerts */}
         <section className="space-y-4">
-          <h2 className="text-xl font-serif text-nature-primary flex items-center gap-2">
-            <Info size={18} /> Alertas de Logística
+          <h2 className="text-xl font-sans text-nature-primary flex items-center gap-2">
+            <Info size={18} /> Alertas de Transporte
           </h2>
           <div className="grid gap-3">
             {analytics.heuristicAlerts.length === 0 && <p className="text-gray-400 text-sm">Todo parece estar en orden.</p>}
@@ -108,7 +109,7 @@ export const SmartSummaryTable = () => {
               <div key={p.id} className="p-4 rounded-xl flex items-center justify-between border bg-red-50/30 border-red-100 group">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center">
-                    {p.cat === 'flight' ? <Plane size={14} /> : p.cat === 'hotel' ? <Hotel size={14} /> : <Navigation size={14} />}
+                    {isTransportCat(p.cat) ? <Plane size={14} /> : isAccommodationCat(p.cat) ? <Hotel size={14} /> : <Navigation size={14} />}
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-red-900">Urgente: {p.title || p.notes.split('\n')[0] || p.cat}</h4>

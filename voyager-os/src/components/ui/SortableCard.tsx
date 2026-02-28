@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
 import { Edit2, CheckCircle2, AlertCircle, Clock, Lightbulb, Lock, GripVertical, MoreVertical, LogOut, ArrowRightCircle } from 'lucide-react';
 import type { LocationItem } from '../../types';
-import { CAT_ICONS, LOGISTICS_ICONS } from '../../constants';
+import { CAT_ICONS, CAT_LABELS, isTransportCat } from '../../constants';
 import { useAppStore } from '../../store';
 
 export const CardVisual = memo(({
@@ -213,7 +213,7 @@ export const SortableCard = memo(({
   };
 
   const isFreeTime = item.cat === 'free';
-  const isLogistics = item.cat === 'logistics';
+  const isLogistics = isTransportCat(item.cat);
   const formatDuration = (mins: number) => mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60 ? (mins % 60) + 'm' : ''}` : `${mins}m`;
 
   return (
@@ -269,13 +269,18 @@ export const SortableCard = memo(({
                 <GripVertical size={14} className="opacity-50" />
               </div>
             )}
-            <span className="text-lg">{item.logisticsType ? (LOGISTICS_ICONS[item.logisticsType] || '📋') : '📋'}</span>
+            <span className="text-lg">{CAT_ICONS[item.cat] || '📋'}</span>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black truncate">{item.title || 'Logística'}</span>
-                {item.logisticsConfirmation && (
+                <span className="text-xs font-black truncate">{item.title || CAT_LABELS[item.cat] || 'Transporte'}</span>
+                {(item.company || item.flightNumber) && (
                   <span className="text-[9px] font-mono bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 uppercase tracking-tighter">
-                    {item.logisticsConfirmation}
+                    {[item.company, item.flightNumber].filter(Boolean).join(' ')}
+                  </span>
+                )}
+                {!item.company && !item.flightNumber && (item.logisticsConfirmation || item.bookingRef) && (
+                  <span className="text-[9px] font-mono bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 uppercase tracking-tighter">
+                    {item.logisticsConfirmation || item.bookingRef}
                   </span>
                 )}
               </div>
@@ -299,9 +304,14 @@ export const SortableCard = memo(({
                   ) : null;
                 })()}
 
-                {item.logisticsDetail && (
-                  <span className="text-[9px] text-blue-600/60 font-medium italic truncate max-w-[150px]">
-                    · {item.logisticsDetail}
+                {item.terminal && (
+                  <span className="text-[9px] text-blue-600/60 font-medium truncate">
+                    T{item.terminal}{item.gate ? ` · P${item.gate}` : ''}
+                  </span>
+                )}
+                {item.seat && (
+                  <span className="text-[9px] text-blue-600/60 font-medium">
+                    💺 {item.seat}
                   </span>
                 )}
 

@@ -102,7 +102,7 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
             <div className="w-8 h-8 rounded-full bg- प्रकृति-mint/30 flex items-center justify-center text-nature-primary">
               <Coffee size={16} />
             </div>
-            <h2 className="text-xl font-serif font-bold text-nature-primary">
+            <h2 className="text-xl font-sans font-bold text-nature-primary">
               {formId ? 'Editar Tiempo Libre' : 'Añadir Tiempo Libre'}
             </h2>
           </div>

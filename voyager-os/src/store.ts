@@ -31,6 +31,33 @@ export interface ToastConfig {
 
 let dbPromise: Promise<IDBPDatabase<VoyagerDB>>;
 
+const computeDateForDay = (dayId: string, tripVariants: TripVariant[], globalVariantId: string): Date | null => {
+  if (dayId === 'unassigned') return null;
+  const variant = tripVariants.find(v => v.id === globalVariantId) || tripVariants.find(v => v.id === 'default');
+  if (!variant?.startDate) return null;
+
+  const start = new Date(variant.startDate);
+  const dayIndexMatch = dayId.match(/^day-(\d+)$/);
+  if (!dayIndexMatch) return null;
+
+  const dayIndex = parseInt(dayIndexMatch[1], 10) - 1;
+  if (isNaN(dayIndex) || dayIndex < 0) return null;
+
+  const targetDate = new Date(start);
+  targetDate.setDate(targetDate.getDate() + dayIndex);
+  return targetDate;
+};
+
+const syncItemDateToDay = (item: LocationItem, targetDayId: string, tripVariants: TripVariant[], globalVariantId: string) => {
+  if (!item.datetime || targetDayId === 'unassigned') return;
+  const targetDate = computeDateForDay(targetDayId, tripVariants, globalVariantId);
+  if (targetDate) {
+    const d = new Date(item.datetime);
+    d.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+    item.datetime = d.toISOString();
+  }
+};
+
 const initDB = () => {
   if (!dbPromise) {
     dbPromise = openDB<VoyagerDB>('VoyagerV3_Nature', 3, {
@@ -71,7 +98,7 @@ interface AppState {
   transports: TransportSegment[];
   tripVariants: TripVariant[];
   activeGlobalVariantId: string;
-  activeTab: 'planner' | 'checklist' | 'analytics';
+  activeTab: 'planner' | 'checklist' | 'analytics' | 'gallery';
   filterDays: string[];
   activeDayVariants: Record<string, string>;
   setActiveDayVariant: (dayId: string, variantId: string) => void;
@@ -114,6 +141,9 @@ interface AppState {
   deleteTripVariant: (id: string) => Promise<void>;
   setActiveGlobalVariantId: (id: string) => void;
 
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+
   addLocation: (loc: LocationItem) => Promise<void>;
   updateLocation: (loc: LocationItem) => Promise<void>;
   updateLocationDay: (id: number, day: string, variantId?: string) => Promise<void>;
@@ -135,7 +165,7 @@ interface AppState {
   toggleChecklistItem: (id: number, done: boolean) => Promise<void>;
   deleteChecklistItem: (id: number) => Promise<void>;
 
-  setActiveTab: (tab: 'planner' | 'checklist' | 'analytics') => void;
+  setActiveTab: (tab: 'planner' | 'checklist' | 'analytics' | 'gallery') => void;
   toggleFilterDay: (day: string) => void;
   setFilterDays: (days: string[]) => void;
   setSelectedLocationId: (id: number | null) => void;
@@ -156,7 +186,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeDayVariants: {},
   setActiveDayVariant: (dayId, variantId) => set(state => ({ activeDayVariants: { ...state.activeDayVariants, [dayId]: variantId } })),
   selectedLocationId: null,
-  isDrawingRouteFor: null,
   lightboxImages: null,
   lightboxIndex: 0,
   dialog: null,
@@ -167,7 +196,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setMovingItemId: (id) => set({ movingItemId: id }),
 
+  isDrawingRouteFor: null,
   setDrawingRouteFor: (transportId) => set({ isDrawingRouteFor: transportId }),
+
+  theme: (localStorage.getItem('voyager-theme') as 'light' | 'dark') ||
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  toggleTheme: () => set(state => {
+    const newTheme = state.theme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('voyager-theme', newTheme);
+    if (newTheme === 'dark') document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+    return { theme: newTheme };
+  }),
 
   showDialog: (config) => set({ dialog: config }),
   closeDialog: () => set({ dialog: null }),
@@ -285,6 +325,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
 
       if (!loc.reservationStatus) loc.reservationStatus = 'idea';
+
+      // Migration v4: remap old categories to new specialized ones
+      const legacyCat = loc.cat as string;
+      if (legacyCat === 'logistics' && loc.logisticsType) {
+        (loc as any).cat = loc.logisticsType; // 'hotel-checkin' etc. are now valid Category values
+        loc.logisticsType = undefined;
+        await db.put('locations', loc);
+      } else if (legacyCat === 'flight') {
+        (loc as any).cat = 'flight-departure';
+        await db.put('locations', loc);
+      } else if (legacyCat === 'transport') {
+        (loc as any).cat = 'taxi';
+        await db.put('locations', loc);
+      } else if (legacyCat === 'hotel') {
+        (loc as any).cat = 'hotel-checkin';
+        await db.put('locations', loc);
+      }
     }
 
     const checklist = await db.getAll('checklist');
@@ -346,6 +403,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     const db = await initDB();
     const item = await db.get('locations', id);
     if (item) {
+      if (item.day !== targetDay) {
+        syncItemDateToDay(item, targetDay, get().tripVariants, get().activeGlobalVariantId || 'default');
+      }
       item.day = targetDay;
       item.variantId = targetVariant;
       item.globalVariantId = get().activeGlobalVariantId || 'default';
@@ -365,6 +425,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     const item = locations.find(l => l.id === itemId);
     if (!item) return;
 
+    if (item.day !== targetDay) {
+      syncItemDateToDay(item, targetDay, get().tripVariants, get().activeGlobalVariantId || 'default');
+    }
     item.day = targetDay;
     item.variantId = targetVariant;
     item.globalVariantId = get().activeGlobalVariantId || 'default';
@@ -447,6 +510,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
 
     activeItems.forEach(item => {
+      if (item.day !== day) {
+        syncItemDateToDay(item, day, get().tripVariants, currentActiveGlobal);
+      }
       item.day = day;
       item.variantId = variantId;
       item.globalVariantId = currentActiveGlobal;

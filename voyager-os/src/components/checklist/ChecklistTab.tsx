@@ -16,7 +16,7 @@ export const ChecklistTab = () => {
   return (
     <div className="flex-1 bg-nature-bg p-8 md:p-16 overflow-y-auto w-full">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-5xl font-serif text-nature-primary mb-4">Equipaje</h1>
+        <h1 className="text-5xl font-sans text-nature-primary mb-4">Equipaje</h1>
         <p className="text-nature-textLight font-light text-lg mb-10">Lo esencial para un viaje sin preocupaciones.</p>
         <div className="flex gap-4 mb-10 items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
           <input value={newTodo} onChange={(e) => setNewTodo(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()} className="flex-1 bg-transparent border-none p-4 text-nature-text placeholder-gray-400 outline-none text-lg" placeholder="Añadir elemento..." />
@@ -36,7 +36,7 @@ export const ChecklistTab = () => {
                     <div className={`w-6 h-6 border-2 flex items-center justify-center rounded-full transition-all duration-300 ${item.done ? 'bg-nature-primary border-nature-primary text-white' : 'border-gray-300 text-transparent'}`}>
                       <Check size={14} strokeWidth={3} />
                     </div>
-                    <span className={`text-lg font-serif transition-colors duration-500 ${item.done ? 'line-through text-gray-300' : 'text-nature-text font-medium'}`}>{item.text}</span>
+                    <span className={`text-lg font-sans transition-colors duration-500 ${item.done ? 'line-through text-gray-300' : 'text-nature-text font-medium'}`}>{item.text}</span>
                   </div>
                   <button onClick={() => deleteChecklistItem(item.id)} className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all font-bold text-sm tracking-wider uppercase px-4 py-2">Eliminar</button>
                 </div>

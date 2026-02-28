@@ -21,7 +21,7 @@ export const LightboxModal = () => {
 
   return (
     <div className="fixed inset-0 z-[3000] bg-white/95 backdrop-blur-xl flex flex-col justify-center items-center">
-      <button onClick={closeLightbox} className="absolute top-8 right-8 text-nature-text text-4xl hover:text-nature-primary transition-colors z-50 font-serif">✕</button>
+      <button onClick={closeLightbox} className="absolute top-8 right-8 text-nature-text text-4xl hover:text-nature-primary transition-colors z-50 font-sans">✕</button>
       <button onClick={() => setLightboxIndex((lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length)} className="absolute left-4 md:left-8 top-1/2 transform -translate-y-1/2 p-4 text-gray-400 hover:text-nature-primary hover:bg-gray-100 rounded-full transition-all z-50"><ChevronLeft size={32} /></button>
       <button onClick={() => setLightboxIndex((lightboxIndex + 1) % lightboxImages.length)} className="absolute right-4 md:right-8 top-1/2 transform -translate-y-1/2 p-4 text-gray-400 hover:text-nature-primary hover:bg-gray-100 rounded-full transition-all z-50"><ChevronRight size={32} /></button>
 

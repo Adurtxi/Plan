@@ -65,7 +65,7 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
         <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-nature-bg/30">
           <div className="flex items-center gap-2 text-nature-primary">
             <Calendar size={20} />
-            <h2 className="text-xl font-serif font-bold">Ajustes del Viaje</h2>
+            <h2 className="text-xl font-sans font-bold">Ajustes del Viaje</h2>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-colors text-gray-400 hover:text-nature-primary">
             <X size={20} />

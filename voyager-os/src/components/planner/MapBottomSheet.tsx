@@ -1,34 +1,84 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useAppStore } from '../../store';
 import { ChevronUp, ChevronDown, Clock } from 'lucide-react';
-import { CAT_ICONS } from '../../constants';
+import { CAT_ICONS, isTransportCat } from '../../constants';
+import { hapticFeedback } from '../../utils/haptics';
 
 export const MapBottomSheet = ({ selectedDay }: { selectedDay: string }) => {
   const { locations, activeDayVariants, setSelectedLocationId } = useAppStore();
-  const [expanded, setExpanded] = useState(false);
+  const [snapState, setSnapState] = useState<0 | 1 | 2>(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const touchStartY = useRef(0);
 
   const activeVariant = activeDayVariants[selectedDay] || 'default';
 
   const dayLocations = useMemo(() => {
     return locations
-      .filter(l => l.day === selectedDay && (l.variantId || 'default') === activeVariant && l.cat !== 'free' && l.cat !== 'logistics')
+      .filter(l => l.day === selectedDay && (l.variantId || 'default') === activeVariant && l.cat !== 'free' && !isTransportCat(l.cat))
       .sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
   }, [locations, selectedDay, activeVariant]);
 
+  const snapHeights = ['20vh', '50vh', '85vh'];
+  const currentHeight = snapHeights[snapState];
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const dy = e.touches[0].clientY - touchStartY.current;
+
+    // Dampening beyond bounds
+    if (snapState === 2 && dy < 0) setDragOffset(dy * 0.2);
+    else if (snapState === 0 && dy > 0) setDragOffset(dy * 0.2);
+    else setDragOffset(dy);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    if (dragOffset < -50) {
+      setSnapState(prev => {
+        const next = Math.min(2, prev + 1) as 0 | 1 | 2;
+        if (next !== prev) hapticFeedback.light();
+        return next;
+      });
+    } else if (dragOffset > 50) {
+      setSnapState(prev => {
+        const next = Math.max(0, prev - 1) as 0 | 1 | 2;
+        if (next !== prev) hapticFeedback.light();
+        return next;
+      });
+    }
+    setDragOffset(0);
+  };
+
   return (
     <div
-      className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-[500] flex flex-col ${expanded ? 'h-[75vh]' : 'h-[35vh]'
-        }`}
+      className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-15px_40px_rgba(0,0,0,0.15)] flex flex-col z-[500] border-t border-gray-100"
+      style={{
+        height: currentHeight,
+        transform: `translateY(${isDragging ? dragOffset : 0}px)`,
+        transition: isDragging ? 'none' : 'height 0.3s cubic-bezier(0.25,1,0.5,1), transform 0.3s cubic-bezier(0.25,1,0.5,1)',
+      }}
     >
       {/* Handle / Header */}
       <div
-        className="w-full flex flex-col items-center pt-3 pb-4 cursor-pointer shrink-0"
-        onClick={() => setExpanded(!expanded)}
+        className="w-full flex flex-col items-center pt-3 pb-4 cursor-pointer shrink-0 touch-none"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={() => {
+          hapticFeedback.selection();
+          setSnapState(prev => prev === 2 ? 1 : prev === 1 ? 0 : 2);
+        }}
       >
-        <div className="w-12 h-1.5 bg-gray-200 rounded-full mb-3" />
+        <div className="w-12 h-1.5 bg-gray-200 rounded-full mb-3 shadow-inner" />
         <div className="flex items-center justify-between w-full px-6 text-sm font-bold text-gray-500">
           <span>{dayLocations.length} actividades en el mapa</span>
-          {expanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+          {snapState === 2 ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
         </div>
       </div>
 
@@ -49,8 +99,9 @@ export const MapBottomSheet = ({ selectedDay }: { selectedDay: string }) => {
               <button
                 key={loc.id}
                 onClick={() => {
+                  hapticFeedback.selection();
                   setSelectedLocationId(loc.id);
-                  setExpanded(false); // minimize sheet to show map
+                  setSnapState(1); // minimize sheet to half to show map
                 }}
                 className="w-full text-left bg-gray-50 hover:bg-nature-mint/20 active:bg-nature-mint/30 border border-gray-100 p-4 rounded-2xl flex items-center gap-4 transition-colors"
               >

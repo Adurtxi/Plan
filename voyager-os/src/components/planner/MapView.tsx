@@ -1,16 +1,17 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
-import { useEffect, useState } from 'react';
-import { MapPin, Layers, PenTool, CheckCircle2 } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { MapPin, Layers, PenTool, CheckCircle2, Maximize, LocateFixed } from 'lucide-react';
 import L from 'leaflet';
 import { useAppStore } from '../../store';
 import { useFilteredLocations } from '../../hooks/useFilteredLocations';
+import { hapticFeedback } from '../../utils/haptics';
 import type { LocationItem } from '../../types';
-import { CAT_ICONS } from '../../constants';
+import { CAT_ICONS, CAT_COLORS } from '../../constants';
 
 
 const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
   const isNecessary = item.priority === 'necessary';
-  const color = isNecessary ? '#2D5A27' : '#C4A484';
+  const color = CAT_COLORS[item.cat] || (isNecessary ? '#2D5A27' : '#C4A484');
   const hasImage = item.images && item.images.length > 0;
 
   const imgHtml = hasImage
@@ -31,16 +32,60 @@ const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
   return L.divIcon({ html, className: 'custom-marker-container', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -45] });
 };
 
-const MapUpdater = ({ locations }: { locations: LocationItem[] }) => {
+const MapUpdater = ({ locations, reframeTrigger }: { locations: LocationItem[], reframeTrigger: number }) => {
   const map = useMap();
-  const { activeGlobalVariantId, isDrawingRouteFor } = useAppStore();
+  const { isDrawingRouteFor, selectedLocationId } = useAppStore();
+  const locationsRef = useRef(locations);
+
   useEffect(() => {
-    const visibleLocations = locations.filter(loc => loc.coords);
-    if (visibleLocations.length > 0 && !isDrawingRouteFor) {
-      const bounds = L.latLngBounds(visibleLocations.map(loc => [loc.coords!.lat, loc.coords!.lng] as [number, number]));
-      map.fitBounds(bounds, { padding: [50, 50] });
+    locationsRef.current = locations;
+  }, [locations]);
+
+  // Handle reframe trigger (View all)
+  useEffect(() => {
+    if (reframeTrigger > 0) {
+      const visibleLocations = locationsRef.current.filter(loc => loc.coords);
+      if (visibleLocations.length > 0 && !isDrawingRouteFor) {
+        const bounds = L.latLngBounds(visibleLocations.map(loc => [loc.coords!.lat, loc.coords!.lng] as [number, number]));
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
     }
-  }, [locations, activeGlobalVariantId, map, isDrawingRouteFor]);
+  }, [reframeTrigger, map, isDrawingRouteFor]);
+
+  // Handle zooming to selected location
+  useEffect(() => {
+    if (selectedLocationId) {
+      const selectedLoc = locationsRef.current.find(l => l.id === selectedLocationId);
+      if (selectedLoc?.coords && !isDrawingRouteFor) {
+        map.flyTo([selectedLoc.coords.lat, selectedLoc.coords.lng], 16, { duration: 0.8 });
+      }
+    }
+  }, [selectedLocationId, map, isDrawingRouteFor]);
+
+  // Handle initial load - fit bounds once if there are locations
+  const [hasDoneInitialFit, setHasDoneInitialFit] = useState(false);
+  useEffect(() => {
+    if (!hasDoneInitialFit && locations.length > 0) {
+      const visibleLocations = locations.filter(loc => loc.coords);
+      if (visibleLocations.length > 0) {
+        const bounds = L.latLngBounds(visibleLocations.map(loc => [loc.coords!.lat, loc.coords!.lng] as [number, number]));
+        map.fitBounds(bounds, { padding: [50, 50] });
+        setHasDoneInitialFit(true);
+      }
+    }
+  }, [locations, map, hasDoneInitialFit]);
+
+  return null;
+};
+
+const MapCenterOnMeUpdater = ({ trigger }: { trigger: number }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (trigger > 0) {
+      hapticFeedback.medium();
+      map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
+    }
+  }, [trigger, map]);
   return null;
 };
 
@@ -103,6 +148,8 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
   const filteredLocations = useFilteredLocations();
   const [mapType, setMapType] = useState<'m' | 's'>('m'); // 'm' for Map, 's' for Satellite
   const [tempMarker, setTempMarker] = useState<{ lat: number, lng: number } | null>(null);
+  const [reframeTrigger, setReframeTrigger] = useState(0);
+  const [centerMeTrigger, setCenterMeTrigger] = useState(0);
 
   // Clear temp marker when exiting add mode
   useEffect(() => {
@@ -115,7 +162,8 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
         <MapResizeHandler />
         <MapCursorHandler isAddMode={isAddMode} isDrawingMode={!!isDrawingRouteFor} />
         <TileLayer url={`https://{s}.google.com/vt/lyrs=${mapType}&x={x}&y={y}&z={z}&hl=es`} subdomains={['mt0', 'mt1', 'mt2', 'mt3']} attribution="&copy; Google" maxZoom={20} />
-        <MapUpdater locations={filteredLocations} />
+        <MapUpdater locations={filteredLocations} reframeTrigger={reframeTrigger} />
+        <MapCenterOnMeUpdater trigger={centerMeTrigger} />
         {<MapClickHandler isAddMode={isAddMode} isDrawingMode={!!isDrawingRouteFor} onDrawClick={(lat, lng) => {
           if (isDrawingRouteFor) addRoutePoint(isDrawingRouteFor, lat, lng);
         }} onMapClick={(lat, lng) => {
@@ -126,7 +174,7 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
         {routePolylines}
         {filteredLocations.filter(l => l.coords).map(loc => (
           <Marker key={loc.id} position={[loc.coords!.lat, loc.coords!.lng]} icon={createCustomMarker(loc)} eventHandlers={{ click: () => setSelectedLocationId(loc.id) }}>
-            <Popup className="font-serif font-bold text-[#333]">{loc.title || loc.notes?.split("\n")[0] || "Ubicación"}</Popup>
+            <Popup className="font-sans font-bold text-[#333]">{loc.title || loc.notes?.split("\n")[0] || "Ubicación"}</Popup>
           </Marker>
         ))}
         {tempMarker && (
@@ -153,6 +201,12 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
       )}
 
       <div className="absolute top-6 right-6 z-[400] flex flex-col gap-2">
+        <button onClick={() => setCenterMeTrigger(prev => prev + 1)} className="bg-white/90 backdrop-blur text-nature-primary hover:bg-white p-3 rounded-full shadow-lg transition-colors border border-gray-100" title="Centrar en mí">
+          <LocateFixed size={20} />
+        </button>
+        <button onClick={() => setReframeTrigger(prev => prev + 1)} className="bg-white/90 backdrop-blur text-nature-primary hover:bg-white p-3 rounded-full shadow-lg transition-colors border border-gray-100" title="Reencuadrar Mapa (Ver todo)">
+          <Maximize size={20} />
+        </button>
         <button onClick={() => setIsAddMode(!isAddMode)} className={`p-3 rounded-full shadow-lg transition-colors border ${isAddMode ? 'bg-nature-primary text-white border-nature-primary' : 'bg-white/90 backdrop-blur text-nature-primary hover:bg-white border-gray-100'}`} title="Añadir Destino en Mapa">
           <MapPin size={20} />
         </button>

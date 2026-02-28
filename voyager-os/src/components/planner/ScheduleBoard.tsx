@@ -1,5 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -7,8 +6,8 @@ import { ArrowDown } from 'lucide-react';
 import { SortableCard } from '../ui/SortableCard';
 import { TransportBlock } from './TransportBlock';
 import { useAppStore } from '../../store';
-import { DAYS, LOGISTICS_TYPES } from '../../constants';
-import type { LocationItem, LogisticsType } from '../../types';
+import { DAYS, isTransportCat } from '../../constants';
+import type { LocationItem } from '../../types';
 
 /* ── MoveSlot: clickable drop-zone shown between cards when moving ── */
 const MoveSlot = ({ onClick, label }: { onClick: () => void; label?: string }) => (
@@ -20,90 +19,6 @@ const MoveSlot = ({ onClick, label }: { onClick: () => void; label?: string }) =
     {label || 'Colocar aquí'}
   </button>
 );
-
-/* ── LogisticsQuickAdd: popover to add logistics cards to a day ── */
-const LogisticsQuickAdd = ({ dayId, variantId }: { dayId: string; variantId: string }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const { addLocation, addToast } = useAppStore();
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
-
-  const handleAdd = async (type: typeof LOGISTICS_TYPES[number]) => {
-    await addLocation({
-      id: Date.now(),
-      title: type.label,
-      link: '',
-      coords: null,
-      priority: 'necessary' as const,
-      cat: 'logistics' as const,
-      logisticsType: type.value as LogisticsType,
-      cost: '0',
-      slot: 'Mañana',
-      notes: '',
-      images: [],
-      attachments: [],
-      day: dayId,
-      variantId,
-      reservationStatus: 'idea' as const,
-      order: Date.now(),
-    });
-    addToast(`${type.icon} ${type.label} añadido`, 'success');
-    setIsOpen(false);
-  };
-
-  const toggle = () => {
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setMenuPos({
-        top: rect.bottom,
-        left: rect.left,
-        width: rect.width
-      });
-    }
-    setIsOpen(!isOpen);
-  };
-
-  return (
-    <div className="relative">
-      <button
-        ref={buttonRef}
-        onClick={toggle}
-        className="w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 py-1.5 rounded-xl border-dashed text-[10px] font-bold transition-colors flex items-center justify-center gap-1 uppercase tracking-widest"
-      >
-        📋 + Logística
-      </button>
-      {isOpen && createPortal(
-        <div
-          className="fixed z-[9999] mt-1 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-white/50 p-3 grid grid-cols-2 gap-2 animate-fade-in-up"
-          style={{
-            top: menuPos.top,
-            left: menuPos.left,
-            width: Math.max(menuPos.width * 1.5, 280),
-            minWidth: '280px'
-          }}
-        >
-          <div className="col-span-2 px-2 pb-1 flex items-center justify-between border-b border-gray-100 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-nature-primary/40">Logística del día</span>
-            <span className="text-[10px] text-gray-400">Selecciona un tipo</span>
-          </div>
-          {LOGISTICS_TYPES.map(type => (
-            <button
-              key={type.value}
-              onClick={() => handleAdd(type)}
-              className="text-left p-3 rounded-xl hover:bg-nature-mint/30 hover:shadow-sm border border-transparent hover:border-nature-mint/50 transition-all flex flex-col gap-1 group/item"
-            >
-              <span className="text-2xl group-hover/item:scale-110 transition-transform">{type.icon}</span>
-              <span className="text-[11px] font-bold text-gray-700 truncate">{type.label}</span>
-            </button>
-          ))}
-          {/* Click outside to close wrapper */}
-          <div className="fixed inset-0 -z-10 bg-black/5" onClick={() => setIsOpen(false)} />
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-};
 
 interface BoardColumnProps {
   dayId: string;
@@ -161,7 +76,7 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
                   onRequestMove={() => onRequestMove(item.id)}
                   isMergeTarget={item.id === mergeTargetId}
                 />
-                {nextItem && item.cat !== 'free' && item.cat !== 'logistics' && nextItem.cat !== 'free' && nextItem.cat !== 'logistics' && (
+                {nextItem && item.cat !== 'free' && !isTransportCat(item.cat) && nextItem.cat !== 'free' && !isTransportCat(nextItem.cat) && (
                   <div className="mt-1 mb-0.5 w-full scale-[0.98] opacity-90">
                     <TransportBlock fromLoc={item} toLoc={nextItem} />
                   </div>
@@ -278,7 +193,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
         const groupBlock = block;
         const blockFirstItem = groupBlock.items[0];
         const blockLastItem = groupBlock.items[groupBlock.items.length - 1];
-        const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && blockLastItem.cat !== 'logistics' && nextBlockFirstItem.cat !== 'free' && nextBlockFirstItem.cat !== 'logistics';
+        const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && !isTransportCat(blockLastItem.cat) && nextBlockFirstItem.cat !== 'free' && !isTransportCat(nextBlockFirstItem.cat);
 
         blockMeta.push({
           firstItemId: blockFirstItem.id,
@@ -306,7 +221,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
       } else {
         const itemBlock = block;
         const blockLastItem = itemBlock.item;
-        const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && blockLastItem.cat !== 'logistics' && nextBlockFirstItem.cat !== 'free' && nextBlockFirstItem.cat !== 'logistics';
+        const showTransport = nextBlockFirstItem && blockLastItem.cat !== 'free' && !isTransportCat(blockLastItem.cat) && nextBlockFirstItem.cat !== 'free' && !isTransportCat(nextBlockFirstItem.cat);
 
         blockMeta.push({
           firstItemId: itemBlock.item.id,
@@ -366,8 +281,8 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
   }, [filteredLocations]);
 
   return (
-    <div className={`flex-none ${viewMode === 'split-vertical' ? 'w-full max-w-[360px] mx-auto' : 'w-[340px]'} flex flex-col h-full bg-white border border-gray-100 rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed ? 'opacity-40' : ''}`}>
-      <div className="p-5 pb-3 border-b border-gray-50 flex flex-col">
+    <div className={`flex-none ${viewMode === 'split-vertical' ? 'w-full max-w-[360px] mx-auto' : 'w-[340px]'} flex flex-col min-h-full h-auto bg-white border border-gray-100 rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed ? 'opacity-40' : ''}`}>
+      <div className="p-5 pb-3 border-b border-gray-50 flex flex-col shrink-0">
         <div className="flex justify-between items-end mb-3">
           <label className="flex items-center gap-2 cursor-pointer group">
             <input
@@ -378,7 +293,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
               title="Mostrar/ocultar ruta en el mapa"
             />
             <span
-              className={`font-serif text-2xl font-medium transition-colors ${filterDays.includes(dayId) ? 'text-nature-primary' : 'text-gray-400 group-hover:text-nature-primary'}`}
+              className={`font-sans text-2xl font-medium transition-colors ${filterDays.includes(dayId) ? 'text-nature-primary' : 'text-gray-400 group-hover:text-nature-primary'}`}
             >
               {dayLabel}
             </span>
@@ -417,20 +332,19 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
         {handleAddNewToDay && (
           <div className="flex flex-col gap-2 w-full mt-3">
             <div className="flex gap-2">
-              <button onClick={() => handleAddNewToDay(dayId, activeVariant)} className="flex-1 bg-nature-mint/30 hover:bg-nature-mint/50 border border-nature-primary/20 text-nature-primary py-2 rounded-xl border border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1">
+              <button onClick={() => handleAddNewToDay(dayId, activeVariant)} className="flex-1 bg-nature-mint/30 hover:bg-nature-mint/50 border border-nature-primary/20 text-nature-primary py-2 rounded-xl border border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1 shrink-0">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Actividad
+                Añadir
               </button>
               <button onClick={() => {
                 if (handleAddFreeTimeToDay) {
                   handleAddFreeTimeToDay(dayId, activeVariant);
                 }
-              }} className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 py-2 rounded-xl border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1" title="Añadir Hueco Libre">
+              }} className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 py-2 rounded-xl border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1 shrink-0" title="Añadir Hueco Libre">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 Libre
               </button>
             </div>
-            <LogisticsQuickAdd dayId={dayId} variantId={activeVariant} />
           </div>
         )}
       </div>

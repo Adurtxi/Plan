@@ -16,7 +16,7 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
   const [showOptions, setShowOptions] = useState(false);
   const [hasAttemptedAutoCalc, setHasAttemptedAutoCalc] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, spaceAbove: 0, spaceBelow: 0 });
 
   const transportId = `${fromLoc.id}-${toLoc.id}`;
   const segment = transports.find(t => t.id === transportId);
@@ -78,7 +78,9 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
       const rect = buttonRef.current.getBoundingClientRect();
       setMenuPos({
         top: rect.top,
-        left: rect.left + rect.width / 2
+        left: rect.left + rect.width / 2,
+        spaceAbove: rect.top,
+        spaceBelow: window.innerHeight - rect.bottom
       });
     }
     setShowOptions(!showOptions);
@@ -110,13 +112,13 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
 
         {showOptions && createPortal(
           <div
-            className="fixed z-[9999] -translate-x-1/2 -translate-y-[calc(100%+8px)] animate-fade-in-up"
+            className={`fixed z-[9999] -translate-x-1/2 animate-fade-in-up ${menuPos.spaceAbove < 300 && menuPos.spaceBelow > 300 ? 'translate-y-2' : '-translate-y-[calc(100%+8px)]'}`}
             style={{
-              top: menuPos.top,
+              top: menuPos.spaceAbove < 300 && menuPos.spaceBelow > 300 ? menuPos.top + 24 : menuPos.top,
               left: menuPos.left
             }}
           >
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] border border-white/40 p-1.5 min-w-[200px] flex flex-col gap-0.5 overflow-hidden ring-1 ring-black/5">
+            <div className="bg-white dark:bg-nature-surface rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-nature-border p-1.5 min-w-[200px] flex flex-col gap-0.5 overflow-hidden ring-1 ring-black/5">
               <div className="px-3 py-2 text-[9px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100/50 mb-1">
                 Modo de Transporte
               </div>

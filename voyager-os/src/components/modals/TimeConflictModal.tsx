@@ -31,7 +31,7 @@ export const TimeConflictModal = ({ isOpen, activeTitle, overTitle, overDatetime
             <Clock size={32} />
           </div>
           <div>
-            <h2 className="text-xl font-serif font-bold text-nature-primary">Asignación de Hora</h2>
+            <h2 className="text-xl font-sans font-bold text-nature-primary">Asignación de Hora</h2>
             <p className="text-sm text-gray-500 mt-2 px-2">
               Has colocado <strong className="text-nature-text font-bold">"{activeTitle}"</strong> detrás de <strong className="text-nature-text font-bold">"{overTitle}"</strong> (que es a las {formattedOverTime}).
             </p>

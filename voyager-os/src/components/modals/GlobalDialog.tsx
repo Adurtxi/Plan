@@ -39,7 +39,7 @@ export const GlobalDialog = () => {
             <div className={`p-2 rounded-2xl ${dialog.isDestructive ? 'bg-red-50 text-red-500' : 'bg-nature-mint/50'}`}>
               <Icon size={24} />
             </div>
-            <h2 className="text-xl font-serif font-bold text-gray-800">{dialog.title}</h2>
+            <h2 className="text-xl font-sans font-bold text-gray-800">{dialog.title}</h2>
           </div>
           <button onClick={handleCancel} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-50 transition-colors">
             <X size={20} />

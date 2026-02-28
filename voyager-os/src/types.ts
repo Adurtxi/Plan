@@ -1,7 +1,22 @@
 export type Priority = 'optional' | 'necessary';
-export type Category = 'sight' | 'food' | 'hotel' | 'shop' | 'flight' | 'transport' | 'free' | 'logistics';
+
+// ── Activity (ocio/turismo) ──
+export type ActivityCategory = 'sight' | 'food' | 'walk' | 'beach' | 'pool' | 'photos' | 'shop' | 'nightlife';
+// ── Transport ──
+export type TransportCategory = 'flight-departure' | 'flight-arrival' | 'bus-departure' | 'bus-arrival'
+  | 'train-departure' | 'train-arrival' | 'taxi' | 'car-rental' | 'ferry' | 'transfer' | 'airport-wait';
+// ── Accommodation ──
+export type AccommodationCategory = 'hotel-checkin' | 'hotel-checkout';
+// ── Special ──
+export type SpecialCategory = 'free';
+
+export type Category = ActivityCategory | TransportCategory | AccommodationCategory | SpecialCategory;
+export type CategoryGroup = 'activity' | 'transport' | 'accommodation' | 'free';
+
+// Legacy types kept for migration compatibility
 export type LogisticsType = 'hotel-checkin' | 'hotel-checkout' | 'flight-departure' | 'flight-arrival'
   | 'bus-departure' | 'bus-arrival' | 'airport-wait' | 'transfer';
+
 export type ReservationStatus = 'idea' | 'pending' | 'booked';
 
 export interface ImageFile {
@@ -15,60 +30,87 @@ export interface PriceInfo {
 }
 
 export interface TripVariant {
-  id: string; // e.g. "default", "plan-B"
-  name: string; // e.g. "Plan Principal"
-  startDate: string | null; // e.g. "2024-05-01"
-  endDate: string | null; // e.g. "2024-05-07"
+  id: string;
+  name: string;
+  startDate: string | null;
+  endDate: string | null;
 }
 
 export interface TransportSegment {
-  id: string; // e.g., 'loc1-to-loc2'
+  id: string;
   fromLocationId: number;
   toLocationId: number;
   mode: 'walk' | 'car' | 'transit' | 'flight' | 'bike' | 'manual';
-  durationOverride?: number; // In minutes, overrides OSRM if set
-  durationCalculated?: number; // In minutes, from API
-  distance?: number; // In meters, from API
-  polyline?: [number, number][]; // Array of [lat, lng] for drawing the route
+  durationOverride?: number;
+  durationCalculated?: number;
+  distance?: number;
+  polyline?: [number, number][];
   customCost?: PriceInfo;
   notes?: string;
 }
 
 export interface LocationItem {
   id: number;
-  title?: string; // Optional user-defined title
+  title?: string;
   link: string;
   coords: { lat: number; lng: number } | null;
   priority: Priority;
   cat: Category;
-  cost: string; // Legacy string cost, keeping for backwards compatibility initially
-  newPrice?: PriceInfo; // New precise numeric pricing
+  cost: string;
+  newPrice?: PriceInfo;
 
   // Date and Time
-  day: string; // Legacy 'day-1', 'unassigned' etc
-  globalVariantId?: string; // e.g. 'plan-B', 'default'
-  variantId?: string; // Day-specific variant, e.g. 'default', 'soleado'
-  datetime?: string; // ISO string for exact time or check-in
-  isPinnedTime?: boolean; // If true, the system will not auto-recalculate this item's start time
-  derivedDatetime?: string; // Calculated field for UI display (not saved to DB)
-  checkOutDatetime?: string; // For hotels/flights
-  durationMinutes?: number; // Explicit duration in minutes
-  order?: number; // For manual drag and drop sorting within a day
+  day: string;
+  globalVariantId?: string;
+  variantId?: string;
+  datetime?: string;
+  isPinnedTime?: boolean;
+  derivedDatetime?: string;
+  checkOutDatetime?: string;
+  durationMinutes?: number;
+  order?: number;
 
   // Grouping
-  groupId?: string; // For micro-boxing adjacent locations
+  groupId?: string;
 
   // Reservation
   reservationStatus?: ReservationStatus;
   bookingRef?: string;
-  logisticsConfirmation?: string; // e.g. "ABC-123"
-  logisticsDetail?: string; // e.g. "Terminal 4", "Asiento 12A", "Andén 2"
+
+  // Legacy logistics fields (kept for migration)
+  logisticsConfirmation?: string;
+  logisticsDetail?: string;
+  logisticsType?: LogisticsType;
+
+  // Transport-specific
+  company?: string;
+  flightNumber?: string;
+  terminal?: string;
+  gate?: string;
+  platform?: string;
+  seat?: string;
+  station?: string;
+  pickupPoint?: string;
+  dropoffPoint?: string;
+  transportApp?: string;
+
+  // Accommodation-specific
+  hotelName?: string;
+  roomNumber?: string;
+  address?: string;
+  lateCheckout?: boolean;
+
+  // Food-specific
+  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'tapas';
+  numPeople?: number;
+
+  // Photography-specific
+  bestTimeHint?: string;
 
   slot: string;
-  logisticsType?: LogisticsType;
   notes: string;
   images: ImageFile[];
-  attachments: ImageFile[]; // For tickets/PDFs
+  attachments: ImageFile[];
 }
 
 export interface ChecklistItem {

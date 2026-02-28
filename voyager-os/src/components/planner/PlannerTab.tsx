@@ -15,10 +15,10 @@ import { MobileDaySelector } from './MobileDaySelector';
 import { useAppStore } from '../../store';
 import { useResponsive } from '../../hooks/useResponsive';
 import { CardVisual } from '../ui/SortableCard';
-import { DAYS } from '../../constants';
+import { DAYS, getCatConfig, isTransportCat } from '../../constants';
 import type { Category, Priority, ReservationStatus, LocationItem } from '../../types';
 
-export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
+export const PlannerTab = ({ mobileView, setMobileView }: { mobileView?: 'plan' | 'map', setMobileView?: (v: 'plan' | 'map') => void }) => {
   const { locations, optimisticLocations, clearOptimisticLocations, filterDays, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations, executeMoveHere, activeDayVariants, setIsDragging } = useAppStore();
   const { isMobile } = useResponsive();
 
@@ -268,6 +268,35 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
         const durInput = form.elements.namedItem('durationMinutes') as HTMLInputElement;
         if (durInput) durInput.value = loc.durationMinutes ? loc.durationMinutes.toString() : '';
 
+        // Populate specialized fields
+        const setField = (name: string, val?: string) => {
+          const el = form.elements.namedItem(name) as HTMLInputElement;
+          if (el && val) el.value = val;
+        };
+        setField('company', loc.company);
+        setField('flightNumber', loc.flightNumber);
+        setField('terminal', loc.terminal);
+        setField('gate', loc.gate);
+        setField('platform', loc.platform);
+        setField('seat', loc.seat);
+        setField('station', loc.station);
+        setField('pickupPoint', loc.pickupPoint);
+        setField('dropoffPoint', loc.dropoffPoint);
+        setField('transportApp', loc.transportApp);
+        setField('address', loc.address);
+        setField('roomNumber', loc.roomNumber);
+        setField('bestTimeHint', loc.bestTimeHint);
+
+        // Checkbox: lateCheckout
+        const lateCheckoutInput = form.elements.namedItem('lateCheckout') as HTMLInputElement;
+        if (lateCheckoutInput) lateCheckoutInput.checked = !!loc.lateCheckout;
+
+        // Radio: mealType
+        if (loc.mealType) {
+          const mealRadio = form.querySelector(`input[name="mealType"][value="${loc.mealType}"]`) as HTMLInputElement;
+          if (mealRadio) mealRadio.checked = true;
+        }
+
         // Show coords if available
         if (loc.coords) {
           const mapCoordsInput = form.elements.namedItem('mapCoords') as HTMLInputElement;
@@ -329,7 +358,8 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
         }
       }
     }
-    if (!coords && !formId && formCat !== 'logistics') { alert("Se requieren coordenadas. Usa un enlace de Maps o clica en el mapa."); return; }
+    const catCfg = getCatConfig(formCat);
+    if (!coords && !formId && catCfg?.needsCoords) { alert("Se requieren coordenadas. Usa un enlace de Maps o clica en el mapa."); return; }
 
     let finalCoords = coords;
     let finalDay = preselectedDay;
@@ -348,6 +378,25 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
     const priceCurrency = (formData.get('priceCurrency') as string) || 'EUR';
 
     const isPinnedTime = formData.get('isPinnedTime') === 'on';
+
+    // Collect specialized fields from form
+    const specializedFields = {
+      company: formData.get('company') as string || undefined,
+      flightNumber: formData.get('flightNumber') as string || undefined,
+      terminal: formData.get('terminal') as string || undefined,
+      gate: formData.get('gate') as string || undefined,
+      platform: formData.get('platform') as string || undefined,
+      seat: formData.get('seat') as string || undefined,
+      station: formData.get('station') as string || undefined,
+      pickupPoint: formData.get('pickupPoint') as string || undefined,
+      dropoffPoint: formData.get('dropoffPoint') as string || undefined,
+      transportApp: formData.get('transportApp') as string || undefined,
+      address: formData.get('address') as string || undefined,
+      roomNumber: formData.get('roomNumber') as string || undefined,
+      lateCheckout: formData.get('lateCheckout') === 'on',
+      mealType: formData.get('mealType') as any || undefined,
+      bestTimeHint: formData.get('bestTimeHint') as string || undefined,
+    };
 
     if (formId) {
       const existing = locations.find(l => l.id === formId);
@@ -374,7 +423,8 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
           bookingRef: formData.get('bookingRef') as string || undefined,
           logisticsConfirmation: formData.get('logisticsConfirmation') as string || undefined,
           logisticsDetail: formData.get('logisticsDetail') as string || undefined,
-          attachments: tempAttachments.length > 0 ? tempAttachments : existing.attachments || []
+          attachments: tempAttachments.length > 0 ? tempAttachments : existing.attachments || [],
+          ...specializedFields,
         });
       }
     } else {
@@ -400,7 +450,8 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
         bookingRef: formData.get('bookingRef') as string || undefined,
         logisticsConfirmation: formData.get('logisticsConfirmation') as string || undefined,
         logisticsDetail: formData.get('logisticsDetail') as string || undefined,
-        attachments: tempAttachments
+        attachments: tempAttachments,
+        ...specializedFields,
       });
     }
 
@@ -473,7 +524,7 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
     };
 
     // Determine which days to show routes for
-    const allAssigned = displayLocations.filter(l => l.day !== 'unassigned' && l.coords && l.cat !== 'free' && l.cat !== 'logistics');
+    const allAssigned = displayLocations.filter(l => l.day !== 'unassigned' && l.coords && l.cat !== 'free' && !isTransportCat(l.cat));
     const visibleDays = filterDays.length > 0
       ? [...new Set(allAssigned.filter(l => filterDays.includes(l.day)).map(l => l.day))]
       : [...new Set(allAssigned.map(l => l.day))];
@@ -550,7 +601,7 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
     if (mobileView === 'map') {
       return <MobileMapView routePolylines={routePolylines} />;
     }
-    return <MobileTimelineView />;
+    return <MobileTimelineView setMobileView={setMobileView} />;
   }
 
   const movingItemData = locations.find(l => l.id === movingItemId);
