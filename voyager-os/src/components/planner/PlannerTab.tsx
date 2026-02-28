@@ -10,14 +10,15 @@ import { TripSettingsModal } from './TripSettingsModal';
 import { TimeConflictModal, type TimeConflictAction } from '../modals/TimeConflictModal';
 import { IdeaInbox } from './IdeaInbox';
 import { MobileTimelineView } from './MobileTimelineView';
+import { MobileMapView } from './MobileMapView';
 import { useAppStore } from '../../store';
 import { useResponsive } from '../../hooks/useResponsive';
 import { CardVisual } from '../ui/SortableCard';
 import { DAYS } from '../../constants';
 import type { Category, Priority, ReservationStatus, LocationItem } from '../../types';
 
-export const PlannerTab = () => {
-  const { locations, optimisticLocations, clearOptimisticLocations, filterDays, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations, executeMoveHere, activeDayVariants } = useAppStore();
+export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
+  const { locations, optimisticLocations, clearOptimisticLocations, filterDays, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations, executeMoveHere, activeDayVariants, setIsDragging } = useAppStore();
   const { isMobile } = useResponsive();
 
   const displayLocations = optimisticLocations || locations;
@@ -55,6 +56,14 @@ export const PlannerTab = () => {
   const mergeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dwellOverIdRef = useRef<string | null>(null);
 
+  // Auto-open settings if main plan has no start date
+  React.useEffect(() => {
+    const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
+    if (activeVar && !activeVar.startDate) {
+      setIsSettingsModalOpen(true);
+    }
+  }, [tripVariants, activeGlobalVariantId]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
@@ -69,6 +78,7 @@ export const PlannerTab = () => {
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id.toString());
+    setIsDragging(true);
     // Clear any merge state
     setMergeTargetId(null);
     dwellOverIdRef.current = null;
@@ -121,9 +131,15 @@ export const PlannerTab = () => {
       // Clear merge state on any drop
       setMergeTargetId(null);
       dwellOverIdRef.current = null;
-      if (mergeTimerRef.current) { clearTimeout(mergeTimerRef.current); mergeTimerRef.current = null; }
+      if (mergeTimerRef.current) {
+        clearTimeout(mergeTimerRef.current);
+        mergeTimerRef.current = null;
+      }
+      setIsDragging(false);
       return;
     }
+
+    setIsDragging(false);
 
     const activeIdStr = active.id.toString();
     const overIdStr = over.id.toString();
@@ -160,21 +176,21 @@ export const PlannerTab = () => {
     if (overIdStr.startsWith('col-')) {
       const parts = overIdStr.replace('col-', '').split('::');
       targetDay = parts[0];
-      targetVariant = parts[1] || 'default';
+      targetVariant = parts[1] || activeDayVariants[targetDay] || 'default';
       passOverId = null;
     } else if (overIdStr.startsWith('group-')) {
       const groupId = overIdStr.replace('group-', '');
       const groupItem = locations.find(l => l.groupId === groupId);
       if (groupItem) {
         targetDay = groupItem.day;
-        targetVariant = groupItem.variantId || 'default';
+        targetVariant = groupItem.variantId || activeDayVariants[targetDay] || 'default';
         passOverId = overIdStr;
       }
     } else {
       const overLoc = locations.find(l => l.id.toString() === overIdStr);
       if (overLoc) {
         targetDay = overLoc.day;
-        targetVariant = overLoc.variantId || 'default';
+        targetVariant = overLoc.variantId || activeDayVariants[targetDay] || 'default';
         passOverId = overLoc.id;
       }
     }
@@ -348,6 +364,7 @@ export const PlannerTab = () => {
           images: tempImages.length > 0 ? tempImages : existing.images,
           day: finalDay,
           variantId: finalVariant,
+          globalVariantId: existing.globalVariantId || activeGlobalVariantId || 'default',
           reservationStatus: (formData.get('reservationStatus') as ReservationStatus) || 'idea',
           bookingRef: formData.get('bookingRef') as string || undefined
         });
@@ -370,6 +387,7 @@ export const PlannerTab = () => {
         images: tempImages,
         day: finalDay,
         variantId: finalVariant,
+        globalVariantId: activeGlobalVariantId || 'default',
         reservationStatus: (formData.get('reservationStatus') as ReservationStatus) || 'idea',
         bookingRef: formData.get('bookingRef') as string || undefined
       });
@@ -506,6 +524,9 @@ export const PlannerTab = () => {
   }, [tripVariants, activeGlobalVariantId]);
 
   if (isMobile) {
+    if (mobileView === 'map') {
+      return <MobileMapView routePolylines={routePolylines} />;
+    }
     return <MobileTimelineView />;
   }
 
@@ -566,7 +587,8 @@ export const PlannerTab = () => {
                     <button
                       key={day}
                       onClick={() => {
-                        if (moveToDayModal.itemId) moveToDay(moveToDayModal.itemId, day, 'default');
+                        const targetVariant = activeDayVariants[day] || 'default';
+                        if (moveToDayModal.itemId) moveToDay(moveToDayModal.itemId, day, targetVariant);
                         setMoveToDayModal({ isOpen: false, itemId: null });
                       }}
                       className="text-left px-4 py-3 bg-gray-50 hover:bg-nature-mint/30 rounded-xl text-sm font-bold text-gray-700 transition-colors"
@@ -589,7 +611,7 @@ export const PlannerTab = () => {
                   onMapClick={handleMapClick}
                   isAddMode={isAddMode}
                   setIsAddMode={setIsAddMode}
-                  showDaySelector={viewMode === 'map-only'}
+                  showDaySelector={false}
                 />
                 {/* View mode selector — over the map */}
                 <div className="absolute bottom-4 right-4 z-[600]">

@@ -13,32 +13,54 @@ interface IdeaInboxProps {
 }
 
 export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInboxProps) => {
-  const { locations, activeGlobalVariantId, tripVariants } = useAppStore();
+  const { locations, activeGlobalVariantId, tripVariants, isDragging, moveToDay, activeDayVariants } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+
+  const toggleSelection = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleBulkMove = (targetDay: string) => {
+    selectedIds.forEach(id => {
+      const targetVariant = activeDayVariants[targetDay] || 'default';
+      moveToDay(id, targetDay, targetVariant);
+    });
+    setSelectedIds([]);
+    setShowMoveModal(false);
+  };
 
   const { isOver, setNodeRef } = useDroppable({ id: 'col-unassigned' });
 
   const unassigned = locations.filter(l => l.day === 'unassigned' && l.cat !== 'free' && l.cat !== 'logistics');
 
-  const assignedByDay = useMemo(() => {
+  const { assignedByDay = [], dayOptions = [] } = useMemo(() => {
     const assigned = locations.filter(
-      l => l.day !== 'unassigned' && (l.variantId || 'default') === activeGlobalVariantId
+      l => l.day !== 'unassigned' && (l.globalVariantId || 'default') === (activeGlobalVariantId || 'default') && l.cat !== 'free'
     );
 
     const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
     const dayLabels: Record<string, string> = {};
+    const dayOptions: { value: string; label: string }[] = [];
     if (activeVar?.startDate && activeVar?.endDate) {
       const start = new Date(activeVar.startDate);
       const end = new Date(activeVar.endDate);
       let i = 1;
       const d = new Date(start);
       while (d <= end) {
-        dayLabels[`day-${i}`] = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+        const id = `day-${i}`;
+        dayLabels[id] = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+        dayOptions.push({ value: id, label: dayLabels[id] });
         d.setDate(d.getDate() + 1);
         i++;
       }
     } else {
-      DAYS.forEach(d => { dayLabels[d] = d.replace('-', ' '); });
+      DAYS.forEach(d => {
+        dayLabels[d] = d.replace('-', ' ');
+        dayOptions.push({ value: d, label: dayLabels[d] });
+      });
     }
 
     // Group by day
@@ -50,7 +72,7 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
         .sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
       grouped.push({ dayId, label: dayLabels[dayId] || dayId.replace('-', ' '), items });
     }
-    return grouped;
+    return { assignedByDay: grouped, dayOptions };
   }, [locations, activeGlobalVariantId, tripVariants]);
 
   const totalCount = unassigned.length;
@@ -72,7 +94,7 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
         </div>
       </button>
 
-      <div className={`w-full md:w-[360px] shrink-0 bg-white border-r border-gray-100 flex flex-col z-[510] shadow-[10px_0_30px_rgba(0,0,0,0.1)] h-full absolute top-0 bottom-0 left-0 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
+      <div className={`w-full md:w-[360px] shrink-0 bg-white border-r border-gray-100 flex flex-col z-[510] shadow-[10px_0_30px_rgba(0,0,0,0.1)] h-full absolute top-0 bottom-0 left-0 transform ${isOpen && !isDragging ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
         <button type="button" onClick={() => setIsOpen(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-nature-primary z-50 bg-white/50 rounded-full backdrop-blur transition-colors">
           <X size={24} />
         </button>
@@ -108,7 +130,14 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
               <SortableContext items={unassigned.map(l => l.id.toString())}>
                 <div className="space-y-3">
                   {unassigned.map(item => (
-                    <SortableCard key={item.id} item={item} onClick={() => handleEdit(item.id)} onCardClick={() => handleCardClick(item.id)} />
+                    <SortableCard
+                      key={item.id}
+                      item={item}
+                      onClick={() => handleEdit(item.id)}
+                      onCardClick={() => handleCardClick(item.id)}
+                      isSelected={selectedIds.includes(item.id)}
+                      onToggleSelect={(e: React.MouseEvent) => toggleSelection(e, item.id)}
+                    />
                   ))}
                 </div>
               </SortableContext>
@@ -140,6 +169,33 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
             </div>
           )}
         </div>
+
+        {/* Bulk Action Bar */}
+        {selectedIds.length > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] z-50 flex flex-col gap-3">
+            <div className="flex justify-between items-center px-2">
+              <span className="text-sm font-bold text-nature-primary">{selectedIds.length} seleccionadas</span>
+              <button onClick={() => setSelectedIds([])} className="text-[10px] uppercase font-bold text-gray-400 hover:text-gray-600">Cancelar</button>
+            </div>
+            {showMoveModal ? (
+              <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto custom-scroll">
+                {[...dayOptions, { value: 'unassigned', label: '📥 Buzón de Ideas' }].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleBulkMove(opt.value)}
+                    className={`text-left px-4 py-3 rounded-xl text-sm font-bold transition-colors ${opt.value === 'unassigned' ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' : 'bg-gray-50 text-gray-700 hover:bg-nature-mint/30'}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <button onClick={() => setShowMoveModal(true)} className="w-full bg-nature-primary text-white py-3 rounded-xl font-bold text-sm flex justify-center gap-2 items-center hover:bg-nature-primary/90">
+                <Calendar size={18} /> Mover al día...
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

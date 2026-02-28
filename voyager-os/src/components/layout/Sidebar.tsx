@@ -29,7 +29,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="w-20 md:w-24 bg-white border-r border-nature-border flex flex-col items-center py-8 gap-8 z-30 shadow-soft shrink-0">
+    <aside className="w-20 md:w-24 bg-white border-r border-nature-border hidden lg:flex flex-col items-center py-8 gap-8 z-30 shadow-soft shrink-0">
       <div className="w-10 h-10 md:w-12 md:h-12 bg-nature-primary text-white rounded-full flex items-center justify-center font-serif font-bold text-xl md:text-2xl shadow-lg shadow-nature-primary/20">V</div>
       <button onClick={() => setActiveTab('planner')} className={`p-4 rounded-2xl transition-all duration-300 ${activeTab === 'planner' ? 'bg-nature-mint/50 text-nature-primary shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-nature-bg'}`} title="Itinerario"><Map size={24} strokeWidth={1.5} /></button>
       <button onClick={() => setActiveTab('analytics')} className={`p-4 rounded-2xl transition-all duration-300 ${activeTab === 'analytics' ? 'bg-nature-mint/50 text-nature-primary shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-nature-bg'}`} title="Análisis"><LineChart size={24} strokeWidth={1.5} /></button>

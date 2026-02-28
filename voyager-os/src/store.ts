@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { ChecklistItem, LocationItem, ImageFile, TransportSegment, TripVariant } from './types';
-import { DAYS } from './constants';
 
 interface VoyagerDB extends DBSchema {
   locations: { key: number; value: LocationItem };
@@ -101,6 +100,9 @@ interface AppState {
   commitOptimisticLocations: () => Promise<void>;
   clearOptimisticLocations: () => void;
 
+  isDragging: boolean;
+  setIsDragging: (isDragging: boolean) => void;
+
   movingItemId: number | null;
   setMovingItemId: (id: number | null) => void;
 
@@ -131,6 +133,7 @@ interface AppState {
 
   setActiveTab: (tab: 'planner' | 'checklist' | 'analytics') => void;
   toggleFilterDay: (day: string) => void;
+  setFilterDays: (days: string[]) => void;
   setSelectedLocationId: (id: number | null) => void;
   openLightbox: (images: ImageFile[], startIndex?: number) => void;
   setLightboxIndex: (index: number) => void;
@@ -153,6 +156,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   lightboxIndex: 0,
   dialog: null,
   toasts: [],
+  isDragging: false,
+  setIsDragging: (isDragging) => set({ isDragging }),
   movingItemId: null,
 
   setMovingItemId: (id) => set({ movingItemId: id }),
@@ -247,20 +252,6 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   loadData: async () => {
     const db = await initDB();
-    const locations = await db.getAll('locations');
-
-    const validDays = [...DAYS, 'unassigned'];
-    for (const loc of locations) {
-      if (!validDays.includes(loc.day)) {
-        loc.day = 'unassigned';
-        await db.put('locations', loc);
-      }
-      if (!loc.variantId) loc.variantId = 'default';
-      if (!loc.reservationStatus) loc.reservationStatus = 'idea';
-    }
-
-    const checklist = await db.getAll('checklist');
-    const transports = await db.getAll('transports');
 
     let tripVariants = await db.getAll('tripVariants');
     if (tripVariants.length === 0) {
@@ -268,6 +259,29 @@ export const useAppStore = create<AppState>((set, get) => ({
       await db.put('tripVariants', defaultVariant);
       tripVariants = [defaultVariant];
     }
+    const globalVariantIds = tripVariants.map(v => v.id);
+
+    const locations = await db.getAll('locations');
+
+    for (const loc of locations) {
+      if (!loc.variantId) loc.variantId = 'default';
+
+      // Migration: if globalVariantId is missing, check if the old variantId is actually a global plan ID
+      if (!loc.globalVariantId) {
+        if (globalVariantIds.includes(loc.variantId)) {
+          loc.globalVariantId = loc.variantId;
+          loc.variantId = 'default';
+        } else {
+          loc.globalVariantId = 'default';
+        }
+        await db.put('locations', loc);
+      }
+
+      if (!loc.reservationStatus) loc.reservationStatus = 'idea';
+    }
+
+    const checklist = await db.getAll('checklist');
+    const transports = await db.getAll('transports');
 
     set({ locations, checklist, transports, tripVariants });
   },
@@ -314,6 +328,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       get().saveLocationHistory();
       item.day = day;
       if (variantId) item.variantId = variantId;
+      if (!item.globalVariantId) item.globalVariantId = get().activeGlobalVariantId || 'default';
       await db.put('locations', item);
       await get().loadData();
     }
@@ -326,6 +341,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (item) {
       item.day = targetDay;
       item.variantId = targetVariant;
+      item.globalVariantId = get().activeGlobalVariantId || 'default';
       item.groupId = undefined;
       item.order = Date.now();
       await db.put('locations', item);
@@ -344,10 +360,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     item.day = targetDay;
     item.variantId = targetVariant;
+    item.globalVariantId = get().activeGlobalVariantId || 'default';
     item.groupId = targetGroupId;
 
     const targetGroup = locations
-      .filter(l => l.day === targetDay && (l.variantId || 'default') === targetVariant && l.id !== itemId)
+      .filter(l => l.day === targetDay && (l.variantId || 'default') === targetVariant && (l.globalVariantId || 'default') === (get().activeGlobalVariantId || 'default') && l.id !== itemId)
       .sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
 
     let insertIndex = targetGroup.length;
@@ -379,6 +396,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     item2.groupId = newGroupId;
     item1.day = item2.day;
     item1.variantId = item2.variantId;
+    item1.globalVariantId = item2.globalVariantId || get().activeGlobalVariantId || 'default';
 
     await db.put('locations', item1);
     await db.put('locations', item2);
@@ -400,9 +418,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     if (activeItems.length === 0) return;
 
+    const currentActiveGlobal = get().activeGlobalVariantId || 'default';
     const targetGroup = locations.filter(l =>
       l.day === day &&
       (l.variantId || 'default') === variantId &&
+      (l.globalVariantId || 'default') === currentActiveGlobal &&
       !activeItems.find(a => a.id === l.id)
     ).sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
 
@@ -422,6 +442,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     activeItems.forEach(item => {
       item.day = day;
       item.variantId = variantId;
+      item.globalVariantId = currentActiveGlobal;
       if (!isGroupDrag) {
         item.groupId = inheritedGroupId;
       }
@@ -563,6 +584,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       ? state.filterDays.filter(d => d !== day)
       : [...state.filterDays, day]
   })),
+  setFilterDays: (days) => set({ filterDays: days }),
   setSelectedLocationId: (id) => set({ selectedLocationId: id }),
   openLightbox: (images, startIndex = 0) => set({ lightboxImages: images, lightboxIndex: startIndex }),
   setLightboxIndex: (index) => set({ lightboxIndex: index }),

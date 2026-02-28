@@ -76,7 +76,7 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-nature-primary/20 backdrop-blur-sm transition-opacity" onClick={() => setSelectedLocationId(null)}></div>
-      <div className="bg-white rounded-bento shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[85vh] w-full max-w-4xl relative z-10 animate-[fadeIn_0.3s_ease-out]">
+      <div className="bg-white rounded-none md:rounded-bento shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] w-full md:max-w-4xl relative z-10 animate-[fadeIn_0.3s_ease-out]">
         {/* LEFT PANE - GALLERY */}
         {!isFreeTime && (
           <div className="md:w-5/12 bg-gray-100 relative h-64 md:h-auto group overflow-hidden">

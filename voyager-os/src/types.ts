@@ -46,7 +46,8 @@ export interface LocationItem {
 
   // Date and Time
   day: string; // Legacy 'day-1', 'unassigned' etc
-  variantId?: string; // e.g. 'default', 'option-A'
+  globalVariantId?: string; // e.g. 'plan-B', 'default'
+  variantId?: string; // Day-specific variant, e.g. 'default', 'soleado'
   datetime?: string; // ISO string for exact time or check-in
   isPinnedTime?: boolean; // If true, the system will not auto-recalculate this item's start time
   derivedDatetime?: string; // Calculated field for UI display (not saved to DB)

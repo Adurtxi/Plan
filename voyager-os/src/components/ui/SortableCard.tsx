@@ -17,7 +17,9 @@ export const CardVisual = memo(({
   dragAttributes,
   onRequestMove,
   isMovingMode,
-  isMergeTarget
+  isMergeTarget,
+  isSelected,
+  onToggleSelect
 }: {
   item: LocationItem,
   onClick?: () => void,
@@ -28,7 +30,9 @@ export const CardVisual = memo(({
   dragAttributes?: any,
   onRequestMove?: () => void,
   isMovingMode?: boolean,
-  isMergeTarget?: boolean
+  isMergeTarget?: boolean,
+  isSelected?: boolean,
+  onToggleSelect?: (e: React.MouseEvent) => void
 }) => {
   const { showDialog, updateLocation, extractFromGroup } = useAppStore();
   const [showMenu, setShowMenu] = useState(false);
@@ -53,7 +57,7 @@ export const CardVisual = memo(({
     : (item.cost ? `${item.cost}€` : '-');
 
   const content = (
-    <div onClick={onCardClick} className={`bento-card p-4 cursor-pointer relative group bg-white border ${item.priority === 'necessary' ? 'border-nature-primary/30 shadow-[0_4px_20px_-4px_rgba(45,90,39,0.15)] ring-1 ring-nature-primary/10' : 'border-gray-100'} ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''} ${isMergeTarget ? 'ring-2 ring-nature-primary animate-pulse scale-[1.03] shadow-xl border-nature-primary/50 bg-nature-mint/10' : isOver ? 'ring-2 ring-nature-accent bg-nature-mint/10 scale-[1.02] shadow-lg' : 'hover:border-gray-200'} ${isMovingMode ? 'opacity-40 pointer-events-none grayscale-[50%]' : ''} transition-all`}>
+    <div onClick={onCardClick} className={`bento-card p-4 cursor-pointer relative group bg-white border ${item.priority === 'necessary' ? 'border-nature-primary/30 shadow-[0_4px_20px_-4px_rgba(45,90,39,0.15)] ring-1 ring-nature-primary/10' : 'border-gray-100'} ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''} ${isMergeTarget ? 'ring-2 ring-nature-primary animate-pulse scale-[1.03] shadow-xl border-nature-primary/50 bg-nature-mint/10' : isOver ? 'ring-2 ring-nature-accent bg-nature-mint/10 scale-[1.02] shadow-lg' : isSelected ? 'ring-2 ring-nature-primary bg-nature-mint/5 border-nature-primary/50' : 'hover:border-gray-200'} ${isMovingMode ? 'opacity-40 pointer-events-none grayscale-[50%]' : ''} transition-all`}>
       {isMergeTarget && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-nature-primary text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg z-50 whitespace-nowrap animate-bounce">
           📦 Soltar para agrupar
@@ -69,6 +73,11 @@ export const CardVisual = memo(({
               onClick={(e) => e.stopPropagation()}
             >
               <GripVertical size={16} />
+            </div>
+          )}
+          {onToggleSelect && (
+            <div onClick={onToggleSelect} className="mr-1 -ml-1 z-10 p-2 cursor-pointer text-nature-primary">
+              {isSelected ? <CheckCircle2 size={20} className="fill-nature-primary/20 text-nature-primary" /> : <div className="w-5 h-5 rounded-full border-2 border-gray-300" />}
             </div>
           )}
           <span className="text-xl text-gray-500 bg-gray-50 p-2 rounded-xl border border-gray-100">{CAT_ICONS[item.cat]}</span>
@@ -176,7 +185,25 @@ export const CardVisual = memo(({
 });
 CardVisual.displayName = 'CardVisual';
 
-export const SortableCard = memo(({ item, onClick, onCardClick, onRequestMove, isMovingMode, isMergeTarget }: { item: LocationItem, onClick: () => void, onCardClick?: () => void, onRequestMove?: () => void, isMovingMode?: boolean, isMergeTarget?: boolean }) => {
+export const SortableCard = memo(({
+  item,
+  onClick,
+  onCardClick,
+  onRequestMove,
+  isMovingMode,
+  isMergeTarget,
+  isSelected,
+  onToggleSelect
+}: {
+  item: LocationItem,
+  onClick: () => void,
+  onCardClick?: () => void,
+  onRequestMove?: () => void,
+  isMovingMode?: boolean,
+  isMergeTarget?: boolean,
+  isSelected?: boolean,
+  onToggleSelect?: (e: React.MouseEvent) => void
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({ id: item.id.toString(), disabled: isMovingMode });
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -277,14 +304,15 @@ export const SortableCard = memo(({ item, onClick, onCardClick, onRequestMove, i
             item={item}
             onClick={onClick}
             onCardClick={onCardClick}
-            isOver={isOver && !isDragging}
             dragListeners={listeners}
             dragAttributes={attributes}
             onRequestMove={onRequestMove}
             isMovingMode={isMovingMode}
             isMergeTarget={isMergeTarget}
-          />
-        </div>
+            isOver={isOver}
+            isSelected={isSelected}
+            onToggleSelect={onToggleSelect}
+          />  </div>
       )}
     </div>
   );

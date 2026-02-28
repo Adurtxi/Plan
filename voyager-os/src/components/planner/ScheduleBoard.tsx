@@ -145,7 +145,7 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
 const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere }: BoardColumnProps) => {
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
   const optimisticLocations = useAppStore(s => s.optimisticLocations);
-  const { showDialog, addToast, transports, tripVariants, activeGlobalVariantId, toggleFilterDay, filterDays, activeDayVariants, setActiveDayVariant } = useAppStore();
+  const { showDialog, addToast, transports, toggleFilterDay, filterDays, activeDayVariants, setActiveDayVariant, tripVariants, activeGlobalVariantId } = useAppStore();
   const activeVariant = activeDayVariants[dayId] || 'default';
   const { isOver, setNodeRef } = useDroppable({ id: `col-${dayId}::${activeVariant}` });
 
@@ -336,13 +336,20 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
     <div className={`flex-none w-[340px] flex flex-col h-full bg-white border border-gray-100 rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed ? 'opacity-40' : ''}`}>
       <div className="p-5 pb-3 border-b border-gray-50 flex flex-col">
         <div className="flex justify-between items-end mb-3">
-          <button
-            onClick={() => toggleFilterDay(dayId)}
-            className={`font-serif text-2xl font-medium transition-colors ${filterDays.includes(dayId) ? 'text-nature-primary' : 'text-gray-400 hover:text-nature-primary'}`}
-            title="Clic para filtrar por este día"
-          >
-            {dayLabel}
-          </button>
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={filterDays.includes(dayId)}
+              onChange={() => toggleFilterDay(dayId)}
+              className="w-4 h-4 rounded text-nature-primary focus:ring-nature-primary border-gray-300 cursor-pointer"
+              title="Mostrar/ocultar ruta en el mapa"
+            />
+            <span
+              className={`font-serif text-2xl font-medium transition-colors ${filterDays.includes(dayId) ? 'text-nature-primary' : 'text-gray-400 group-hover:text-nature-primary'}`}
+            >
+              {dayLabel}
+            </span>
+          </label>
           <span className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Itinerario</span>
         </div>
 
@@ -457,7 +464,7 @@ interface ScheduleBoardProps {
 }
 
 export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove, mergeTargetId, movingItemId, executeMoveHere }: ScheduleBoardProps) => {
-  const { locations, filterDays, toggleFilterDay, tripVariants, activeGlobalVariantId } = useAppStore();
+  const { locations, filterDays, tripVariants, activeGlobalVariantId } = useAppStore();
 
   const displayDays = useMemo(() => {
     let dynamicDays: { id: string, label: string }[] = [];
@@ -500,7 +507,7 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
       ) : (
         <div className="flex flex-col h-full">
           {/* Day filter checkbox bar */}
-          <div className="flex items-center gap-2 px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-sm overflow-x-auto custom-scroll shrink-0">
+          {/* <div className="flex items-center gap-2 px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-sm overflow-x-auto custom-scroll shrink-0">
             <span className="text-[9px] font-bold tracking-widest text-gray-400 uppercase shrink-0">Días</span>
             {(() => {
               const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
@@ -531,7 +538,7 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
                 );
               });
             })()}
-          </div>
+          </div> */}
           <div className="flex gap-6 h-full min-w-max pb-4 overflow-x-auto p-6 pb-12 bg-nature-bg custom-scroll">
             {displayDays.map(dayObj => (
               <BoardColumn
@@ -539,7 +546,7 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
                 dayId={dayObj.id}
                 dayLabel={dayObj.label}
                 isDimmed={filterDays.length > 0 && !filterDays.includes(dayObj.id)}
-                locations={locations.filter(l => l.day === dayObj.id)}
+                locations={locations.filter(l => l.day === dayObj.id && (l.globalVariantId || 'default') === (activeGlobalVariantId || 'default'))}
                 handleEdit={handleEdit}
                 handleCardClick={handleCardClick}
                 handleAddNewToDay={handleAddNewToDay}
