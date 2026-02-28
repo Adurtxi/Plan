@@ -270,26 +270,47 @@ export const SortableCard = memo(({
               </div>
             )}
             <span className="text-lg">{item.logisticsType ? (LOGISTICS_ICONS[item.logisticsType] || '📋') : '📋'}</span>
-            <div className="flex flex-col">
-              <span className="text-xs font-bold">{item.title || 'Logística'}</span>
-              {(() => {
-                const displayTime = item.derivedDatetime || item.datetime;
-                if (displayTime) {
-                  return (
-                    <span className="text-[10px] text-blue-500 font-bold flex items-center gap-1 mt-0.5">
-                      <Clock size={10} />
-                      {new Date(displayTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      {item.isPinnedTime && <Lock size={8} className="opacity-50" />}
-                      {item.durationMinutes && ` · ${formatDuration(item.durationMinutes)}`}
-                    </span>
-                  );
-                }
-                return item.durationMinutes ? (
-                  <span className="text-[10px] text-blue-500 font-bold flex items-center gap-1 mt-0.5">
-                    <Clock size={10} /> {formatDuration(item.durationMinutes)}
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black truncate">{item.title || 'Logística'}</span>
+                {item.logisticsConfirmation && (
+                  <span className="text-[9px] font-mono bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 uppercase tracking-tighter">
+                    {item.logisticsConfirmation}
                   </span>
-                ) : null;
-              })()}
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                {(() => {
+                  const displayTime = item.derivedDatetime || item.datetime;
+                  if (displayTime) {
+                    return (
+                      <span className="text-[10px] text-blue-500 font-bold flex items-center gap-1">
+                        <Clock size={10} />
+                        {new Date(displayTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {item.isPinnedTime && <Lock size={8} className="opacity-50" />}
+                      </span>
+                    );
+                  }
+                  return item.durationMinutes ? (
+                    <span className="text-[10px] text-blue-500 font-bold flex items-center gap-1">
+                      <Clock size={10} /> {formatDuration(item.durationMinutes)}
+                    </span>
+                  ) : null;
+                })()}
+
+                {item.logisticsDetail && (
+                  <span className="text-[9px] text-blue-600/60 font-medium italic truncate max-w-[150px]">
+                    · {item.logisticsDetail}
+                  </span>
+                )}
+
+                {item.attachments && item.attachments.length > 0 && (
+                  <span className="text-[9px] bg-nature-mint/40 text-nature-primary px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    🎟️ Billete
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           {!isMovingMode && (

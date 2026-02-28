@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -24,6 +25,8 @@ const MoveSlot = ({ onClick, label }: { onClick: () => void; label?: string }) =
 const LogisticsQuickAdd = ({ dayId, variantId }: { dayId: string; variantId: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { addLocation, addToast } = useAppStore();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
 
   const handleAdd = async (type: typeof LOGISTICS_TYPES[number]) => {
     await addLocation({
@@ -38,6 +41,7 @@ const LogisticsQuickAdd = ({ dayId, variantId }: { dayId: string; variantId: str
       slot: 'Mañana',
       notes: '',
       images: [],
+      attachments: [],
       day: dayId,
       variantId,
       reservationStatus: 'idea' as const,
@@ -47,27 +51,55 @@ const LogisticsQuickAdd = ({ dayId, variantId }: { dayId: string; variantId: str
     setIsOpen(false);
   };
 
+  const toggle = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPos({
+        top: rect.bottom,
+        left: rect.left,
+        width: rect.width
+      });
+    }
+    setIsOpen(!isOpen);
+  };
+
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        ref={buttonRef}
+        onClick={toggle}
         className="w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 py-1.5 rounded-xl border-dashed text-[10px] font-bold transition-colors flex items-center justify-center gap-1 uppercase tracking-widest"
       >
         📋 + Logística
       </button>
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50 grid grid-cols-2 gap-1 animate-fade-in-up">
+      {isOpen && createPortal(
+        <div
+          className="fixed z-[9999] mt-1 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-white/50 p-3 grid grid-cols-2 gap-2 animate-fade-in-up"
+          style={{
+            top: menuPos.top,
+            left: menuPos.left,
+            width: Math.max(menuPos.width * 1.5, 280),
+            minWidth: '280px'
+          }}
+        >
+          <div className="col-span-2 px-2 pb-1 flex items-center justify-between border-b border-gray-100 mb-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-nature-primary/40">Logística del día</span>
+            <span className="text-[10px] text-gray-400">Selecciona un tipo</span>
+          </div>
           {LOGISTICS_TYPES.map(type => (
             <button
               key={type.value}
               onClick={() => handleAdd(type)}
-              className="text-left px-2.5 py-2 rounded-lg hover:bg-gray-50 text-xs font-bold text-gray-600 hover:text-nature-primary transition-colors flex items-center gap-2"
+              className="text-left p-3 rounded-xl hover:bg-nature-mint/30 hover:shadow-sm border border-transparent hover:border-nature-mint/50 transition-all flex flex-col gap-1 group/item"
             >
-              <span className="text-base">{type.icon}</span>
-              <span className="truncate">{type.label}</span>
+              <span className="text-2xl group-hover/item:scale-110 transition-transform">{type.icon}</span>
+              <span className="text-[11px] font-bold text-gray-700 truncate">{type.label}</span>
             </button>
           ))}
-        </div>
+          {/* Click outside to close wrapper */}
+          <div className="fixed inset-0 -z-10 bg-black/5" onClick={() => setIsOpen(false)} />
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -86,6 +118,7 @@ interface BoardColumnProps {
   mergeTargetId?: number | null;
   movingItemId?: number | null;
   executeMoveHere?: (itemId: number, targetDay: string, targetVariant: string, targetGroupId?: string, insertBeforeId?: number | null) => void;
+  viewMode?: 'split-horizontal' | 'split-vertical' | 'map-only' | 'board-only';
 }
 
 const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequestMove, mergeTargetId }: { groupId: string, items: LocationItem[], handleEdit: any, handleCardClick: any, onRequestMove: any, mergeTargetId?: number | null }) => {
@@ -142,7 +175,7 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
   );
 };
 
-const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere }: BoardColumnProps) => {
+const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, viewMode }: BoardColumnProps) => {
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
   const optimisticLocations = useAppStore(s => s.optimisticLocations);
   const { showDialog, addToast, transports, toggleFilterDay, filterDays, activeDayVariants, setActiveDayVariant, tripVariants, activeGlobalVariantId } = useAppStore();
@@ -333,7 +366,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
   }, [filteredLocations]);
 
   return (
-    <div className={`flex-none w-[340px] flex flex-col h-full bg-white border border-gray-100 rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed ? 'opacity-40' : ''}`}>
+    <div className={`flex-none ${viewMode === 'split-vertical' ? 'w-full max-w-[360px] mx-auto' : 'w-[340px]'} flex flex-col h-full bg-white border border-gray-100 rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed ? 'opacity-40' : ''}`}>
       <div className="p-5 pb-3 border-b border-gray-50 flex flex-col">
         <div className="flex justify-between items-end mb-3">
           <label className="flex items-center gap-2 cursor-pointer group">
@@ -489,57 +522,20 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
     }
 
     if (viewMode === 'split-vertical') {
-      return filterDays.length > 0 ? dynamicDays.filter(d => filterDays.includes(d.id)) : [];
+      // Strictly show only one day. If no filter, default to day-1
+      const activeDay = (filterDays && filterDays.length === 1) ? filterDays[0] : 'day-1';
+      return dynamicDays.filter(d => d.id === activeDay);
     }
     return dynamicDays;
   }, [viewMode, filterDays, tripVariants, activeGlobalVariantId]);
 
   return (
-    <div className="h-full w-full overflow-x-auto p-6 pb-12 bg-nature-bg custom-scroll transition-colors relative">
-      {viewMode === 'split-vertical' && filterDays.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-full text-center p-8 opacity-60">
-          <div className="w-16 h-16 rounded-full bg-nature-primary/10 flex items-center justify-center mb-4 text-nature-primary">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-          </div>
-          <p className="font-serif text-xl text-nature-primary font-bold mb-2">Selecciona un día</p>
-          <p className="text-sm text-gray-500 max-w-xs">Elige un día en el filtro del mapa para ver su itinerario aquí.</p>
-        </div>
+    <div className={`h-full w-full ${viewMode === 'split-vertical' ? 'overflow-hidden' : 'overflow-x-auto'} pb-12 bg-nature-bg custom-scroll transition-colors relative`}>
+      {false ? (
+        <div />
       ) : (
-        <div className="flex flex-col h-full">
-          {/* Day filter checkbox bar */}
-          {/* <div className="flex items-center gap-2 px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-sm overflow-x-auto custom-scroll shrink-0">
-            <span className="text-[9px] font-bold tracking-widest text-gray-400 uppercase shrink-0">Días</span>
-            {(() => {
-              const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
-              let dayOptions: { id: string; label: string }[] = [];
-              if (activeVar?.startDate && activeVar?.endDate) {
-                const start = new Date(activeVar.startDate);
-                const end = new Date(activeVar.endDate);
-                let i = 1;
-                const d = new Date(start);
-                while (d <= end) {
-                  dayOptions.push({ id: `day-${i}`, label: d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }) });
-                  d.setDate(d.getDate() + 1);
-                  i++;
-                }
-              } else {
-                dayOptions = DAYS.map(d => ({ id: d, label: d }));
-              }
-              return dayOptions.map(opt => {
-                const isActive = filterDays.includes(opt.id);
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => toggleFilterDay(opt.id)}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${isActive ? 'bg-nature-primary text-white border-nature-primary shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-nature-primary/30 hover:text-nature-primary'}`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              });
-            })()}
-          </div> */}
-          <div className="flex gap-6 h-full min-w-max pb-4 overflow-x-auto p-6 pb-12 bg-nature-bg custom-scroll">
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className={`${viewMode === 'split-vertical' ? 'flex justify-center p-4' : 'flex gap-6 min-w-max p-6 pb-20'} flex-1 min-h-0 bg-nature-bg custom-scroll`}>
             {displayDays.map(dayObj => (
               <BoardColumn
                 key={dayObj.id}
@@ -555,6 +551,7 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
                 mergeTargetId={mergeTargetId}
                 movingItemId={movingItemId}
                 executeMoveHere={executeMoveHere}
+                viewMode={viewMode}
               />
             ))}
           </div>

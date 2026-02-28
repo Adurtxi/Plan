@@ -136,7 +136,7 @@ export const MobileTimelineView = () => {
       id: Date.now(), title: type.label, link: '', coords: null,
       priority: 'necessary' as const, cat: 'logistics' as const,
       logisticsType: type.value as LogisticsType, cost: '0', slot: 'Mañana',
-      notes: '', images: [], day: selectedDay, variantId: activeVariant,
+      notes: '', images: [], attachments: [], day: selectedDay, variantId: activeVariant,
       reservationStatus: 'idea' as const, order: Date.now(),
     });
     addToast(`${type.icon} ${type.label} añadido`, 'success');
@@ -147,7 +147,7 @@ export const MobileTimelineView = () => {
     await addLocation({
       id: Date.now(), title: 'Tiempo Libre', link: '', coords: null,
       priority: 'optional' as const, cat: 'free' as const, cost: '0',
-      slot: 'Mañana', notes: '', images: [], day: selectedDay,
+      slot: 'Mañana', notes: '', images: [], attachments: [], day: selectedDay,
       variantId: activeVariant, reservationStatus: 'idea' as const, order: Date.now(),
     });
     addToast('☕ Tiempo libre añadido', 'success');

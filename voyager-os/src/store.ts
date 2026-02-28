@@ -106,6 +106,9 @@ interface AppState {
   movingItemId: number | null;
   setMovingItemId: (id: number | null) => void;
 
+  isDrawingRouteFor: string | null;
+  setDrawingRouteFor: (transportId: string | null) => void;
+
   addTripVariant: (variant: TripVariant) => Promise<void>;
   updateTripVariant: (variant: TripVariant) => Promise<void>;
   deleteTripVariant: (id: string) => Promise<void>;
@@ -126,6 +129,7 @@ interface AppState {
   addTransport: (transport: TransportSegment) => Promise<void>;
   updateTransport: (transport: TransportSegment) => Promise<void>;
   deleteTransport: (id: string) => Promise<void>;
+  addRoutePoint: (transportId: string, lat: number, lng: number) => Promise<void>;
 
   addChecklistItem: (text: string) => Promise<void>;
   toggleChecklistItem: (id: number, done: boolean) => Promise<void>;
@@ -152,6 +156,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeDayVariants: {},
   setActiveDayVariant: (dayId, variantId) => set(state => ({ activeDayVariants: { ...state.activeDayVariants, [dayId]: variantId } })),
   selectedLocationId: null,
+  isDrawingRouteFor: null,
   lightboxImages: null,
   lightboxIndex: 0,
   dialog: null,
@@ -161,6 +166,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   movingItemId: null,
 
   setMovingItemId: (id) => set({ movingItemId: id }),
+
+  setDrawingRouteFor: (transportId) => set({ isDrawingRouteFor: transportId }),
 
   showDialog: (config) => set({ dialog: config }),
   closeDialog: () => set({ dialog: null }),
@@ -553,6 +560,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   deleteTransport: async (id) => {
     const db = await initDB();
     await db.delete('transports', id);
+    await get().loadData();
+  },
+
+  addRoutePoint: async (transportId, lat, lng) => {
+    const db = await initDB();
+    const transport = await db.get('transports', transportId);
+    if (!transport) return;
+
+    if (!transport.polyline) {
+      transport.polyline = [];
+    }
+
+    transport.polyline.push([lat, lng]);
+    transport.durationCalculated = 0; // Clear auto duration since it's custom drawn now
+    await db.put('transports', transport);
     await get().loadData();
   },
 

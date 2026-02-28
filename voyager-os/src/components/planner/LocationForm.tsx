@@ -18,6 +18,8 @@ interface LocationFormProps {
   setFormCurrency: (c: string) => void;
   tempImages: { data: string, name: string }[];
   setTempImages: React.Dispatch<React.SetStateAction<{ data: string, name: string }[]>>;
+  tempAttachments: { data: string, name: string }[];
+  setTempAttachments: React.Dispatch<React.SetStateAction<{ data: string, name: string }[]>>;
   handleAddLocation: (e: React.FormEvent<HTMLFormElement>) => void;
   handleFiles: (files: FileList | null) => void;
   resetForm: () => void;
@@ -28,7 +30,7 @@ interface LocationFormProps {
 export const LocationForm = ({
   isFormPanelOpen, setIsFormPanelOpen, formId, formPriority, setFormPriority, formCat, setFormCat,
   formSlot, setFormSlot, formCurrency, setFormCurrency,
-  tempImages, setTempImages, handleAddLocation, handleFiles, resetForm, locations,
+  tempImages, setTempImages, tempAttachments, setTempAttachments, handleAddLocation, handleFiles, resetForm, locations,
 }: LocationFormProps) => {
   const [activeTab, setActiveTab] = useState<'general' | 'time' | 'finance' | 'assets'>('general');
   const [resStatus, setResStatus] = useState<ReservationStatus>('idea');
@@ -160,6 +162,25 @@ export const LocationForm = ({
               <input name="coordsReadonly" type="text" readOnly className="w-full bg-nature-mint/20 border border-nature-primary/20 rounded-xl p-4 text-nature-primary outline-none text-xs font-mono cursor-default" />
             </div>
 
+            {formCat === 'logistics' && (
+              <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 space-y-4 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-blue-500 italic text-lg">ℹ️</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-800/40">Detalles de Logística</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Confirmación / PNR</label>
+                    <input name="logisticsConfirmation" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="ABC123" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Terminal / Andén / Asiento</label>
+                    <input name="logisticsDetail" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="T4, 12A..." />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-4 gap-3">
               {(Object.keys(CAT_ICONS) as Category[]).map(cat => (
                 <label key={cat} className="cursor-pointer group">
@@ -282,18 +303,39 @@ export const LocationForm = ({
             <label className="cursor-pointer">
               <div className="border-2 border-dashed border-gray-200 hover:border-nature-primary hover:bg-nature-mint/30 bg-gray-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all group shadow-sm hover:shadow-md">
                 <ImageIcon size={32} className="text-gray-300 group-hover:text-nature-primary mb-3 transition-colors" />
-                <p className="text-xs text-gray-400 group-hover:text-nature-primary font-medium">Buscar o arrastrar imágenes</p>
-                <input type="file" multiple hidden accept="image/*" onChange={(e) => handleFiles(e.target.files)} />
+                <p className="text-xs text-gray-400 group-hover:text-nature-primary font-medium">Fotos y Documentos (Billete)</p>
+                <input type="file" multiple hidden onChange={(e) => handleFiles(e.target.files)} />
               </div>
             </label>
+
             {tempImages.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mt-4">
-                {tempImages.map((img, i) => (
-                  <div key={i} className="relative group">
-                    <img src={img.data} alt="temp" className="w-full aspect-square object-cover rounded-xl shadow-sm border border-gray-100" />
-                    <button type="button" onClick={() => setTempImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button>
-                  </div>
-                ))}
+              <div>
+                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Imágenes</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {tempImages.map((img, i) => (
+                    <div key={i} className="relative group">
+                      <img src={img.data} alt="temp" className="w-full aspect-square object-cover rounded-xl shadow-sm border border-gray-100" />
+                      <button type="button" onClick={() => setTempImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-400 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tempAttachments.length > 0 && (
+              <div>
+                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Documentos / Adjuntos</label>
+                <div className="space-y-2">
+                  {tempAttachments.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-nature-mint/10 border border-nature-primary/10 rounded-xl">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <span className="text-lg">📄</span>
+                        <span className="text-xs font-bold text-nature-primary truncate">{f.name}</span>
+                      </div>
+                      <button type="button" onClick={() => setTempAttachments(prev => prev.filter((_, idx) => idx !== i))} className="p-1 text-red-300 hover:text-red-500 transition-colors"><X size={14} /></button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

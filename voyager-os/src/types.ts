@@ -25,7 +25,7 @@ export interface TransportSegment {
   id: string; // e.g., 'loc1-to-loc2'
   fromLocationId: number;
   toLocationId: number;
-  mode: 'walk' | 'car' | 'transit' | 'flight';
+  mode: 'walk' | 'car' | 'transit' | 'flight' | 'bike' | 'manual';
   durationOverride?: number; // In minutes, overrides OSRM if set
   durationCalculated?: number; // In minutes, from API
   distance?: number; // In meters, from API
@@ -61,11 +61,14 @@ export interface LocationItem {
   // Reservation
   reservationStatus?: ReservationStatus;
   bookingRef?: string;
+  logisticsConfirmation?: string; // e.g. "ABC-123"
+  logisticsDetail?: string; // e.g. "Terminal 4", "Asiento 12A", "Andén 2"
 
   slot: string;
   logisticsType?: LogisticsType;
   notes: string;
   images: ImageFile[];
+  attachments: ImageFile[]; // For tickets/PDFs
 }
 
 export interface ChecklistItem {

@@ -11,6 +11,7 @@ import { TimeConflictModal, type TimeConflictAction } from '../modals/TimeConfli
 import { IdeaInbox } from './IdeaInbox';
 import { MobileTimelineView } from './MobileTimelineView';
 import { MobileMapView } from './MobileMapView';
+import { MobileDaySelector } from './MobileDaySelector';
 import { useAppStore } from '../../store';
 import { useResponsive } from '../../hooks/useResponsive';
 import { CardVisual } from '../ui/SortableCard';
@@ -28,6 +29,7 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
 
   const [formId, setFormId] = useState<number | null>(null);
   const [tempImages, setTempImages] = useState<{ data: string, name: string }[]>([]);
+  const [tempAttachments, setTempAttachments] = useState<{ data: string, name: string }[]>([]);
   const [formPriority, setFormPriority] = useState<Priority>('optional');
   const [formCat, setFormCat] = useState<Category>('sight');
   const [formSlot, setFormSlot] = useState<string>('Mañana');
@@ -255,6 +257,9 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
         if (loc.datetime) (form.elements.namedItem('datetime') as HTMLInputElement).value = loc.datetime;
         if (loc.checkOutDatetime) (form.elements.namedItem('checkOutDatetime') as HTMLInputElement).value = loc.checkOutDatetime;
         if (loc.bookingRef) (form.elements.namedItem('bookingRef') as HTMLInputElement).value = loc.bookingRef;
+        if (loc.logisticsConfirmation) (form.elements.namedItem('logisticsConfirmation') as HTMLInputElement).value = loc.logisticsConfirmation;
+        if (loc.logisticsDetail) (form.elements.namedItem('logisticsDetail') as HTMLInputElement).value = loc.logisticsDetail;
+        setTempAttachments(loc.attachments || []);
         if (loc.newPrice?.amount) (form.elements.namedItem('priceAmount') as HTMLInputElement).value = loc.newPrice.amount.toString();
 
         const pinnedInput = form.elements.namedItem('isPinnedTime') as HTMLInputElement;
@@ -278,7 +283,7 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
   };
 
   const resetForm = () => {
-    setFormId(null); setTempImages([]); setFormPriority('optional'); setFormCat('sight');
+    setFormId(null); setTempImages([]); setTempAttachments([]); setFormPriority('optional'); setFormCat('sight');
     setFormSlot('Mañana'); setFormCurrency('EUR'); setPreselectedDay('unassigned'); setPreselectedVariant('default');
     (document.getElementById('mainForm') as HTMLFormElement)?.reset();
     // Hide coords display
@@ -366,7 +371,10 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
           variantId: finalVariant,
           globalVariantId: existing.globalVariantId || activeGlobalVariantId || 'default',
           reservationStatus: (formData.get('reservationStatus') as ReservationStatus) || 'idea',
-          bookingRef: formData.get('bookingRef') as string || undefined
+          bookingRef: formData.get('bookingRef') as string || undefined,
+          logisticsConfirmation: formData.get('logisticsConfirmation') as string || undefined,
+          logisticsDetail: formData.get('logisticsDetail') as string || undefined,
+          attachments: tempAttachments.length > 0 ? tempAttachments : existing.attachments || []
         });
       }
     } else {
@@ -389,7 +397,10 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
         variantId: finalVariant,
         globalVariantId: activeGlobalVariantId || 'default',
         reservationStatus: (formData.get('reservationStatus') as ReservationStatus) || 'idea',
-        bookingRef: formData.get('bookingRef') as string || undefined
+        bookingRef: formData.get('bookingRef') as string || undefined,
+        logisticsConfirmation: formData.get('logisticsConfirmation') as string || undefined,
+        logisticsDetail: formData.get('logisticsDetail') as string || undefined,
+        attachments: tempAttachments
       });
     }
 
@@ -411,6 +422,12 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
             setTempImages(prev => [...prev, { data: c.toDataURL("image/webp", 0.8), name: f.name }]);
           };
         }
+      } else {
+        // Non-image files or generic attachments
+        const reader = new FileReader(); reader.readAsDataURL(f);
+        reader.onload = (e) => {
+          setTempAttachments(prev => [...prev, { data: e.target?.result as string, name: f.name }]);
+        };
       }
     });
   };
@@ -486,6 +503,12 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
   const handleMapClick = (lat: number, lng: number) => {
     if (!isAddMode) return;
     resetForm();
+
+    // Auto-assign day if only one day is selected in filter
+    if (filterDays.length === 1 && filterDays[0] !== 'all') {
+      setPreselectedDay(filterDays[0]);
+    }
+
     setIsFormPanelOpen(true);
     setSelectedLocationId(null);
     setTimeout(() => showCoordsInForm(lat, lng), 0);
@@ -549,6 +572,7 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
             formSlot={formSlot} setFormSlot={setFormSlot}
             formCurrency={formCurrency} setFormCurrency={setFormCurrency}
             tempImages={tempImages} setTempImages={setTempImages}
+            tempAttachments={tempAttachments} setTempAttachments={setTempAttachments}
             handleAddLocation={handleAddLocation} handleFiles={handleFiles} resetForm={resetForm}
             locations={locations} handleEdit={handleEdit}
           />
@@ -611,7 +635,6 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
                   onMapClick={handleMapClick}
                   isAddMode={isAddMode}
                   setIsAddMode={setIsAddMode}
-                  showDaySelector={false}
                 />
                 {/* View mode selector — over the map */}
                 <div className="absolute bottom-4 right-4 z-[600]">
@@ -628,18 +651,31 @@ export const PlannerTab = ({ mobileView }: { mobileView?: 'plan' | 'map' }) => {
             )}
 
             {viewMode !== 'map-only' && (
-              <div className={`${viewMode === 'board-only' ? 'w-full h-full' : viewMode === 'split-vertical' ? 'w-[400px] shrink-0 h-full' : 'w-full flex-1'} overflow-hidden transition-all duration-300 relative`}>
-                <ScheduleBoard
-                  handleEdit={handleEdit}
-                  handleCardClick={setSelectedLocationId}
-                  handleAddNewToDay={handleAddNewToDay}
-                  handleAddFreeTimeToDay={handleAddFreeTimeToDay}
-                  viewMode={viewMode}
-                  onRequestMove={(id) => setMovingItemId(id)}
-                  mergeTargetId={mergeTargetId}
-                  movingItemId={movingItemId}
-                  executeMoveHere={executeMoveHere}
-                />
+              <div className={`${viewMode === 'board-only' ? 'w-full h-full flex flex-col' : viewMode === 'split-vertical' ? 'w-[400px] shrink-0 h-full bg-white border-l border-gray-100 flex flex-col' : 'w-full flex-1 min-h-0 flex flex-col'} transition-all duration-300 relative`}>
+                {viewMode === 'split-vertical' && (
+                  <div className="p-4 border-b border-gray-50 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+                    <div className="flex items-center justify-between mb-2 px-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-nature-primary/50">Día seleccionado</span>
+                    </div>
+                    <MobileDaySelector
+                      selectedDay={(filterDays && filterDays.length === 1) ? filterDays[0] : 'day-1'}
+                      onSelectDay={(day) => useAppStore.getState().setFilterDays([day])}
+                    />
+                  </div>
+                )}
+                <div className="flex-1 overflow-hidden relative">
+                  <ScheduleBoard
+                    handleEdit={handleEdit}
+                    handleCardClick={setSelectedLocationId}
+                    handleAddNewToDay={handleAddNewToDay}
+                    handleAddFreeTimeToDay={handleAddFreeTimeToDay}
+                    viewMode={viewMode}
+                    onRequestMove={(id) => setMovingItemId(id)}
+                    mergeTargetId={mergeTargetId}
+                    movingItemId={movingItemId}
+                    executeMoveHere={executeMoveHere}
+                  />
+                </div>
                 {viewMode === 'board-only' && (
                   <div className="absolute bottom-4 right-4 z-[600]">
                     <div className="bg-white/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-white">

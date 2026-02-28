@@ -61,6 +61,7 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
       reservationStatus: 'idea' as const,
       datetime: finalDatetime,
       durationMinutes: finalDuration,
+      attachments: [],
     };
 
     if (formId) {

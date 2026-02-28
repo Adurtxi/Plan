@@ -29,7 +29,6 @@ export const MobileMapView = ({ routePolylines }: { routePolylines: React.ReactN
         <MapView
           routePolylines={routePolylines}
           setIsFormPanelOpen={() => { }}
-          showDaySelector={false}
           isAddMode={false}
           setIsAddMode={() => { }}
         />
