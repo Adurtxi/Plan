@@ -4,6 +4,8 @@ import type { Category, Priority, LocationItem, ReservationStatus } from '../../
 import { getCatGroup, getCatConfig, CAT_LABELS } from '../../constants';
 import { CustomSelect } from '../ui/CustomSelect';
 import { ActivityTypePicker } from './ActivityTypePicker';
+import { useAppStore } from '../../store';
+import { useTripVariants } from '../../hooks/useTripData';
 
 interface LocationFormProps {
   isFormPanelOpen: boolean;
@@ -37,6 +39,13 @@ export const LocationForm = ({
   const [resStatus, setResStatus] = useState<ReservationStatus>('idea');
   const [durHours, setDurHours] = useState<number | string>('');
   const [durMins, setDurMins] = useState<number | string>('');
+  const [currentTags, setCurrentTags] = useState<string[]>([]);
+  const [tagInputValue, setTagInputValue] = useState('');
+
+  const { activeGlobalVariantId, setIsTripSettingsOpen } = useAppStore();
+  const { data: tripVariants = [] } = useTripVariants();
+  const activeVariant = tripVariants.find(v => v.id === activeGlobalVariantId);
+  const predefinedCities = activeVariant?.cities || [];
 
   const catGroup = getCatGroup(formCat);
   const catConfig = getCatConfig(formCat);
@@ -53,13 +62,24 @@ export const LocationForm = ({
         setDurHours('');
         setDurMins('');
       }
+
+      // Initialize tags
+      if (existing && existing.tags) {
+        setCurrentTags([...existing.tags]);
+      } else {
+        setCurrentTags([]);
+      }
     } else {
       setResStatus('idea');
       setActiveTab('general');
       setDurHours('');
       setDurMins('');
+      setCurrentTags([]);
     }
   }, [formId, locations]);
+
+  // Extract unique cities for datalist
+  const availableCities = Array.from(new Set(locations.map(l => l.city).filter(Boolean))) as string[];
 
   // Global paste handler
   useEffect(() => {
@@ -112,7 +132,31 @@ export const LocationForm = ({
     inputDur.value = totalMins > 0 ? totalMins.toString() : '';
     e.currentTarget.appendChild(inputDur);
 
+    // Inject tags
+    const inputTags = document.createElement('input');
+    inputTags.type = 'hidden';
+    inputTags.name = 'tags';
+    inputTags.value = currentTags.join(',');
+    e.currentTarget.appendChild(inputTags);
+
     handleAddLocation(e);
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === ',') {
+      e.preventDefault();
+      const val = tagInputValue.trim().replace(/,/g, '');
+      if (val && !currentTags.includes(val)) {
+        setCurrentTags([...currentTags, val]);
+      }
+      setTagInputValue('');
+    } else if (e.key === 'Backspace' && !tagInputValue && currentTags.length > 0) {
+      setCurrentTags(currentTags.slice(0, -1));
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setCurrentTags(currentTags.filter(t => t !== tagToRemove));
   };
 
   const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: any }) => (
@@ -214,6 +258,57 @@ export const LocationForm = ({
                     <input name="bestTimeHint" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="Ej. Golden hour 18:30, amanecer..." />
                   </div>
                 )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex justify-between items-end mb-2">
+                      <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase block">Ciudad / Zona</label>
+                      {predefinedCities.length === 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setIsTripSettingsOpen(true)}
+                          className="text-[9px] text-nature-primary hover:underline font-bold uppercase tracking-wider"
+                        >
+                          Configurar Ciudades
+                        </button>
+                      )}
+                    </div>
+                    {predefinedCities.length > 0 ? (
+                      <select name="city" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text outline-none text-xs transition-all font-bold cursor-pointer">
+                        <option value="">Seleccionar ciudad...</option>
+                        {predefinedCities.map(city => <option key={city} value={city}>{city}</option>)}
+                      </select>
+                    ) : (
+                      <>
+                        <input name="city" list="cities-list" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="Ej. Dubai Marina, Tokio..." />
+                        <datalist id="cities-list">
+                          {availableCities.map(city => <option key={city} value={city} />)}
+                        </datalist>
+                      </>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Etiquetas (Enter para añadir)</label>
+                    <div className="w-full bg-gray-50 border border-gray-100 focus-within:border-nature-mint focus-within:bg-white rounded-xl p-2.5 flex flex-wrap gap-2 transition-all min-h-[50px] items-center">
+                      {currentTags.map(tag => (
+                        <span key={tag} className="bg-nature-mint text-nature-primary text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
+                          #{tag}
+                          <button type="button" onClick={() => removeTag(tag)} className="hover:text-red-500 bg-white/50 rounded-full p-0.5 transition-colors">
+                            <X size={10} />
+                          </button>
+                        </span>
+                      ))}
+                      <input
+                        type="text"
+                        value={tagInputValue}
+                        onChange={(e) => setTagInputValue(e.target.value)}
+                        onKeyDown={handleTagKeyDown}
+                        className="flex-1 min-w-[100px] bg-transparent outline-none text-xs text-nature-text placeholder-gray-300"
+                        placeholder={currentTags.length === 0 ? "Ej. playa, relax..." : ""}
+                      />
+                    </div>
+                  </div>
+                </div>
 
                 {/* Priority */}
                 <div className="grid grid-cols-2 gap-3">

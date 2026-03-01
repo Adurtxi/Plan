@@ -24,6 +24,8 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [activeCityFilter, setActiveCityFilter] = useState<string>('all');
+  const [activeTagFilter, setActiveTagFilter] = useState<string>('all');
 
   const toggleSelection = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
@@ -49,11 +51,27 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
         (item.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.notes || '').toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesFilter = activeFilter === 'all' || getCatGroup(item.cat) === activeFilter;
+      const matchesCat = activeFilter === 'all' || getCatGroup(item.cat) === activeFilter;
+      const matchesCity = activeCityFilter === 'all' || item.city === activeCityFilter;
+      const matchesTag = activeTagFilter === 'all' || (item.tags && item.tags.includes(activeTagFilter));
 
-      return matchesSearch && matchesFilter;
+      return matchesSearch && matchesCat && matchesCity && matchesTag;
     });
-  }, [unassignedAll, searchTerm, activeFilter]);
+  }, [unassignedAll, searchTerm, activeFilter, activeCityFilter, activeTagFilter]);
+
+  // Extract unique cities and tags
+  const { availableCities, availableTags } = useMemo(() => {
+    const cities = new Set<string>();
+    const tags = new Set<string>();
+    locations.forEach(l => {
+      if (l.city) cities.add(l.city);
+      if (l.tags) l.tags.forEach(t => tags.add(t));
+    });
+    return {
+      availableCities: Array.from(cities).sort(),
+      availableTags: Array.from(tags).sort()
+    };
+  }, [locations]);
 
   const { assignedByDay = [], dayOptions = [] } = useMemo(() => {
     const assigned = locations.filter(
@@ -137,17 +155,64 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
             <Plus size={18} /> Nueva Idea
           </button>
 
-          <div className="relative mt-2">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} className="text-gray-400" />
+          <div className="flex flex-col gap-2 mt-2">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={16} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar en buzón..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-gray-100 border-transparent focus:bg-white focus:border-nature-primary focus:ring-2 focus:ring-nature-primary/20 rounded-xl text-sm transition-all outline-none"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Buscar en buzón..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-gray-100 border-transparent focus:bg-white focus:border-nature-primary focus:ring-2 focus:ring-nature-primary/20 rounded-xl text-sm transition-all outline-none"
-            />
+
+            {(availableCities.length > 0 || availableTags.length > 0) && (
+              <div className="flex flex-col gap-2">
+                {availableCities.length > 0 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 shrink-0 mr-1">Zonas</span>
+                    <button
+                      onClick={() => setActiveCityFilter('all')}
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === 'all' ? 'bg-nature-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                    >
+                      Todas
+                    </button>
+                    {availableCities.map(city => (
+                      <button
+                        key={city}
+                        onClick={() => setActiveCityFilter(city)}
+                        className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === city ? 'bg-nature-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {availableTags.length > 0 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 shrink-0 mr-1">Tags</span>
+                    <button
+                      onClick={() => setActiveTagFilter('all')}
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeTagFilter === 'all' ? 'bg-nature-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                    >
+                      Todas
+                    </button>
+                    {availableTags.map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => setActiveTagFilter(tag)}
+                        className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeTagFilter === tag ? 'bg-nature-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                      >
+                        #{tag}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-2 mt-1">

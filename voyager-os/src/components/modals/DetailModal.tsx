@@ -132,6 +132,9 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
         {selectedLocation.dropoffPoint && (
           <InfoChip label="Destino/Devolución" value={selectedLocation.dropoffPoint} icon={<MapPin size={12} />} />
         )}
+        {selectedLocation.city && (
+          <InfoChip label="Ciudad / ZONA" value={selectedLocation.city} icon={<MapPin size={12} />} />
+        )}
         {selectedLocation.transportApp && (
           <InfoChip label="App" value={selectedLocation.transportApp} />
         )}
@@ -194,6 +197,9 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
       <div className="grid grid-cols-2 gap-3">
         {selectedLocation.address && (
           <InfoChip label="Dirección" value={selectedLocation.address} icon={<MapPin size={12} />} fullWidth />
+        )}
+        {selectedLocation.city && (
+          <InfoChip label="Ciudad / ZONA" value={selectedLocation.city} icon={<MapPin size={12} />} />
         )}
         {selectedLocation.roomNumber && (
           <InfoChip label="Habitación" value={selectedLocation.roomNumber} />
@@ -296,7 +302,14 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
               <span className="text-lg">{catIcon}</span>
               <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: catColor }}>{catLabel}</span>
             </div>
-            <button onClick={() => setSelectedLocationId(null)} className="text-gray-400 hover:text-nature-primary transition-colors"><X size={24} /></button>
+
+            <div className="flex items-center gap-1.5 opacity-80 overflow-x-auto no-scrollbar max-w-[200px]">
+              {selectedLocation.tags?.map((tag, i) => (
+                <span key={i} className="text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md bg-nature-mint/30 text-nature-primary border border-nature-primary/10 whitespace-nowrap">#{tag}</span>
+              ))}
+            </div>
+
+            <button onClick={() => setSelectedLocationId(null)} className="text-gray-400 hover:text-nature-primary transition-colors ml-auto"><X size={24} /></button>
           </div>
 
           {/* ── Render by type ── */}
@@ -325,6 +338,11 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
                 {selectedLocation.title || selectedLocation.notes?.split("\n")[0] || "Ubicación sin nombre"}
               </h2>
               <div className="flex gap-3 mb-8 items-center flex-wrap">
+                {selectedLocation.city && (
+                  <span className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-nature-primary text-white flex items-center gap-1.5 shadow-sm">
+                    <MapPin size={12} /> {selectedLocation.city}
+                  </span>
+                )}
                 <span className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">
                   {selectedLocation.priority === 'necessary' ? 'Esencial' : 'Opcional'}
                 </span>

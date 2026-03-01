@@ -173,6 +173,9 @@ interface AppState {
   openLightbox: (images: ImageFile[], startIndex?: number, locationId?: number | null) => void;
   setLightboxIndex: (index: number) => void;
   closeLightbox: () => void;
+
+  isTripSettingsOpen: boolean;
+  setIsTripSettingsOpen: (isOpen: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -197,6 +200,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   movingItemId: null,
 
   setMovingItemId: (id) => set({ movingItemId: id }),
+
+  isTripSettingsOpen: false,
+  setIsTripSettingsOpen: (isOpen) => set({ isTripSettingsOpen: isOpen }),
 
   isDrawingRouteFor: null,
   setDrawingRouteFor: (transportId) => set({ isDrawingRouteFor: transportId }),

@@ -21,7 +21,7 @@ import { useLocations, useTransports, useTripVariants, useAddLocation, useUpdate
 import { useReorderLocation, useMergeLocations, useMoveToDay, useExecuteMoveHere } from '../../hooks/useTripMutations';
 
 export const PlannerTab = () => {
-  const { optimisticLocations, clearOptimisticLocations, filterDays, setSelectedLocationId, undo, activeGlobalVariantId, movingItemId, setMovingItemId, activeDayVariants, setIsDragging, mobileView, setMobileView } = useAppStore();
+  const { optimisticLocations, clearOptimisticLocations, filterDays, setSelectedLocationId, undo, activeGlobalVariantId, movingItemId, setMovingItemId, activeDayVariants, setIsDragging, mobileView, setMobileView, isTripSettingsOpen, setIsTripSettingsOpen } = useAppStore();
   const { isMobile } = useResponsive();
 
   const { data: locations = [] } = useLocations();
@@ -53,7 +53,6 @@ export const PlannerTab = () => {
   const [formCurrency, setFormCurrency] = useState<string>('EUR');
   const [isFormPanelOpen, setIsFormPanelOpen] = useState(false);
   const [isFreeTimeSheetOpen, setIsFreeTimeSheetOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const [moveToDayModal, setMoveToDayModal] = useState<{ isOpen: boolean, itemId: number | null }>({ isOpen: false, itemId: null });
 
@@ -79,7 +78,7 @@ export const PlannerTab = () => {
   React.useEffect(() => {
     const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
     if (activeVar && !activeVar.startDate) {
-      setIsSettingsModalOpen(true);
+      setIsTripSettingsOpen(true);
     }
   }, [tripVariants, activeGlobalVariantId]);
 
@@ -308,6 +307,8 @@ export const PlannerTab = () => {
         setField('address', loc.address);
         setField('roomNumber', loc.roomNumber);
         setField('bestTimeHint', loc.bestTimeHint);
+        setField('city', loc.city);
+        setField('tags', loc.tags?.join(', '));
 
         // Checkbox: lateCheckout
         const lateCheckoutInput = form.elements.namedItem('lateCheckout') as HTMLInputElement;
@@ -401,6 +402,10 @@ export const PlannerTab = () => {
 
     const isPinnedTime = formData.get('isPinnedTime') === 'on';
 
+    // Parse tags safely
+    const rawTags = formData.get('tags') as string || '';
+    const parsedTags = rawTags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
     // Collect specialized fields from form
     const specializedFields = {
       company: formData.get('company') as string || undefined,
@@ -418,6 +423,8 @@ export const PlannerTab = () => {
       lateCheckout: formData.get('lateCheckout') === 'on',
       mealType: formData.get('mealType') as any || undefined,
       bestTimeHint: formData.get('bestTimeHint') as string || undefined,
+      city: formData.get('city') as string || undefined,
+      tags: parsedTags.length > 0 ? parsedTags : undefined,
     };
 
     if (formId) {
@@ -681,8 +688,8 @@ export const PlannerTab = () => {
 
 
           <TripSettingsModal
-            isOpen={isSettingsModalOpen}
-            onClose={() => setIsSettingsModalOpen(false)}
+            isOpen={isTripSettingsOpen}
+            onClose={() => setIsTripSettingsOpen(false)}
           />
 
           {conflictModalData && (
@@ -733,7 +740,7 @@ export const PlannerTab = () => {
                 {/* View mode selector — over the map */}
                 <div className="absolute bottom-4 right-4 z-[600]">
                   <div className="bg-white/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-white">
-                    <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50 mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+                    <button onClick={() => setIsTripSettingsOpen(true)} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50 mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
                     <div className="w-px h-6 bg-gray-200 mr-2"></div>
                     <button onClick={() => setViewMode('split-horizontal')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-horizontal' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
                     <button onClick={() => setViewMode('split-vertical')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-vertical' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
@@ -773,7 +780,7 @@ export const PlannerTab = () => {
                 {viewMode === 'board-only' && (
                   <div className="absolute bottom-4 right-4 z-[600]">
                     <div className="bg-white/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-white">
-                      <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50 mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+                      <button onClick={() => setIsTripSettingsOpen(true)} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50 mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
                       <div className="w-px h-6 bg-gray-200 mr-2"></div>
                       <button onClick={() => setViewMode('split-horizontal')} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
                       <button onClick={() => setViewMode('split-vertical')} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>

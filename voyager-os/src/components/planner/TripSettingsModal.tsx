@@ -19,9 +19,16 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
   const activeVariant = tripVariants.find(v => v.id === activeGlobalVariantId);
   const [editingVariant, setEditingVariant] = useState<TripVariant | null>(null);
 
+  // Custom states for cities
+  const [currentCities, setCurrentCities] = useState<string[]>([]);
+  const [cityInputValue, setCityInputValue] = useState('');
+
   useEffect(() => {
     if (isOpen && activeVariant) {
       setEditingVariant({ ...activeVariant });
+      setCurrentCities(activeVariant.cities ? [...activeVariant.cities] : []);
+    } else {
+      setCityInputValue('');
     }
   }, [isOpen, activeVariant]);
 
@@ -40,9 +47,29 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
   };
 
   const handleSave = () => {
-    updateTripVariant(editingVariant);
+    updateTripVariant({
+      ...editingVariant,
+      cities: currentCities.length > 0 ? currentCities : undefined
+    });
     addToast('Ajustes de viaje guardados', 'success');
     onClose();
+  };
+
+  const handleCityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = cityInputValue.trim().replace(/,/g, '');
+      if (val && !currentCities.includes(val)) {
+        setCurrentCities([...currentCities, val]);
+      }
+      setCityInputValue('');
+    } else if (e.key === 'Backspace' && !cityInputValue && currentCities.length > 0) {
+      setCurrentCities(currentCities.slice(0, -1));
+    }
+  };
+
+  const removeCity = (cityToRemove: string) => {
+    setCurrentCities(currentCities.filter(c => c !== cityToRemove));
   };
 
   const handleDelete = (id: string) => {
@@ -137,6 +164,33 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
             <p className="text-xs text-gray-400 mt-2 ml-1">
               Si defines inicio y fin, el tablero generará automáticamente las columnas exactas de tu viaje.
             </p>
+          </div>
+
+          <div className="bg-gray-50/50 border border-gray-100 p-4 rounded-[24px] space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">Zonas / Ciudades a Visitar</label>
+              <div className="w-full bg-white shadow-sm border border-transparent focus-within:border-nature-mint focus-within:ring-2 focus-within:ring-nature-primary/20 rounded-xl p-2.5 flex flex-wrap gap-2 min-h-[50px] items-center transition-all">
+                {currentCities.map(city => (
+                  <span key={city} className="bg-nature-mint text-nature-primary text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
+                    {city}
+                    <button type="button" onClick={() => removeCity(city)} className="hover:text-red-500 bg-white/50 rounded-full p-0.5 transition-colors">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  value={cityInputValue}
+                  onChange={(e) => setCityInputValue(e.target.value)}
+                  onKeyDown={handleCityKeyDown}
+                  className="flex-1 min-w-[150px] bg-transparent outline-none text-sm text-nature-text placeholder-gray-300"
+                  placeholder={currentCities.length === 0 ? "Ej. Tokio, Kioto... (Pulsa Enter)" : ""}
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-2 ml-1">
+                Define aquí las zonas (ej. "Norte de Italia", "Milán"). Cuando añadas actividades, podrás seleccionarlas rápidamente de esta lista.
+              </p>
+            </div>
           </div>
 
         </div>

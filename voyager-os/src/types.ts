@@ -34,6 +34,7 @@ export interface TripVariant {
   name: string;
   startDate: string | null;
   endDate: string | null;
+  cities?: string[];
 }
 
 export interface TransportSegment {
@@ -58,6 +59,10 @@ export interface LocationItem {
   cat: Category;
   cost: string;
   newPrice?: PriceInfo;
+
+  // New categorizations
+  city?: string;
+  tags?: string[];
 
   // Date and Time
   day: string;
