@@ -3,9 +3,11 @@ import { useAppStore } from '../../store';
 import { ChevronUp, ChevronDown, Clock } from 'lucide-react';
 import { CAT_ICONS, isTransportCat } from '../../constants';
 import { hapticFeedback } from '../../utils/haptics';
+import { useLocations } from '../../hooks/useTripData';
 
 export const MapBottomSheet = ({ selectedDay }: { selectedDay: string }) => {
-  const { locations, activeDayVariants, setSelectedLocationId } = useAppStore();
+  const { activeDayVariants, setSelectedLocationId } = useAppStore();
+  const { data: locations = [] } = useLocations();
   const [snapState, setSnapState] = useState<0 | 1 | 2>(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);

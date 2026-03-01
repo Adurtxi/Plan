@@ -4,6 +4,7 @@ import { Navigation2, Car, Train, Map, Loader2, Bike, PenTool } from 'lucide-rea
 import { useAppStore } from '../../store';
 import type { LocationItem, TransportSegment } from '../../types';
 import { calculateRoute } from '../../lib/routingService';
+import { useTransports, useAddTransport } from '../../hooks/useTripData';
 
 interface TransportBlockProps {
   fromLoc: LocationItem;
@@ -11,7 +12,9 @@ interface TransportBlockProps {
 }
 
 export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => {
-  const { transports, addTransport, addToast, setDrawingRouteFor, isDrawingRouteFor } = useAppStore();
+  const { addToast, setDrawingRouteFor, isDrawingRouteFor } = useAppStore();
+  const { data: transports = [] } = useTransports();
+  const { mutateAsync: addTransport } = useAddTransport();
   const [isCalculating, setIsCalculating] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [hasAttemptedAutoCalc, setHasAttemptedAutoCalc] = useState(false);

@@ -1,12 +1,17 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import { useAppStore } from '../../store';
 import { ImageIcon, Layers, MapPin, Info, Map, Navigation } from 'lucide-react';
 import { CAT_ICONS, getCatGroup, DAYS } from '../../constants';
 import { hapticFeedback } from '../../utils/haptics';
 import { DetailModal } from '../modals/DetailModal';
+import { useLocations, useTripVariants } from '../../hooks/useTripData';
 
 export const GalleryTab = () => {
-  const { locations, tripVariants, activeGlobalVariantId, openLightbox, setActiveTab, setFilterDays, setSelectedLocationId, setMobileView } = useAppStore();
+  const { activeGlobalVariantId, openLightbox, setFilterDays, setSelectedLocationId, setMobileView } = useAppStore();
+  const { data: locations = [] } = useLocations();
+  const { data: tripVariants = [] } = useTripVariants();
+  const navigate = useNavigate();
 
   const { groupedData, dayLabels } = useMemo(() => {
     const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
@@ -60,7 +65,7 @@ export const GalleryTab = () => {
 
   const handleGoToMap = (loc: any) => {
     hapticFeedback.light();
-    setActiveTab('planner');
+    navigate('/');
     setFilterDays([loc.day]);
     setSelectedLocationId(loc.id);
     setMobileView('map');
@@ -73,7 +78,7 @@ export const GalleryTab = () => {
 
   const handleEditFromGallery = (id: number) => {
     // Si queremos editar desde la galería, enviamos al planificador
-    setActiveTab('planner');
+    navigate('/');
     setFilterDays([locations.find(l => l.id === id)?.day || 'unassigned']);
     setSelectedLocationId(id);
   };

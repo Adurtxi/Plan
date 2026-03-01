@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../store';
+import { useLocations } from './useTripData';
 
 export const useFilteredLocations = () => {
-  const { locations, filterDays, activeGlobalVariantId, activeDayVariants } = useAppStore();
+  const { filterDays, activeGlobalVariantId, activeDayVariants } = useAppStore();
+  const { data: locations = [] } = useLocations();
 
   const filteredLocations = useMemo(() => {
     return locations.filter(loc => {

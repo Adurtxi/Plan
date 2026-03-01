@@ -5,6 +5,8 @@ import { X, Inbox, Plus, Calendar, Search, Filter } from 'lucide-react';
 import { SortableCard } from '../ui/SortableCard';
 import { useAppStore } from '../../store';
 import { DAYS, isTransportCat, getCatGroup } from '../../constants';
+import { useLocations, useTripVariants } from '../../hooks/useTripData';
+import { useMoveToDay } from '../../hooks/useTripMutations';
 
 interface IdeaInboxProps {
   handleEdit: (id: number) => void;
@@ -13,7 +15,10 @@ interface IdeaInboxProps {
 }
 
 export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInboxProps) => {
-  const { locations, activeGlobalVariantId, tripVariants, isDragging, moveToDay, activeDayVariants } = useAppStore();
+  const { activeGlobalVariantId, isDragging, activeDayVariants } = useAppStore();
+  const { data: locations = [] } = useLocations();
+  const { data: tripVariants = [] } = useTripVariants();
+  const { mutate: moveToDay } = useMoveToDay();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showMoveModal, setShowMoveModal] = useState(false);
@@ -28,7 +33,7 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
   const handleBulkMove = (targetDay: string) => {
     selectedIds.forEach(id => {
       const targetVariant = activeDayVariants[targetDay] || 'default';
-      moveToDay(id, targetDay, targetVariant);
+      moveToDay({ id, targetDay, targetVariant });
     });
     setSelectedIds([]);
     setShowMoveModal(false);

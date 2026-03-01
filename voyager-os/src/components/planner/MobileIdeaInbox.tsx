@@ -3,6 +3,8 @@ import { useAppStore } from '../../store';
 import { X, Inbox, Plus, Calendar, Search, Filter, CheckSquare } from 'lucide-react';
 import { DAYS, isTransportCat, getCatGroup } from '../../constants';
 import { CAT_ICONS } from '../../constants';
+import { useLocations, useTripVariants } from '../../hooks/useTripData';
+import { useMoveToDay } from '../../hooks/useTripMutations';
 
 interface MobileIdeaInboxProps {
   isOpen: boolean;
@@ -12,7 +14,10 @@ interface MobileIdeaInboxProps {
 }
 
 export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: MobileIdeaInboxProps) => {
-  const { locations, activeGlobalVariantId, tripVariants, moveToDay, activeDayVariants } = useAppStore();
+  const { activeGlobalVariantId, activeDayVariants } = useAppStore();
+  const { data: locations = [] } = useLocations();
+  const { data: tripVariants = [] } = useTripVariants();
+  const { mutate: moveToDay } = useMoveToDay();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,7 +31,7 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
   const handleBulkMove = (targetDay: string) => {
     selectedIds.forEach(id => {
       const targetVariant = activeDayVariants[targetDay] || 'default';
-      moveToDay(id, targetDay, targetVariant);
+      moveToDay({ id, targetDay, targetVariant });
     });
     setSelectedIds([]);
     setShowMoveModal(false);

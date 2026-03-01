@@ -2,13 +2,19 @@ import { useEffect } from 'react';
 import { X, Trash2, Copy, Clock, UploadCloud, Plane, MapPin, Building2, Ticket, Layers } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { CAT_ICONS, CAT_LABELS, CAT_COLORS, getCatGroup, isTransportCat, isAccommodationCat } from '../../constants';
+import { useLocations, useAddLocation, useUpdateLocation, useDeleteLocation } from '../../hooks/useTripData';
 
 interface DetailModalProps {
   onEdit: (id: number) => void;
 }
 
 export const DetailModal = ({ onEdit }: DetailModalProps) => {
-  const { locations, selectedLocationId, setSelectedLocationId, deleteLocation, openLightbox, showDialog, addToast, updateLocation, addLocation } = useAppStore();
+  const { selectedLocationId, setSelectedLocationId, openLightbox, showDialog, addToast } = useAppStore();
+  const { data: locations = [] } = useLocations();
+  const { mutateAsync: addLocation } = useAddLocation();
+  const { mutateAsync: updateLocation } = useUpdateLocation();
+  const { mutateAsync: deleteLocation } = useDeleteLocation();
+
   const selectedLocation = locations.find(l => l.id === selectedLocationId);
 
   useEffect(() => {

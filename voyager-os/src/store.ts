@@ -98,7 +98,6 @@ interface AppState {
   transports: TransportSegment[];
   tripVariants: TripVariant[];
   activeGlobalVariantId: string;
-  activeTab: 'planner' | 'checklist' | 'analytics' | 'gallery';
   filterDays: string[];
   activeDayVariants: Record<string, string>;
   setActiveDayVariant: (dayId: string, variantId: string) => void;
@@ -165,7 +164,6 @@ interface AppState {
   toggleChecklistItem: (id: number, done: boolean) => Promise<void>;
   deleteChecklistItem: (id: number) => Promise<void>;
 
-  setActiveTab: (tab: 'planner' | 'checklist' | 'analytics' | 'gallery') => void;
   mobileView: 'plan' | 'map';
   setMobileView: (view: 'plan' | 'map') => void;
   toggleFilterDay: (day: string) => void;
@@ -184,7 +182,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   tripVariants: [],
   optimisticLocations: null,
   activeGlobalVariantId: 'default',
-  activeTab: 'planner',
   mobileView: 'plan',
   setMobileView: (view) => set({ mobileView: view }),
   filterDays: [],
@@ -674,7 +671,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().loadData();
   },
 
-  setActiveTab: (tab) => set({ activeTab: tab }),
   toggleFilterDay: (day) => set(state => ({
     filterDays: state.filterDays.includes(day)
       ? state.filterDays.filter(d => d !== day)

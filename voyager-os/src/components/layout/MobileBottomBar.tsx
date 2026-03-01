@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router';
 import { Map, MapPin, CheckSquare, BarChart3, Moon, Sun, Image as ImageIcon } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { hapticFeedback } from '../../utils/haptics';
 
 const tabs = [
-  { id: 'planner' as const, icon: MapPin, label: 'Plan' },
-  { id: 'planner' as const, icon: Map, label: 'Mapa', mobileView: 'map' as const },
-  { id: 'gallery' as const, icon: ImageIcon, label: 'Fotos' },
-  { id: 'checklist' as const, icon: CheckSquare, label: 'Check' },
-  { id: 'analytics' as const, icon: BarChart3, label: 'Datos' },
+  { id: 'planner' as const, icon: MapPin, label: 'Plan', path: '/' },
+  { id: 'planner' as const, icon: Map, label: 'Mapa', mobileView: 'map' as const, path: '/' },
+  { id: 'gallery' as const, icon: ImageIcon, label: 'Fotos', path: '/gallery' },
+  { id: 'checklist' as const, icon: CheckSquare, label: 'Check', path: '/checklist' },
+  { id: 'analytics' as const, icon: BarChart3, label: 'Datos', path: '/analytics' },
 ];
 
 export const MobileBottomBar = ({ mobileView, setMobileView }: { mobileView: 'plan' | 'map'; setMobileView: (v: 'plan' | 'map') => void }) => {
-  const { activeTab, setActiveTab } = useAppStore();
   const [isVisible, setIsVisible] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScrollEvent = (e: Event) => {
@@ -27,19 +29,21 @@ export const MobileBottomBar = ({ mobileView, setMobileView }: { mobileView: 'pl
 
   const handleTabClick = (tab: typeof tabs[number]) => {
     hapticFeedback.selection();
-    if (tab.mobileView) {
-      setActiveTab('planner');
+    navigate(tab.path);
+    if (tab.mobileView === 'map') {
       setMobileView('map');
-    } else {
-      setActiveTab(tab.id);
-      if (tab.id === 'planner') setMobileView('plan');
+    } else if (tab.id === 'planner') {
+      setMobileView('plan');
     }
   };
 
   const isActive = (tab: typeof tabs[number]) => {
-    if (tab.mobileView === 'map') return activeTab === 'planner' && mobileView === 'map';
-    if (tab.id === 'planner') return activeTab === 'planner' && mobileView === 'plan';
-    return activeTab === tab.id;
+    if (location.pathname !== tab.path) return false;
+    if (tab.path === '/') {
+      if (tab.mobileView === 'map') return mobileView === 'map';
+      return mobileView === 'plan';
+    }
+    return true;
   };
 
   return (

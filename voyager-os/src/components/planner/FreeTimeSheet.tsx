@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useAppStore } from '../../store';
 import { X, Clock, Coffee } from 'lucide-react';
+
+import { useLocations, useAddLocation, useUpdateLocation } from '../../hooks/useTripData';
 
 interface FreeTimeSheetProps {
   isOpen: boolean;
@@ -12,7 +13,9 @@ interface FreeTimeSheetProps {
 }
 
 export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave }: FreeTimeSheetProps) => {
-  const { locations, addLocation, updateLocation } = useAppStore();
+  const { data: locations = [] } = useLocations();
+  const { mutateAsync: addLocation } = useAddLocation();
+  const { mutateAsync: updateLocation } = useUpdateLocation();
 
   const [title, setTitle] = useState('Tiempo Libre');
   const [datetime, setDatetime] = useState('');

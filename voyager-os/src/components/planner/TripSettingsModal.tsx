@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAppStore } from '../../store';
 import { X, Calendar, Copy, Trash2 } from 'lucide-react';
 import type { TripVariant } from '../../types';
+import { useTripVariants, useAddTripVariant, useUpdateTripVariant, useDeleteTripVariant } from '../../hooks/useTripData';
 
 interface TripSettingsModalProps {
   isOpen: boolean;
@@ -9,7 +10,11 @@ interface TripSettingsModalProps {
 }
 
 export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) => {
-  const { tripVariants, activeGlobalVariantId, setActiveGlobalVariantId, addTripVariant, updateTripVariant, deleteTripVariant, showDialog, addToast } = useAppStore();
+  const { activeGlobalVariantId, setActiveGlobalVariantId, showDialog, addToast } = useAppStore();
+  const { data: tripVariants = [] } = useTripVariants();
+  const { mutate: addTripVariant } = useAddTripVariant();
+  const { mutate: updateTripVariant } = useUpdateTripVariant();
+  const { mutate: deleteTripVariant } = useDeleteTripVariant();
 
   const activeVariant = tripVariants.find(v => v.id === activeGlobalVariantId);
   const [editingVariant, setEditingVariant] = useState<TripVariant | null>(null);

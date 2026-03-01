@@ -11,9 +11,12 @@ import { DndContext, closestCenter, type DragEndEvent, TouchSensor, PointerSenso
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { LocationItem } from '../../types';
+import { useLocations, useTripVariants, useAddLocation } from '../../hooks/useTripData';
+import { useReorderLocation, useMoveToDay } from '../../hooks/useTripMutations';
 
 const MoveToDaySheet = ({ onClose, onMove }: { onClose: () => void, onMove: (day: string) => void }) => {
-  const { tripVariants, activeGlobalVariantId } = useAppStore();
+  const { activeGlobalVariantId } = useAppStore();
+  const { data: tripVariants = [] } = useTripVariants();
   let dayOptions: { value: string; label: string }[] = [];
   const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
 
@@ -96,7 +99,7 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
       <button
         onClick={(e) => {
           e.stopPropagation();
-          reorderLocation(loc.id, 0, 'unassigned', useAppStore.getState().activeGlobalVariantId);
+          reorderLocation(loc.id, null, 'unassigned', useAppStore.getState().activeGlobalVariantId);
         }}
         className="p-1.5 mt-2 rounded-lg text-gray-400 active:bg-nature-surface active:text-nature-primary transition-colors"
       >
@@ -214,7 +217,11 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
 };
 
 export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileView?: (v: 'plan' | 'map') => void, handleEdit: (id: number) => void }) => {
-  const { locations, activeDayVariants, addLocation, addToast, reorderLocation, moveToDay, loadData, setSelectedLocationId } = useAppStore();
+  const { activeDayVariants, addToast, setSelectedLocationId } = useAppStore();
+  const { data: locations = [], refetch: refetchLocations } = useLocations();
+  const { mutateAsync: addLocation } = useAddLocation();
+  const { mutate: reorderLocation } = useReorderLocation();
+  const { mutate: moveToDay } = useMoveToDay();
   const [skippedTasks, setSkippedTasks] = useState<Set<number>>(new Set());
   const [movingItemId, setMovingItemId] = useState<number | null>(null);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
@@ -282,7 +289,7 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
     if (pullY > 60 && !isRefreshing) {
       hapticFeedback.medium();
       setIsRefreshing(true);
-      await loadData();
+      await refetchLocations();
       setTimeout(() => {
         setIsRefreshing(false);
         setPullY(0);
@@ -315,7 +322,7 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
     hapticFeedback.light();
     const { active, over } = event;
     if (active.id !== over?.id && over) {
-      reorderLocation(Number(active.id), Number(over.id), selectedDay, activeVariant);
+      reorderLocation({ activeId: Number(active.id), overId: Number(over.id), day: selectedDay, variantId: activeVariant });
     }
   };
 
@@ -404,7 +411,7 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
                       isSkipped={skippedTasks.has(loc.id)}
                       setSkippedTasks={setSkippedTasks}
                       reorderLocation={(activeId, overId, day, targetVariant) => {
-                        reorderLocation(Number(activeId), Number(overId), day, targetVariant);
+                        reorderLocation({ activeId: Number(activeId), overId: overId ? Number(overId) : null, day, variantId: targetVariant });
                       }}
                       setMobileView={setMobileView}
                       formattedTime={formattedTime}
@@ -466,7 +473,7 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
         <MoveToDaySheet
           onClose={() => setMovingItemId(null)}
           onMove={(day) => {
-            moveToDay(movingItemId, day, activeDayVariants[day]);
+            moveToDay({ id: movingItemId, targetDay: day, targetVariant: activeDayVariants[day] || 'default' });
             setMovingItemId(null);
             addToast('Actividad movida con éxito', 'success');
           }}

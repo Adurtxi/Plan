@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { useAppStore } from '../../store';
 import { Briefcase, Check } from 'lucide-react';
+import { useChecklist, useAddChecklistItem, useToggleChecklistItem, useDeleteChecklistItem } from '../../hooks/useTripData';
 
 export const ChecklistTab = () => {
-  const { checklist, addChecklistItem, toggleChecklistItem, deleteChecklistItem } = useAppStore();
+  const { data: checklist = [] } = useChecklist();
+  const { mutate: addChecklistItem } = useAddChecklistItem();
+  const { mutate: toggleChecklistItem } = useToggleChecklistItem();
+  const { mutate: deleteChecklistItem } = useDeleteChecklistItem();
   const [newTodo, setNewTodo] = useState('');
 
   const handleAdd = () => {
@@ -32,7 +35,7 @@ export const ChecklistTab = () => {
             <div className="divide-y divide-gray-50 flex-1">
               {checklist.map(item => (
                 <div key={item.id} className="flex items-center p-6 justify-between hover:bg-gray-50 transition-colors group">
-                  <div className="flex gap-6 items-center flex-1 cursor-pointer" onClick={() => toggleChecklistItem(item.id, !item.done)}>
+                  <div className="flex gap-6 items-center flex-1 cursor-pointer" onClick={() => toggleChecklistItem({ id: item.id, done: !item.done })}>
                     <div className={`w-6 h-6 border-2 flex items-center justify-center rounded-full transition-all duration-300 ${item.done ? 'bg-nature-primary border-nature-primary text-white' : 'border-gray-300 text-transparent'}`}>
                       <Check size={14} strokeWidth={3} />
                     </div>

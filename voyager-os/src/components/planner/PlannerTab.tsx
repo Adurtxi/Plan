@@ -17,10 +17,27 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { CardVisual } from '../ui/SortableCard';
 import { DAYS, getCatConfig, isTransportCat } from '../../constants';
 import type { Category, Priority, ReservationStatus, LocationItem } from '../../types';
+import { useLocations, useTransports, useTripVariants, useAddLocation, useUpdateLocation } from '../../hooks/useTripData';
+import { useReorderLocation, useMergeLocations, useMoveToDay, useExecuteMoveHere } from '../../hooks/useTripMutations';
 
 export const PlannerTab = () => {
-  const { locations, optimisticLocations, clearOptimisticLocations, filterDays, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations, executeMoveHere, activeDayVariants, setIsDragging, mobileView, setMobileView } = useAppStore();
+  const { optimisticLocations, clearOptimisticLocations, filterDays, setSelectedLocationId, undo, activeGlobalVariantId, movingItemId, setMovingItemId, activeDayVariants, setIsDragging, mobileView, setMobileView } = useAppStore();
   const { isMobile } = useResponsive();
+
+  const { data: locations = [] } = useLocations();
+  const { data: transports = [] } = useTransports();
+  const { data: tripVariants = [] } = useTripVariants();
+
+  const { mutateAsync: addLocation } = useAddLocation();
+  const { mutateAsync: updateLocation } = useUpdateLocation();
+  const { mutate: reorderLocation } = useReorderLocation();
+  const { mutate: moveToDay } = useMoveToDay();
+  const { mutate: mergeLocations } = useMergeLocations();
+  const { mutate: executeMoveHere } = useExecuteMoveHere();
+
+  const handleExecuteMoveHere = (itemId: number, targetDay: string, targetVariant: string, targetGroupId?: string, insertBeforeId?: number | null) => {
+    executeMoveHere({ itemId, targetDay, targetVariant, targetGroupId, insertBeforeId });
+  };
 
   const displayLocations = optimisticLocations || locations;
 
@@ -159,7 +176,7 @@ export const PlannerTab = () => {
 
     // MERGE: Only merge if dwell timer fired (mergeTargetId is set)
     if (!isGroupDrag && mergeTargetId && overItemLoc && overItemLoc.id === mergeTargetId) {
-      mergeLocations(Number(activeIdStr), mergeTargetId);
+      mergeLocations({ activeId: Number(activeIdStr), targetId: mergeTargetId });
       setMergeTargetId(null);
       dwellOverIdRef.current = null;
       if (mergeTimerRef.current) { clearTimeout(mergeTimerRef.current); mergeTimerRef.current = null; }
@@ -208,18 +225,23 @@ export const PlannerTab = () => {
         overDuration: overItemLoc.durationMinutes || 60,
         activeItemLoc,
         pendingReorder: () => {
-          reorderLocation(Number(activeIdStr), passOverId, targetDay, targetVariant);
+          reorderLocation({
+            activeId: Number(activeIdStr),
+            overId: passOverId,
+            day: targetDay,
+            variantId: targetVariant
+          });
         }
       });
       return;
     }
 
-    reorderLocation(
-      isGroupDrag ? activeIdStr : Number(activeIdStr),
-      passOverId,
-      targetDay,
-      targetVariant
-    );
+    reorderLocation({
+      activeId: isGroupDrag ? activeIdStr : Number(activeIdStr),
+      overId: passOverId,
+      day: targetDay,
+      variantId: targetVariant
+    });
   };
 
   const handleResolveConflict = (action: TimeConflictAction, calculatedDatetime?: string) => {
@@ -684,7 +706,7 @@ export const PlannerTab = () => {
                       key={day}
                       onClick={() => {
                         const targetVariant = activeDayVariants[day] || 'default';
-                        if (moveToDayModal.itemId) moveToDay(moveToDayModal.itemId, day, targetVariant);
+                        if (moveToDayModal.itemId) moveToDay({ id: moveToDayModal.itemId, targetDay: day, targetVariant });
                         setMoveToDayModal({ isOpen: false, itemId: null });
                       }}
                       className="text-left px-4 py-3 bg-gray-50 hover:bg-nature-mint/30 rounded-xl text-sm font-bold text-gray-700 transition-colors"
@@ -745,7 +767,7 @@ export const PlannerTab = () => {
                     onRequestMove={(id) => setMovingItemId(id)}
                     mergeTargetId={mergeTargetId}
                     movingItemId={movingItemId}
-                    executeMoveHere={executeMoveHere}
+                    executeMoveHere={handleExecuteMoveHere}
                   />
                 </div>
                 {viewMode === 'board-only' && (

@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useAppStore } from '../../store';
 import { DAYS } from '../../constants';
+import { useLocations, useTripVariants } from '../../hooks/useTripData';
 
 interface MobileDaySelectorProps {
   selectedDay: string;
@@ -8,7 +9,9 @@ interface MobileDaySelectorProps {
 }
 
 export const MobileDaySelector = ({ selectedDay, onSelectDay }: MobileDaySelectorProps) => {
-  const { locations, tripVariants, activeGlobalVariantId } = useAppStore();
+  const { activeGlobalVariantId } = useAppStore();
+  const { data: locations = [] } = useLocations();
+  const { data: tripVariants = [] } = useTripVariants();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Compute day labels from trip variant dates

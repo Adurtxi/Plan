@@ -8,6 +8,7 @@ import { TransportBlock } from './TransportBlock';
 import { useAppStore } from '../../store';
 import { DAYS, isTransportCat } from '../../constants';
 import type { LocationItem } from '../../types';
+import { useLocations, useTransports, useTripVariants } from '../../hooks/useTripData';
 
 /* ── MoveSlot: clickable drop-zone shown between cards when moving ── */
 const MoveSlot = ({ onClick, label }: { onClick: () => void; label?: string }) => (
@@ -93,7 +94,9 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
 const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, viewMode }: BoardColumnProps) => {
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
   const optimisticLocations = useAppStore(s => s.optimisticLocations);
-  const { showDialog, addToast, transports, toggleFilterDay, filterDays, activeDayVariants, setActiveDayVariant, tripVariants, activeGlobalVariantId } = useAppStore();
+  const { showDialog, addToast, toggleFilterDay, filterDays, activeDayVariants, setActiveDayVariant, activeGlobalVariantId } = useAppStore();
+  const { data: transports = [] } = useTransports();
+  const { data: tripVariants = [] } = useTripVariants();
   const activeVariant = activeDayVariants[dayId] || 'default';
   const { isOver, setNodeRef } = useDroppable({ id: `col-${dayId}::${activeVariant}` });
 
@@ -145,7 +148,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
       currentTime = new Date(finalTime.getTime() + (duration + transportTime) * 60000);
       return { ...loc, derivedDatetime: finalTime.toISOString() };
     });
-  }, [dayId, activeVariant, transports, tripVariants, activeGlobalVariantId]);
+  }, [dayId, activeVariant, transports, tripVariants, activeGlobalVariantId, propLocations, optimisticLocations]);
 
   const isMovingMode = !!movingItemId;
   const movingItemIsHere = filteredLocations.some(l => l.id === movingItemId);
@@ -411,7 +414,9 @@ interface ScheduleBoardProps {
 }
 
 export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove, mergeTargetId, movingItemId, executeMoveHere }: ScheduleBoardProps) => {
-  const { locations, filterDays, tripVariants, activeGlobalVariantId } = useAppStore();
+  const { filterDays, activeGlobalVariantId } = useAppStore();
+  const { data: locations = [] } = useLocations();
+  const { data: tripVariants = [] } = useTripVariants();
 
   const displayDays = useMemo(() => {
     let dynamicDays: { id: string, label: string }[] = [];

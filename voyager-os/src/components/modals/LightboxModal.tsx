@@ -1,10 +1,14 @@
 import { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight, Info, Map, Navigation } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { hapticFeedback } from '../../utils/haptics';
+import { useLocations } from '../../hooks/useTripData';
 
 export const LightboxModal = () => {
-  const { lightboxImages, lightboxIndex, lightboxLocationId, setLightboxIndex, closeLightbox, locations, setSelectedLocationId, setActiveTab, setFilterDays, setMobileView } = useAppStore();
+  const { lightboxImages, lightboxIndex, lightboxLocationId, setLightboxIndex, closeLightbox, setSelectedLocationId, setFilterDays, setMobileView } = useAppStore();
+  const { data: locations = [] } = useLocations();
+  const navigate = useNavigate();
 
   const loc = useMemo(() => {
     return lightboxLocationId ? locations.find(l => l.id === lightboxLocationId) : null;
@@ -28,7 +32,7 @@ export const LightboxModal = () => {
     if (!loc) return;
     hapticFeedback.light();
     closeLightbox();
-    setActiveTab('planner');
+    navigate('/');
     setFilterDays([loc.day]);
     if (setMobileView) setMobileView('map');
   };

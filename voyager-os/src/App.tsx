@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from './store';
+import { Routes, Route } from 'react-router';
 import { Sidebar } from './components/layout/Sidebar';
 import { MobileBottomBar } from './components/layout/MobileBottomBar';
 import { PlannerTab } from './components/planner/PlannerTab';
@@ -18,7 +19,7 @@ import 'leaflet/dist/leaflet.css';
 setupLeaflet();
 
 export default function App() {
-  const { activeTab, loadData, mobileView, setMobileView } = useAppStore();
+  const { loadData, mobileView, setMobileView } = useAppStore();
   const { isMobile } = useResponsive();
 
   useEffect(() => {
@@ -42,10 +43,12 @@ export default function App() {
         animate={{ opacity: 1, x: 0 }}
         className={`flex-1 flex overflow-hidden ${isMobile ? 'pb-16' : ''}`}
       >
-        {activeTab === 'planner' && <PlannerTab />}
-        {activeTab === 'analytics' && <SmartSummaryTable />}
-        {activeTab === 'checklist' && <ChecklistTab />}
-        {activeTab === 'gallery' && <GalleryTab />}
+        <Routes>
+          <Route path="/" element={<PlannerTab />} />
+          <Route path="/analytics" element={<SmartSummaryTable />} />
+          <Route path="/checklist" element={<ChecklistTab />} />
+          <Route path="/gallery" element={<GalleryTab />} />
+        </Routes>
       </motion.div>
       {isMobile && <MobileBottomBar mobileView={mobileView} setMobileView={setMobileView} />}
       <LightboxModal />

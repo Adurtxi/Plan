@@ -1,13 +1,17 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import { useAppStore } from '../../store';
 import { AlertTriangle, CheckCircle, Info, Plane, Hotel, Navigation } from 'lucide-react';
 import { isTransportCat, isAccommodationCat } from '../../constants';
+import { useLocations } from '../../hooks/useTripData';
 
 export const SmartSummaryTable = () => {
-  const { locations, setActiveTab, setSelectedLocationId } = useAppStore();
+  const { setSelectedLocationId } = useAppStore();
+  const { data: locations = [] } = useLocations();
+  const navigate = useNavigate();
 
   const handleGoToReserve = (id: number) => {
-    setActiveTab('planner');
+    navigate('/');
     setTimeout(() => {
       setSelectedLocationId(id);
     }, 100);
