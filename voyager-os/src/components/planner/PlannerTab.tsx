@@ -804,6 +804,25 @@ export const PlannerTab = () => {
           </div>
         </div>
         <DetailModal onEdit={handleEdit} />
+        <LocationForm
+          isFormPanelOpen={isFormPanelOpen} setIsFormPanelOpen={setIsFormPanelOpen}
+          formId={formId} formPriority={formPriority} setFormPriority={setFormPriority}
+          formCat={formCat} setFormCat={setFormCat}
+          formSlot={formSlot} setFormSlot={setFormSlot}
+          formCurrency={formCurrency} setFormCurrency={setFormCurrency}
+          tempImages={tempImages} setTempImages={setTempImages}
+          tempAttachments={tempAttachments} setTempAttachments={setTempAttachments}
+          handleAddLocation={handleAddLocation} handleFiles={handleFiles} resetForm={resetForm}
+          locations={locations} handleEdit={handleEdit}
+        />
+        <FreeTimeSheet
+          isOpen={isFreeTimeSheetOpen}
+          onClose={() => { setIsFreeTimeSheetOpen(false); resetForm(); }}
+          formId={formId}
+          day={preselectedDay}
+          variantId={preselectedVariant}
+          onSave={() => { setIsFreeTimeSheetOpen(false); resetForm(); }}
+        />
       </div>
       <DragOverlay dropAnimation={{ duration: 250, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
         {activeItem ? (
