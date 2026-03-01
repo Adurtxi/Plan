@@ -128,13 +128,13 @@ interface AppState {
   clearOptimisticLocations: () => void;
 
   isDragging: boolean;
-  setIsDragging: (isDragging: boolean) => void;
-
+  setIsDragging: (val: boolean) => void;
   movingItemId: number | null;
   setMovingItemId: (id: number | null) => void;
-
   isDrawingRouteFor: string | null;
-  setDrawingRouteFor: (transportId: string | null) => void;
+  setDrawingRouteFor: (id: string | null) => void;
+  reframeMapCoordinates: { lat: number, lng: number } | null;
+  setReframeMapCoordinates: (coords: { lat: number, lng: number } | null) => void;
 
   addTripVariant: (variant: TripVariant) => Promise<void>;
   updateTripVariant: (variant: TripVariant) => Promise<void>;
@@ -166,10 +166,13 @@ interface AppState {
   deleteChecklistItem: (id: number) => Promise<void>;
 
   setActiveTab: (tab: 'planner' | 'checklist' | 'analytics' | 'gallery') => void;
+  mobileView: 'plan' | 'map';
+  setMobileView: (view: 'plan' | 'map') => void;
   toggleFilterDay: (day: string) => void;
   setFilterDays: (days: string[]) => void;
   setSelectedLocationId: (id: number | null) => void;
-  openLightbox: (images: ImageFile[], startIndex?: number) => void;
+  lightboxLocationId: number | null;
+  openLightbox: (images: ImageFile[], startIndex?: number, locationId?: number | null) => void;
   setLightboxIndex: (index: number) => void;
   closeLightbox: () => void;
 }
@@ -182,6 +185,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   optimisticLocations: null,
   activeGlobalVariantId: 'default',
   activeTab: 'planner',
+  mobileView: 'plan',
+  setMobileView: (view) => set({ mobileView: view }),
   filterDays: [],
   activeDayVariants: {},
   setActiveDayVariant: (dayId, variantId) => set(state => ({ activeDayVariants: { ...state.activeDayVariants, [dayId]: variantId } })),
@@ -198,6 +203,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   isDrawingRouteFor: null,
   setDrawingRouteFor: (transportId) => set({ isDrawingRouteFor: transportId }),
+
+  reframeMapCoordinates: null,
+  setReframeMapCoordinates: (coords) => set({ reframeMapCoordinates: coords }),
 
   theme: (localStorage.getItem('voyager-theme') as 'light' | 'dark') ||
     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
@@ -674,7 +682,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   })),
   setFilterDays: (days) => set({ filterDays: days }),
   setSelectedLocationId: (id) => set({ selectedLocationId: id }),
-  openLightbox: (images, startIndex = 0) => set({ lightboxImages: images, lightboxIndex: startIndex }),
+  lightboxLocationId: null,
+  openLightbox: (images, startIndex = 0, locationId = null) => set({ lightboxImages: images, lightboxIndex: startIndex, lightboxLocationId: locationId }),
   setLightboxIndex: (index) => set({ lightboxIndex: index }),
-  closeLightbox: () => set({ lightboxImages: null, lightboxIndex: 0 }),
+  closeLightbox: () => set({ lightboxImages: null, lightboxIndex: 0, lightboxLocationId: null }),
 }));

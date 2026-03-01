@@ -235,7 +235,7 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
   );
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[4000] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-nature-primary/20 backdrop-blur-sm transition-opacity" onClick={() => setSelectedLocationId(null)}></div>
       <div className="bg-white rounded-none md:rounded-bento shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] w-full md:max-w-4xl relative z-10 animate-[fadeIn_0.3s_ease-out]">
 
@@ -245,7 +245,7 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
             {selectedLocation.images?.length > 0 ? (
               <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory custom-scroll hide-scroll-mobile">
                 {selectedLocation.images.map((img, i) => (
-                  <div key={i} className="min-w-full h-full snap-center relative cursor-pointer" onClick={() => openLightbox(selectedLocation.images)}>
+                  <div key={i} className="min-w-full h-full snap-center relative cursor-pointer" onClick={() => openLightbox(selectedLocation.images, i, selectedLocation.id)}>
                     <img src={img.data} className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-105" alt="gallery" />
                     {i === 0 && selectedLocation.images.length > 1 && (
                       <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full z-10 flex items-center gap-1">

@@ -34,12 +34,21 @@ const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
 
 const MapUpdater = ({ locations, reframeTrigger }: { locations: LocationItem[], reframeTrigger: number }) => {
   const map = useMap();
-  const { isDrawingRouteFor, selectedLocationId } = useAppStore();
+  const { isDrawingRouteFor, selectedLocationId, reframeMapCoordinates, setReframeMapCoordinates } = useAppStore();
   const locationsRef = useRef(locations);
 
   useEffect(() => {
     locationsRef.current = locations;
   }, [locations]);
+
+  // Handle zooming to manual coordinates (from Lightbox)
+  useEffect(() => {
+    if (reframeMapCoordinates) {
+      map.flyTo([reframeMapCoordinates.lat, reframeMapCoordinates.lng], 16, { duration: 0.8 });
+      // Limpiar después de iniciar el vuelo, usando un pequeño timeout para que react procese
+      setTimeout(() => setReframeMapCoordinates(null), 100);
+    }
+  }, [reframeMapCoordinates, map, setReframeMapCoordinates]);
 
   // Handle reframe trigger (View all)
   useEffect(() => {

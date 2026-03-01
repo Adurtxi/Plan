@@ -95,7 +95,11 @@ export const CardVisual = memo(({
           <span className="text-[10px] font-bold tracking-wider text-nature-primary bg-nature-mint/30 border border-nature-primary/20 px-2 py-1 rounded-lg">
             {displayPrice}
           </span>
-          {item.images?.length > 0 && <img src={item.images[0].data} className="w-10 h-10 rounded-xl object-cover ml-3 border border-gray-100 shadow-sm" alt="thumb" />}
+          {item.images?.length > 0 && (
+            <div className="ml-3 shrink-0">
+              <img src={item.images[0].data} className="w-10 h-10 rounded-xl object-cover border border-gray-100 shadow-sm" alt="thumb" />
+            </div>
+          )}
         </div>
       </div>
 

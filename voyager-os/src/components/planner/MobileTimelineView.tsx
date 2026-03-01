@@ -3,7 +3,6 @@ import { useAppStore } from '../../store';
 import { Clock, CheckCircle2, Plus, FolderInput, X, RefreshCw, GripVertical, SkipForward, Inbox, Navigation, Car, Map } from 'lucide-react';
 import { CAT_ICONS, DAYS, isTransportCat } from '../../constants';
 import { MobileIdeaInbox } from './MobileIdeaInbox';
-import { DetailModal } from '../modals/DetailModal';
 import { TransportBlock } from './TransportBlock';
 import { MobileDaySelector } from './MobileDaySelector';
 import { useFilteredLocations } from '../../hooks/useFilteredLocations';
@@ -66,9 +65,10 @@ interface SortableMobileCardProps {
   setMobileView?: (v: 'plan' | 'map') => void;
   formattedTime: string | null;
   onClick: () => void;
+  setSelectedLocationId: (id: number | null) => void;
 }
 
-const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocation, setMobileView, formattedTime, onClick }: SortableMobileCardProps) => {
+const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocation, setMobileView, formattedTime, onClick, setSelectedLocationId }: SortableMobileCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: id,
   });
@@ -158,6 +158,11 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
                 </div>
               </div>
             </div>
+            {loc.images?.length > 0 && (
+              <div className="ml-2 shrink-0 self-center">
+                <img src={loc.images[0].data} className="w-16 h-16 rounded-2xl object-cover border border-gray-100 shadow-sm" alt="thumb" />
+              </div>
+            )}
             <DragHandle />
           </div>
 
@@ -167,7 +172,7 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
                 e.stopPropagation();
                 if (setMobileView) {
                   hapticFeedback.light();
-                  useAppStore.getState().setSelectedLocationId(loc.id);
+                  setSelectedLocationId(loc.id);
                   setMobileView('map');
                 }
               }}
@@ -208,12 +213,11 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
   );
 };
 
-export const MobileTimelineView = ({ setMobileView }: { setMobileView?: (v: 'plan' | 'map') => void }) => {
-  const { locations, activeDayVariants, addLocation, addToast, reorderLocation, moveToDay, loadData } = useAppStore();
+export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileView?: (v: 'plan' | 'map') => void, handleEdit: (id: number) => void }) => {
+  const { locations, activeDayVariants, addLocation, addToast, reorderLocation, moveToDay, loadData, setSelectedLocationId } = useAppStore();
   const [skippedTasks, setSkippedTasks] = useState<Set<number>>(new Set());
   const [movingItemId, setMovingItemId] = useState<number | null>(null);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
-  const [editingLocId, setEditingLocId] = useState<number | null>(null);
   const lastScrollY = useRef(0);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -406,8 +410,9 @@ export const MobileTimelineView = ({ setMobileView }: { setMobileView?: (v: 'pla
                       formattedTime={formattedTime}
                       onClick={() => {
                         hapticFeedback.selection();
-                        useAppStore.getState().setSelectedLocationId(loc.id);
+                        setSelectedLocationId(loc.id);
                       }}
+                      setSelectedLocationId={setSelectedLocationId}
                     />
                     {nextLoc && loc.cat !== 'free' && !isTransportCat(loc.cat) && nextLoc.cat !== 'free' && !isTransportCat(nextLoc.cat) && (
                       <div className="py-2 ml-2">
@@ -471,7 +476,7 @@ export const MobileTimelineView = ({ setMobileView }: { setMobileView?: (v: 'pla
       <MobileIdeaInbox
         isOpen={isInboxOpen}
         onClose={() => setIsInboxOpen(false)}
-        handleEdit={(id) => setEditingLocId(id)}
+        handleEdit={handleEdit}
         handleAddNew={() => {
           addLocation({
             id: Date.now(), title: 'Nueva Idea', link: '', coords: null,
@@ -482,9 +487,7 @@ export const MobileTimelineView = ({ setMobileView }: { setMobileView?: (v: 'pla
         }}
       />
 
-      {editingLocId && (
-        <DetailModal onEdit={(id) => setEditingLocId(id)} />
-      )}
+
     </div >
   );
 };

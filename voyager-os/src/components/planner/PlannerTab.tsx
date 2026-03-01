@@ -18,8 +18,8 @@ import { CardVisual } from '../ui/SortableCard';
 import { DAYS, getCatConfig, isTransportCat } from '../../constants';
 import type { Category, Priority, ReservationStatus, LocationItem } from '../../types';
 
-export const PlannerTab = ({ mobileView, setMobileView }: { mobileView?: 'plan' | 'map', setMobileView?: (v: 'plan' | 'map') => void }) => {
-  const { locations, optimisticLocations, clearOptimisticLocations, filterDays, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations, executeMoveHere, activeDayVariants, setIsDragging } = useAppStore();
+export const PlannerTab = () => {
+  const { locations, optimisticLocations, clearOptimisticLocations, filterDays, transports, reorderLocation, addLocation, updateLocation, moveToDay, setSelectedLocationId, undo, tripVariants, activeGlobalVariantId, movingItemId, setMovingItemId, mergeLocations, executeMoveHere, activeDayVariants, setIsDragging, mobileView, setMobileView } = useAppStore();
   const { isMobile } = useResponsive();
 
   const displayLocations = optimisticLocations || locations;
@@ -599,9 +599,49 @@ export const PlannerTab = ({ mobileView, setMobileView }: { mobileView?: 'plan' 
 
   if (isMobile) {
     if (mobileView === 'map') {
-      return <MobileMapView routePolylines={routePolylines} />;
+      return (
+        <div className="flex-1 flex flex-col overflow-hidden bg-nature-bg">
+          <MobileMapView routePolylines={routePolylines} />
+          <DetailModal onEdit={handleEdit} />
+          <LocationForm
+            isFormPanelOpen={isFormPanelOpen} setIsFormPanelOpen={setIsFormPanelOpen}
+            formId={formId} formPriority={formPriority} setFormPriority={setFormPriority}
+            formCat={formCat} setFormCat={setFormCat}
+            formSlot={formSlot} setFormSlot={setFormSlot}
+            formCurrency={formCurrency} setFormCurrency={setFormCurrency}
+            tempImages={tempImages} setTempImages={setTempImages}
+            tempAttachments={tempAttachments} setTempAttachments={setTempAttachments}
+            handleAddLocation={handleAddLocation} handleFiles={handleFiles} resetForm={resetForm}
+            locations={locations} handleEdit={handleEdit}
+          />
+        </div>
+      );
     }
-    return <MobileTimelineView setMobileView={setMobileView} />;
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden bg-nature-bg">
+        <MobileTimelineView setMobileView={setMobileView} handleEdit={handleEdit} />
+        <DetailModal onEdit={handleEdit} />
+        <LocationForm
+          isFormPanelOpen={isFormPanelOpen} setIsFormPanelOpen={setIsFormPanelOpen}
+          formId={formId} formPriority={formPriority} setFormPriority={setFormPriority}
+          formCat={formCat} setFormCat={setFormCat}
+          formSlot={formSlot} setFormSlot={setFormSlot}
+          formCurrency={formCurrency} setFormCurrency={setFormCurrency}
+          tempImages={tempImages} setTempImages={setTempImages}
+          tempAttachments={tempAttachments} setTempAttachments={setTempAttachments}
+          handleAddLocation={handleAddLocation} handleFiles={handleFiles} resetForm={resetForm}
+          locations={locations} handleEdit={handleEdit}
+        />
+        <FreeTimeSheet
+          isOpen={isFreeTimeSheetOpen}
+          onClose={() => { setIsFreeTimeSheetOpen(false); resetForm(); }}
+          formId={formId}
+          day={preselectedDay}
+          variantId={preselectedVariant}
+          onSave={() => { setIsFreeTimeSheetOpen(false); resetForm(); }}
+        />
+      </div>
+    );
   }
 
   const movingItemData = locations.find(l => l.id === movingItemId);
@@ -616,26 +656,7 @@ export const PlannerTab = ({ mobileView, setMobileView }: { mobileView?: 'plan' 
             handleAddNew={() => { resetForm(); setIsFormPanelOpen(true); setSelectedLocationId(null); setIsAddMode(false); }}
           />
 
-          <LocationForm
-            isFormPanelOpen={isFormPanelOpen} setIsFormPanelOpen={setIsFormPanelOpen}
-            formId={formId} formPriority={formPriority} setFormPriority={setFormPriority}
-            formCat={formCat} setFormCat={setFormCat}
-            formSlot={formSlot} setFormSlot={setFormSlot}
-            formCurrency={formCurrency} setFormCurrency={setFormCurrency}
-            tempImages={tempImages} setTempImages={setTempImages}
-            tempAttachments={tempAttachments} setTempAttachments={setTempAttachments}
-            handleAddLocation={handleAddLocation} handleFiles={handleFiles} resetForm={resetForm}
-            locations={locations} handleEdit={handleEdit}
-          />
 
-          <FreeTimeSheet
-            isOpen={isFreeTimeSheetOpen}
-            onClose={() => { setIsFreeTimeSheetOpen(false); resetForm(); }}
-            formId={formId}
-            day={preselectedDay}
-            variantId={preselectedVariant}
-            onSave={() => { setIsFreeTimeSheetOpen(false); resetForm(); }}
-          />
 
           <TripSettingsModal
             isOpen={isSettingsModalOpen}

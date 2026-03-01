@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from './store';
 import { Sidebar } from './components/layout/Sidebar';
@@ -18,9 +18,8 @@ import 'leaflet/dist/leaflet.css';
 setupLeaflet();
 
 export default function App() {
-  const { activeTab, loadData } = useAppStore();
+  const { activeTab, loadData, mobileView, setMobileView } = useAppStore();
   const { isMobile } = useResponsive();
-  const [mobileView, setMobileView] = useState<'plan' | 'map'>('plan');
 
   useEffect(() => {
     loadData();
@@ -43,7 +42,7 @@ export default function App() {
         animate={{ opacity: 1, x: 0 }}
         className={`flex-1 flex overflow-hidden ${isMobile ? 'pb-16' : ''}`}
       >
-        {activeTab === 'planner' && <PlannerTab mobileView={mobileView} setMobileView={setMobileView} />}
+        {activeTab === 'planner' && <PlannerTab />}
         {activeTab === 'analytics' && <SmartSummaryTable />}
         {activeTab === 'checklist' && <ChecklistTab />}
         {activeTab === 'gallery' && <GalleryTab />}
