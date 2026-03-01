@@ -15,6 +15,7 @@ interface LocationFormProps {
   setFormPriority: (p: Priority) => void;
   formCat: Category;
   setFormCat: (c: Category) => void;
+  preselectedDay?: string;
   formSlot: string;
   setFormSlot: (s: string) => void;
   formCurrency: string;
@@ -199,7 +200,7 @@ export const LocationForm = ({
 
       <div className="flex px-6 border-b border-gray-100 overflow-x-auto no-scrollbar">
         <TabButton id="general" label={tabLabels.general} icon={MapPin} />
-        <TabButton id="time" label={tabLabels.time} icon={Calendar} />
+        {catGroup === 'activity' && <TabButton id="time" label={tabLabels.time} icon={Calendar} />}
         <TabButton id="finance" label={tabLabels.finance} icon={CreditCard} />
         <TabButton id="assets" label={tabLabels.assets} icon={ImageIcon} />
       </div>
@@ -477,12 +478,69 @@ export const LocationForm = ({
                 )}
               </div>
             )}
+
+            {/* ── Transport / Accommodation Shared Time Fields ── */}
+            {catGroup !== 'activity' && (
+              <div className="bg-nature-mint/10 p-6 rounded-2xl border border-nature-primary/10 space-y-4 animate-in fade-in slide-in-from-top-2 mt-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-nature-primary text-lg">🕒</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-nature-primary/50">Horarios</span>
+                </div>
+                {(() => {
+                  const showSlot = false;
+                  return (
+                    <div className="space-y-6">
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 flex items-center justify-between">
+                            <span>
+                              {catGroup === 'transport' ? (formCat.includes('arrival') ? 'Hora Llegada' : 'Hora Salida') :
+                                catGroup === 'accommodation' ? (formCat === 'hotel-checkout' ? 'Hora Check-out' : 'Hora Check-in') :
+                                  'Inicio (Opcional)'}
+                            </span>
+                            <label className="flex items-center gap-1 cursor-pointer" title="Fijar esta hora exacta (No recálcular)">
+                              <input type="checkbox" name="isPinnedTime" className="accent-nature-primary w-3 h-3" />
+                              <span className="normal-case text-[9px] text-nature-primary opacity-80">Fijar Hora</span>
+                            </label>
+                          </label>
+                          <input name="datetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all" />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-4">
+                        <div className="w-1/2">
+                          <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">
+                            {catGroup === 'accommodation' ? (formCat === 'hotel-checkin' ? 'Check-out' : 'Check-in') : 'Fin / Hora Llegada'}
+                          </label>
+                          <input name="checkOutDatetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all" />
+                        </div>
+                        <div className="w-1/2">
+                          <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración</label>
+                          <div className="flex bg-gray-50 border border-gray-100 focus-within:border-nature-mint focus-within:bg-white rounded-xl overflow-hidden transition-all">
+                            <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
+                            <div className="w-px bg-gray-200 my-2"></div>
+                            <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas</label>
+                        <textarea name="notes" rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
+                          placeholder={catGroup === 'transport' ? 'Info del trayecto, escalas...' : catGroup === 'accommodation' ? 'Wifi, desayuno incluido...' : 'Recordar entradas, dress code...'}></textarea>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
           </div>
 
           {/* ═══ TAB: HORARIOS ═══ */}
-          <div className={`${activeTab === 'time' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
-            <div className="flex gap-4">
-              {catGroup === 'activity' && (
+          {catGroup === 'activity' && (
+            <div className={`${activeTab === 'time' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
+              <div className="flex gap-4">
                 <div className="w-1/2">
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Momento del día</label>
                   <CustomSelect
@@ -497,46 +555,40 @@ export const LocationForm = ({
                     buttonClassName="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-nature-text font-bold"
                   />
                 </div>
-              )}
-              <div className={catGroup === 'activity' ? 'w-1/2' : 'flex-1'}>
-                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 flex items-center justify-between">
-                  <span>
-                    {catGroup === 'transport' ? (formCat.includes('arrival') ? 'Hora Llegada' : 'Hora Salida') :
-                      catGroup === 'accommodation' ? (formCat === 'hotel-checkout' ? 'Hora Check-out' : 'Hora Check-in') :
-                        'Inicio (Opcional)'}
-                  </span>
-                  <label className="flex items-center gap-1 cursor-pointer" title="Fijar esta hora exacta (No recálcular)">
-                    <input type="checkbox" name="isPinnedTime" className="accent-nature-primary w-3 h-3" />
-                    <span className="normal-case text-[9px] text-nature-primary opacity-80">Fijar Hora</span>
+                <div className="w-1/2">
+                  <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 flex items-center justify-between">
+                    <span>Inicio (Opcional)</span>
+                    <label className="flex items-center gap-1 cursor-pointer" title="Fijar esta hora exacta (No recálcular)">
+                      <input type="checkbox" name="isPinnedTime" className="accent-nature-primary w-3 h-3" />
+                      <span className="normal-case text-[9px] text-nature-primary opacity-80">Fijar Hora</span>
+                    </label>
                   </label>
-                </label>
-                <input name="datetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all" />
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="w-1/2">
-                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">
-                  {catGroup === 'accommodation' ? (formCat === 'hotel-checkin' ? 'Check-out' : 'Check-in') : 'Fin / Hora Llegada'}
-                </label>
-                <input name="checkOutDatetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all" />
-              </div>
-              <div className="w-1/2">
-                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración</label>
-                <div className="flex bg-gray-50 border border-gray-100 focus-within:border-nature-mint focus-within:bg-white rounded-xl overflow-hidden transition-all">
-                  <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
-                  <div className="w-px bg-gray-200 my-2"></div>
-                  <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
+                  <input name="datetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all" />
                 </div>
               </div>
-            </div>
 
-            <div>
-              <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas</label>
-              <textarea name="notes" rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
-                placeholder={catGroup === 'transport' ? 'Info del trayecto, escalas...' : catGroup === 'accommodation' ? 'Wifi, desayuno incluido...' : 'Recordar entradas, dress code...'}></textarea>
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Fin / Hora Llegada</label>
+                  <input name="checkOutDatetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all" />
+                </div>
+                <div className="w-1/2">
+                  <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración</label>
+                  <div className="flex bg-gray-50 border border-gray-100 focus-within:border-nature-mint focus-within:bg-white rounded-xl overflow-hidden transition-all">
+                    <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
+                    <div className="w-px bg-gray-200 my-2"></div>
+                    <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas</label>
+                <textarea name="notes" rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
+                  placeholder="Recordar entradas, dress code..."></textarea>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ═══ TAB: RESERVA ═══ */}
           <div className={`${activeTab === 'finance' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>

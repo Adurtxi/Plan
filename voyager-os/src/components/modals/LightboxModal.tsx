@@ -35,6 +35,12 @@ export const LightboxModal = () => {
     navigate('/');
     setFilterDays([loc.day]);
     if (setMobileView) setMobileView('map');
+
+    if (loc.coords) {
+      useAppStore.getState().setReframeMapCoordinates(loc.coords);
+      // Evitar que se abra el detalle también
+      setSelectedLocationId(null);
+    }
   };
 
   const handleShowDetail = () => {

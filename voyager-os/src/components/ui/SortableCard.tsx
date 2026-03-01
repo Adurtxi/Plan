@@ -11,6 +11,14 @@ const formatDuration = (mins: number) => {
   return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60 ? (mins % 60) + 'm' : ''}` : `${mins}m`;
 };
 
+const formatDateTimeObj = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return {
+    time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    date: d.toLocaleDateString([], { day: '2-digit', month: 'short' }).replace('.', ''),
+  };
+};
+
 const getStatusIcon = (status?: string) => {
   switch (status) {
     case 'booked': return <CheckCircle2 size={12} className="text-green-500" />;
@@ -117,12 +125,33 @@ export const CardVisual = memo(({
 
               {/* Chips Row */}
               <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                <div className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
-                  <Clock size={12} className="text-nature-primary/70" />
-                  {formattedTime ? (
-                    <span className="flex items-center gap-0.5">{formattedTime} {item.isPinnedTime && <Lock size={10} className="text-nature-primary opacity-50" />}</span>
-                  ) : (item.slot || 'S/H')}
-                </div>
+                {(isTransportCat(item.cat) || item.cat.startsWith('hotel')) ? (() => {
+                  const startObj = timeToFilter ? formatDateTimeObj(timeToFilter) : null;
+                  const endObj = item.checkOutDatetime ? formatDateTimeObj(item.checkOutDatetime) : null;
+
+                  return (
+                    <div className="flex items-center gap-1.5 text-[10px] md:text-xs font-black text-nature-primary bg-nature-mint/20 px-2.5 py-1 rounded-md border border-nature-primary/20">
+                      <Clock size={12} className="text-nature-primary/70 shrink-0" />
+                      <span className="flex items-center flex-wrap gap-x-1 gap-y-0.5 leading-tight">
+                        {startObj ? <span className="whitespace-nowrap">{startObj.time} <span className="text-[9px] opacity-70">({startObj.date})</span></span> : '?'}
+                        {endObj && (
+                          <>
+                            <span className="text-nature-primary/50 mx-0.5">→</span>
+                            <span className="whitespace-nowrap">{endObj.time} <span className="text-[9px] opacity-70">({endObj.date})</span></span>
+                          </>
+                        )}
+                        {(item.isPinnedTime || item.datetime) && <Lock size={10} className="text-nature-primary opacity-50 ml-0.5 shrink-0" />}
+                      </span>
+                    </div>
+                  );
+                })() : (
+                  <div className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                    <Clock size={12} className="text-nature-primary/70" />
+                    {formattedTime ? (
+                      <span className="flex items-center gap-0.5">{formattedTime} {item.isPinnedTime && <Lock size={10} className="text-nature-primary opacity-50" />}</span>
+                    ) : (item.slot || 'S/H')}
+                  </div>
+                )}
 
                 {item.durationMinutes ? (
                   <button onClick={handleEditDuration} className="text-[10px] font-bold px-2 py-1 rounded-md bg-nature-mint/30 hover:bg-nature-mint/60 border border-nature-primary/10 text-nature-primary transition-colors flex items-center z-20">

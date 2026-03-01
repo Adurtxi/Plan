@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Polyline, Tooltip } from 'react-leaflet';
 import { DndContext, closestCenter, type DragEndEvent, type DragStartEvent, useSensor, useSensors, PointerSensor, TouchSensor, DragOverlay } from '@dnd-kit/core';
 import { LocationForm } from './LocationForm';
@@ -12,10 +12,10 @@ import { IdeaInbox } from './IdeaInbox';
 import { MobileTimelineView } from './MobileTimelineView';
 import { MobileMapView } from './MobileMapView';
 import { MobileDaySelector } from './MobileDaySelector';
-import { useAppStore } from '../../store';
+import { useAppStore, computeDateForDay } from '../../store';
 import { useResponsive } from '../../hooks/useResponsive';
 import { CardVisual } from '../ui/SortableCard';
-import { DAYS, getCatConfig, isTransportCat } from '../../constants';
+import { DAYS, getCatConfig, isTransportCat, isAccommodationCat } from '../../constants';
 import type { Category, Priority, ReservationStatus, LocationItem } from '../../types';
 import { useLocations, useTransports, useTripVariants, useAddLocation, useUpdateLocation } from '../../hooks/useTripData';
 import { useReorderLocation, useMergeLocations, useMoveToDay, useExecuteMoveHere } from '../../hooks/useTripMutations';
@@ -254,6 +254,15 @@ export const PlannerTab = () => {
     setConflictModalData(null);
   };
 
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) setTimeout(() => handleEdit(customEvent.detail), 10);
+    };
+    window.addEventListener('open-edit', listener);
+    return () => window.removeEventListener('open-edit', listener);
+  }, [displayLocations]);
+
   const handleEdit = (id: number) => {
     const loc = displayLocations.find(l => l.id === id);
     if (!loc) return;
@@ -276,6 +285,13 @@ export const PlannerTab = () => {
         (form.elements.namedItem('cost') as HTMLInputElement).value = loc.cost;
         (form.elements.namedItem('notes') as HTMLTextAreaElement).value = loc.notes;
         if (loc.datetime) (form.elements.namedItem('datetime') as HTMLInputElement).value = loc.datetime;
+        else {
+          const targetDate = computeDateForDay(loc.day, tripVariants, activeGlobalVariantId);
+          if (targetDate) {
+            const dStr = targetDate.toISOString().split('T')[0] + 'T09:00';
+            (form.elements.namedItem('datetime') as HTMLInputElement).value = dStr;
+          }
+        }
         if (loc.checkOutDatetime) (form.elements.namedItem('checkOutDatetime') as HTMLInputElement).value = loc.checkOutDatetime;
         if (loc.bookingRef) (form.elements.namedItem('bookingRef') as HTMLInputElement).value = loc.bookingRef;
         if (loc.logisticsConfirmation) (form.elements.namedItem('logisticsConfirmation') as HTMLInputElement).value = loc.logisticsConfirmation;
@@ -350,6 +366,17 @@ export const PlannerTab = () => {
     setIsFormPanelOpen(true);
     setSelectedLocationId(null);
     setIsAddMode(false);
+
+    const targetDate = computeDateForDay(day, tripVariants, activeGlobalVariantId);
+    if (targetDate) {
+      setTimeout(() => {
+        const form = document.getElementById('mainForm') as HTMLFormElement;
+        if (form) {
+          const dtInput = form.elements.namedItem('datetime') as HTMLInputElement;
+          if (dtInput) dtInput.value = targetDate.toISOString().split('T')[0] + 'T09:00';
+        }
+      }, 0);
+    }
   };
 
   const handleAddFreeTimeToDay = (day: string, variantId: string) => {
@@ -400,7 +427,10 @@ export const PlannerTab = () => {
     const priceAmount = rawAmount ? parseFloat(rawAmount) : 0;
     const priceCurrency = (formData.get('priceCurrency') as string) || 'EUR';
 
-    const isPinnedTime = formData.get('isPinnedTime') === 'on';
+    const userDateTime = formData.get('datetime') as string;
+    const isTransportation = isTransportCat(formCat);
+    const isAccommodation = isAccommodationCat(formCat);
+    const isPinnedTime = formData.get('isPinnedTime') === 'on' || ((isTransportation || isAccommodation) && !!userDateTime);
 
     // Parse tags safely
     const rawTags = formData.get('tags') as string || '';
@@ -641,7 +671,7 @@ export const PlannerTab = () => {
             tempImages={tempImages} setTempImages={setTempImages}
             tempAttachments={tempAttachments} setTempAttachments={setTempAttachments}
             handleAddLocation={handleAddLocation} handleFiles={handleFiles} resetForm={resetForm}
-            locations={locations} handleEdit={handleEdit}
+            locations={locations} handleEdit={handleEdit} preselectedDay={preselectedDay}
           />
         </div>
       );

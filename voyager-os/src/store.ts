@@ -31,7 +31,7 @@ export interface ToastConfig {
 
 let dbPromise: Promise<IDBPDatabase<VoyagerDB>>;
 
-const computeDateForDay = (dayId: string, tripVariants: TripVariant[], globalVariantId: string): Date | null => {
+export const computeDateForDay = (dayId: string, tripVariants: TripVariant[], globalVariantId: string): Date | null => {
   if (dayId === 'unassigned') return null;
   const variant = tripVariants.find(v => v.id === globalVariantId) || tripVariants.find(v => v.id === 'default');
   if (!variant?.startDate) return null;

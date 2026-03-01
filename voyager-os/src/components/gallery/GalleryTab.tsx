@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAppStore } from '../../store';
-import { ImageIcon, Layers, MapPin, Map, Navigation, MoreVertical, Edit2 } from 'lucide-react';
+import { ImageIcon, Layers, MapPin, Map, Navigation, MoreVertical, Info } from 'lucide-react';
 import { CAT_ICONS, DAYS } from '../../constants';
 import { hapticFeedback } from '../../utils/haptics';
 import { useLocations, useTripVariants } from '../../hooks/useTripData';
+import { DetailModal } from '../modals/DetailModal';
 
 export const GalleryTab = () => {
   const { activeGlobalVariantId, openLightbox, setFilterDays, setSelectedLocationId, setMobileView } = useAppStore();
@@ -119,14 +120,15 @@ export const GalleryTab = () => {
     hapticFeedback.light();
     navigate('/');
     setFilterDays([loc.day]);
-    setSelectedLocationId(loc.id);
+    if (loc.coords) {
+      useAppStore.getState().setReframeMapCoordinates(loc.coords);
+      setSelectedLocationId(null);
+    }
     setMobileView('map');
   };
 
   const handleShowDetail = (loc: any) => {
     hapticFeedback.light();
-    navigate('/');
-    setFilterDays([loc.day]);
     setSelectedLocationId(loc.id);
   };
 
@@ -284,7 +286,7 @@ export const GalleryTab = () => {
                         {activeMenuId === loc.id && (
                           <div className="absolute top-12 right-0 bg-white rounded-2xl border border-gray-200 py-1.5 w-48 z-50 animate-in fade-in zoom-in-95" onClick={e => e.stopPropagation()}>
                             <button onClick={() => { handleShowDetail(loc); setActiveMenuId(null); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 text-sm font-bold text-gray-700 transition-colors">
-                              <Edit2 size={16} className="text-nature-primary" /> Editar
+                              <Info size={16} className="text-nature-primary" /> Detalle
                             </button>
                             <button onClick={() => { handleGoToMap(loc); setActiveMenuId(null); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 text-sm font-bold text-gray-700 transition-colors">
                               <Map size={16} className="text-nature-accent" /> Ver en Mapa
@@ -305,6 +307,13 @@ export const GalleryTab = () => {
           </div>
         )}
       </div>
+
+      <DetailModal onEdit={(id) => {
+        navigate('/');
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('open-edit', { detail: id }));
+        }, 100);
+      }} />
     </div>
   );
 };
