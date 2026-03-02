@@ -10,7 +10,7 @@ export const DetailModal = () => {
     selectedLocationId, setSelectedLocationId,
     isDetailModalOpen, setIsDetailModalOpen,
     openLightbox, showDialog, addToast,
-    openDocumentViewer
+    openDocumentViewer, lightboxImages
   } = useAppStore();
   const { data: locations = [] } = useLocations();
   const { mutateAsync: addLocation } = useAddLocation();
@@ -31,6 +31,8 @@ export const DetailModal = () => {
   }, [selectedLocationId, isDetailModalOpen, setIsDetailModalOpen, setSelectedLocationId]);
 
   if (!selectedLocation || !isDetailModalOpen) return null;
+
+  const isHiddenByLightbox = Array.isArray(lightboxImages) && lightboxImages.length > 0;
 
   const handleQuickUpload = () => {
     const input = document.createElement('input');
@@ -270,10 +272,9 @@ export const DetailModal = () => {
   );
 
   return (
-    <div className="fixed inset-0 z-[4000] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-nature-primary/20 backdrop-blur-sm transition-opacity" onClick={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }}></div>
+    <div className={`fixed inset-0 z-[4000] flex items-center justify-center p-4 transition-opacity duration-300 ${isHiddenByLightbox ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <div className="absolute inset-0 bg-nature-primary/20 backdrop-blur-sm" onClick={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }}></div>
       <div className="bg-white rounded-none md:rounded-bento shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] w-full md:max-w-4xl relative z-10 animate-[fadeIn_0.3s_ease-out]">
-
         {/* LEFT PANE - GALLERY (only for activities and accommodation with images) */}
         {catGroup === 'activity' && (
           <div className="md:w-5/12 bg-gray-100 relative h-64 md:h-auto group overflow-hidden">
@@ -438,6 +439,6 @@ export const DetailModal = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };

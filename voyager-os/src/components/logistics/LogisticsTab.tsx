@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useReservations } from '../../hooks/useTripData';
-import { ReservationForm } from './ReservationForm';
 import { ReservationCard } from './ReservationCard';
+import { ReservationForm } from './ReservationForm';
 
 export const LogisticsTab = () => {
   const { data: reservations = [] } = useReservations();

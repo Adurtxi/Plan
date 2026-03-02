@@ -131,13 +131,19 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
       let finalTime = new Date(currentTime);
       let suggestedDatetime: string | undefined = undefined;
 
-      if (loc.isPinnedTime && loc.datetime) {
-        const pinnedTime = new Date(loc.datetime);
-        // Check if the pinned time is different from the current calculated time
-        if (pinnedTime.getHours() !== finalTime.getHours() || pinnedTime.getMinutes() !== finalTime.getMinutes()) {
-          suggestedDatetime = finalTime.toISOString(); // Suggest the calculated time
+      // Honor explicitly set datetimes on tickets (flights/hotels) even if not "pinned" manually by user,
+      // or if they are explicitly pinned. 
+      if (loc.datetime) {
+        const explicitlySetTime = new Date(loc.datetime);
+        finalTime.setHours(explicitlySetTime.getHours(), explicitlySetTime.getMinutes(), 0, 0);
+
+        if (loc.isPinnedTime) {
+          // Check if the pinned time is different from the current naturally flowing calculated time
+          const flowingTime = new Date(currentTime);
+          if (explicitlySetTime.getHours() !== flowingTime.getHours() || explicitlySetTime.getMinutes() !== flowingTime.getMinutes()) {
+            suggestedDatetime = flowingTime.toISOString(); // Suggest the calculated time
+          }
         }
-        finalTime.setHours(pinnedTime.getHours(), pinnedTime.getMinutes(), 0, 0);
       }
 
       const duration = loc.durationMinutes || 60;
@@ -155,7 +161,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
       currentTime = new Date(finalTime.getTime() + (duration + transportTime) * 60000);
       return {
         ...loc,
-        derivedDatetime: finalTime.toISOString(),
+        derivedDatetime: loc.datetime || finalTime.toISOString(),
         suggestedDatetime
       } as LocationItem & { suggestedDatetime?: string; baseDate?: Date };
     }).map(loc => ({ ...loc, baseDate }));

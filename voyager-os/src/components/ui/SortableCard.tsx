@@ -149,22 +149,20 @@ export const CardVisual = memo(({
                       )}
                     </div>
                   );
-                })() : (
+                })() : formattedTime ? (
                   <div className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
                     <Clock size={12} className="text-nature-primary/70" />
-                    {formattedTime ? (
-                      <span className="flex items-center gap-0.5">
-                        {formattedTime}
-                        {item.isPinnedTime && <Lock size={10} className="text-nature-primary opacity-50" />}
-                        {onTimeConflict && (
-                          <button onClick={(e) => { e.stopPropagation(); onTimeConflict(); }} className="ml-0.5 p-0.5 bg-amber-100 hover:bg-amber-200 text-amber-600 rounded-md transition-colors" title="Desajuste de Horario">
-                            <AlertTriangle size={12} />
-                          </button>
-                        )}
-                      </span>
-                    ) : (item.slot || 'S/H')}
+                    <span className="flex items-center gap-0.5">
+                      {formattedTime}
+                      {item.isPinnedTime && <Lock size={10} className="text-nature-primary opacity-50" />}
+                      {onTimeConflict && (
+                        <button onClick={(e) => { e.stopPropagation(); onTimeConflict(); }} className="ml-0.5 p-0.5 bg-amber-100 hover:bg-amber-200 text-amber-600 rounded-md transition-colors" title="Desajuste de Horario">
+                          <AlertTriangle size={12} />
+                        </button>
+                      )}
+                    </span>
                   </div>
-                )}
+                ) : null}
 
                 {item.durationMinutes ? (
                   <button onClick={handleEditDuration} className="text-[10px] font-bold px-2 py-1 rounded-md bg-nature-mint/30 hover:bg-nature-mint/60 border border-nature-primary/10 text-nature-primary transition-colors flex items-center z-20">
@@ -333,7 +331,7 @@ const TransportCard = memo(({ item, isDragging, isMovingMode, attributes, listen
         <div className="flex flex-1 min-w-0 items-start gap-4">
           {/* Departure Time Block */}
           {displayTime && (
-            <div className="text-center shrink-0">
+            <div className="text-center shrink-0 min-w-[3.5rem]">
               <div className="text-lg md:text-xl font-black text-[#1A365D]">
                 {new Date(displayTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>

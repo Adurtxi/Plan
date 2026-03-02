@@ -123,6 +123,47 @@ export const useAddLocation = () => {
     mutationFn: async (loc: LocationItem) => {
       saveLocationHistory();
       const db = await initDB();
+
+      // Auto-assign chronological order if datetime is provided
+      if (loc.datetime && loc.day && loc.day !== 'unassigned') {
+        const allLocs = await db.getAll('locations');
+        const dayLocs = allLocs.filter(l =>
+          l.day === loc.day &&
+          (l.variantId || 'default') === (loc.variantId || 'default') &&
+          (l.globalVariantId || 'default') === (loc.globalVariantId || 'default')
+        );
+
+        if (dayLocs.length > 0) {
+          const newTime = new Date(loc.datetime).getTime();
+
+          dayLocs.sort((a, b) => {
+            const timeA = a.datetime ? new Date(a.datetime).getTime() : Infinity;
+            const timeB = b.datetime ? new Date(b.datetime).getTime() : Infinity;
+            if (timeA === timeB) return (a.order || 0) - (b.order || 0);
+            return timeA - timeB;
+          });
+
+          const nextItemIndex = dayLocs.findIndex(d => {
+            const t = d.datetime ? new Date(d.datetime).getTime() : Infinity;
+            return t > newTime;
+          });
+
+          if (nextItemIndex === -1) {
+            loc.order = (dayLocs[dayLocs.length - 1].order || Date.now()) + 1000;
+          } else if (nextItemIndex === 0) {
+            loc.order = (dayLocs[0].order || Date.now()) - 1000;
+          } else {
+            const prev = dayLocs[nextItemIndex - 1];
+            const next = dayLocs[nextItemIndex];
+            loc.order = ((prev.order || 0) + (next.order || 0)) / 2;
+          }
+        } else if (!loc.order) {
+          loc.order = Date.now();
+        }
+      } else if (!loc.order) {
+        loc.order = Date.now();
+      }
+
       await db.put('locations', loc);
     },
     onSuccess: () => {

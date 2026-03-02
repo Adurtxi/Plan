@@ -4,6 +4,7 @@ import { useReservations, useAddLocation } from '../../hooks/useTripData';
 import { useAppStore } from '../../store';
 import type { LocationItem, ReservationItem } from '../../types';
 import { CAT_ICONS, CAT_COLORS } from '../../constants';
+import { useTripVariants } from '../../hooks/useTripData';
 
 interface Props {
   isOpen: boolean;
@@ -14,10 +15,31 @@ interface Props {
 export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targetDay }) => {
   const { data: reservations = [] } = useReservations();
   const { mutateAsync: addLocation } = useAddLocation();
+  const { data: tripVariants = [] } = useTripVariants();
   const { addToast } = useAppStore();
   const activeGlobal = useAppStore(s => s.activeGlobalVariantId) || 'default';
 
   if (!isOpen) return null;
+
+  const getDayIdFromDate = (dateStr?: string) => {
+    if (targetDay !== 'unassigned') return targetDay;
+    if (!dateStr) return 'unassigned';
+
+    const activeVar = tripVariants.find(v => v.id === activeGlobal);
+    if (!activeVar?.startDate) return 'unassigned';
+
+    const start = new Date(activeVar.startDate);
+    const target = new Date(dateStr);
+
+    // Calculate difference in days (ignoring time)
+    const diffTime = Math.abs(target.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // If it's before the trip or after reasonable bounds, put in unassigned
+    if (target < start || diffDays > 60) return 'unassigned';
+
+    return `day-${diffDays + 1}`;
+  };
 
   const handleImport = async (res: ReservationItem) => {
     // Basic shared properties
@@ -34,7 +56,7 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
       // parent link
       linkedReservationId: res.id,
       isLinkedChild: true,
-      day: targetDay !== 'unassigned' ? targetDay : 'unassigned', // Try to put in current day
+      day: getDayIdFromDate(res.startDatetime),
       order: Date.now()
     };
 
@@ -54,10 +76,10 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
         } as LocationItem;
 
         const checkOut: LocationItem = {
-          ...baseLoc,
           id: Date.now() + 1,
           order: Date.now() + 1, // second
           cat: 'hotel-checkout',
+          day: getDayIdFromDate(res.endDatetime),
           title: `Salida de ${res.title}`,
           datetime: res.endDatetime,
           city: '',
@@ -100,6 +122,7 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
             ...baseLoc,
             id: Date.now() + 1,
             cat,
+            day: getDayIdFromDate(res.endDatetime),
             title: `[Vuelta/Fin] ${res.title}`,
             datetime: res.endDatetime,
             city: '',
