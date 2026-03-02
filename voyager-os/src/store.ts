@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { ChecklistItem, LocationItem, ImageFile, TransportSegment, TripVariant } from './types';
+import type { ChecklistItem, LocationItem, ImageFile, TransportSegment, TripVariant, ReservationItem } from './types';
 import { addDays, setDateFromOther } from './utils/dateUtils';
 
 interface VoyagerDB extends DBSchema {
@@ -8,6 +8,7 @@ interface VoyagerDB extends DBSchema {
   checklist: { key: number; value: ChecklistItem; indexes: { 'by-id': number } };
   transports: { key: string; value: TransportSegment };
   tripVariants: { key: string; value: TripVariant };
+  reservations: { key: string; value: ReservationItem };
 }
 
 export interface DialogConfig {
@@ -57,7 +58,7 @@ const syncItemDateToDay = (item: LocationItem, targetDayId: string, tripVariants
 
 const initDB = () => {
   if (!dbPromise) {
-    dbPromise = openDB<VoyagerDB>('VoyagerV3_Nature', 3, {
+    dbPromise = openDB<VoyagerDB>('VoyagerV3_Nature', 4, {
       upgrade(db, oldVersion, _newVersion, transaction) {
         if (!db.objectStoreNames.contains('locations')) {
           db.createObjectStore('locations', { keyPath: 'id' });
@@ -70,6 +71,9 @@ const initDB = () => {
         }
         if (!db.objectStoreNames.contains('tripVariants')) {
           db.createObjectStore('tripVariants', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('reservations')) {
+          db.createObjectStore('reservations', { keyPath: 'id' });
         }
 
         if (oldVersion < 2 && db.objectStoreNames.contains('locations')) {
@@ -129,6 +133,17 @@ interface AppState {
 
   dialog: DialogConfig | null;
   toasts: ToastConfig[];
+
+  // Analytics & Reservations
+  reservations: ReservationItem[];
+  addReservation: (res: ReservationItem) => Promise<void>;
+  updateReservation: (res: ReservationItem) => Promise<void>;
+  deleteReservation: (id: string) => Promise<void>;
+
+  // Document Viewer
+  viewerDocument: { url: string; type: string; name: string } | null;
+  openDocumentViewer: (doc: { url: string; type: string; name: string }) => void;
+  closeDocumentViewer: () => void;
 
   pastLocations: LocationItem[][];
   futureLocations: LocationItem[][];
@@ -191,6 +206,8 @@ interface AppState {
   toggleFilterDay: (day: string) => void;
   setFilterDays: (days: string[]) => void;
   setSelectedLocationId: (id: number | null) => void;
+  isDetailModalOpen: boolean;
+  setIsDetailModalOpen: (isOpen: boolean) => void;
   lightboxLocationId: number | null;
   openLightbox: (images: ImageFile[], startIndex?: number, locationId?: number | null) => void;
   setLightboxIndex: (index: number) => void;
@@ -205,6 +222,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   checklist: [],
   transports: [],
   tripVariants: [],
+  reservations: [],
   optimisticLocations: null,
   activeGlobalVariantId: 'default',
   mobileView: 'plan',
@@ -213,8 +231,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeDayVariants: {},
   setActiveDayVariant: (dayId, variantId) => set(state => ({ activeDayVariants: { ...state.activeDayVariants, [dayId]: variantId } })),
   selectedLocationId: null,
+  isDetailModalOpen: false,
+  setIsDetailModalOpen: (isOpen) => set({ isDetailModalOpen: isOpen }),
   lightboxImages: null,
   lightboxIndex: 0,
+
+  viewerDocument: null,
+  openDocumentViewer: (doc) => set({ viewerDocument: doc }),
+  closeDocumentViewer: () => set({ viewerDocument: null }),
+
   dialog: null,
   toasts: [],
   isDragging: false,
@@ -342,6 +367,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const globalVariantIds = tripVariants.map(v => v.id);
 
     const locations = await db.getAll('locations');
+    const reservations = await db.getAll('reservations');
 
     for (const loc of locations) {
       if (!loc.variantId) loc.variantId = 'default';
@@ -380,7 +406,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     const checklist = await db.getAll('checklist');
     const transports = await db.getAll('transports');
 
-    set({ locations, checklist, transports, tripVariants });
+    set({ locations, checklist, transports, tripVariants, reservations });
+  },
+
+  addReservation: async (res) => {
+    const db = await initDB();
+    await db.put('reservations', res);
+    await get().loadData();
+    get().addToast('Reserva guardada con éxito', 'success');
+  },
+
+  updateReservation: async (res) => {
+    const db = await initDB();
+    await db.put('reservations', res);
+    await get().loadData();
+    get().addToast('Reserva actualizada', 'success');
+  },
+
+  deleteReservation: async (id) => {
+    const db = await initDB();
+    await db.delete('reservations', id);
+    await get().loadData();
+    get().addToast('Reserva eliminada', 'info');
   },
 
   addTripVariant: async (variant) => {

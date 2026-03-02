@@ -8,8 +8,10 @@ import { PlannerTab } from './components/planner/PlannerTab';
 import { ChecklistTab } from './components/checklist/ChecklistTab';
 import { GalleryTab } from './components/gallery/GalleryTab';
 import { SmartSummaryTable } from './components/planner/SmartSummaryTable';
+import { LogisticsTab } from './components/logistics/LogisticsTab';
 import { LightboxModal } from './components/modals/LightboxModal';
 import { GlobalDialog } from './components/modals/GlobalDialog';
+import { DocumentViewerModal } from './components/modals/DocumentViewerModal';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { useResponsive } from './hooks/useResponsive';
 import { setupLeaflet } from './lib/leafletSetup';
@@ -48,10 +50,12 @@ export default function App() {
           <Route path="/analytics" element={<SmartSummaryTable />} />
           <Route path="/checklist" element={<ChecklistTab />} />
           <Route path="/gallery" element={<GalleryTab />} />
+          <Route path="/logistics" element={<LogisticsTab />} />
         </Routes>
       </motion.div>
       {isMobile && <MobileBottomBar mobileView={mobileView} setMobileView={setMobileView} />}
       <LightboxModal />
+      <DocumentViewerModal />
       <GlobalDialog />
       <ToastContainer />
     </div>

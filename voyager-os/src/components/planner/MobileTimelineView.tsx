@@ -1,10 +1,11 @@
 import { useMemo, useState, useRef } from 'react';
 import { useAppStore } from '../../store';
-import { Clock, CheckCircle2, Plus, FolderInput, X, RefreshCw, GripVertical, SkipForward, Inbox, Navigation, Car, Map } from 'lucide-react';
+import { Clock, CheckCircle2, Plus, FolderInput, X, RefreshCw, GripVertical, SkipForward, Inbox, Navigation, Car, Map, Ticket } from 'lucide-react';
 import { CAT_ICONS, DAYS, isTransportCat } from '../../constants';
 import { MobileIdeaInbox } from './MobileIdeaInbox';
 import { TransportBlock } from './TransportBlock';
 import { MobileDaySelector } from './MobileDaySelector';
+import { ReservationImportSheet } from './ReservationImportSheet';
 import { useFilteredLocations } from '../../hooks/useFilteredLocations';
 import { hapticFeedback } from '../../utils/haptics';
 import { DndContext, closestCenter, type DragEndEvent, TouchSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -69,9 +70,10 @@ interface SortableMobileCardProps {
   formattedTime: string | null;
   onClick: () => void;
   setSelectedLocationId: (id: number | null) => void;
+  setIsDetailModalOpen: (isOpen: boolean) => void;
 }
 
-const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocation, setMobileView, formattedTime, onClick, setSelectedLocationId }: SortableMobileCardProps) => {
+const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocation, setMobileView, formattedTime, onClick, setSelectedLocationId, setIsDetailModalOpen }: SortableMobileCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: id,
   });
@@ -110,17 +112,17 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
 
   return (
     <div ref={setNodeRef} style={style} className={`relative pl-6 ${isDragging ? 'scale-[1.02] shadow-xl' : ''}`}>
-      <div className={`absolute -left-[9px] top-4 w-4 h-4 rounded-full border-4 border-nature-bg ${isLogistics ? 'bg-blue-400 border-blue-100' :
-        isFree ? 'bg-gray-300 border-gray-100' :
-          'bg-white border-gray-200'
+      <div className={`absolute -left-[9px] top-4 w-4 h-4 rounded-full border-4 dark:border-nature-bg border-nature-bg ${isLogistics ? 'bg-blue-400 border-blue-100 dark:border-blue-900/40' :
+        isFree ? 'bg-gray-300 border-gray-100 dark:border-gray-700/50' :
+          'bg-white dark:bg-nature-surface border-gray-200 dark:border-gray-700'
         }`} />
 
       {isLogistics ? (
-        <div onClick={onClick} className={`bg-blue-50/50 border border-dashed border-blue-200 rounded-2xl py-3 pl-4 pr-2 flex items-stretch gap-3 cursor-pointer active:scale-[0.98] transition-all ${isSkipped ? 'opacity-40 grayscale' : ''}`}>
+        <div onClick={onClick} className={`bg-blue-50/50 dark:bg-blue-900/20 border border-dashed border-blue-200 dark:border-blue-800/50 rounded-2xl py-3 pl-4 pr-2 flex items-stretch gap-3 cursor-pointer active:scale-[0.98] transition-all ${isSkipped ? 'opacity-40 grayscale' : ''}`}>
           <div className="flex items-center gap-3 flex-1 py-1">
             <span className="text-2xl">{CAT_ICONS[loc.cat] || '📋'}</span>
             <div className="flex-1">
-              <h3 className="text-sm font-bold text-blue-700">{loc.title || 'Transporte'}</h3>
+              <h3 className="text-sm font-bold text-blue-700 dark:text-blue-300">{loc.title || 'Transporte'}</h3>
               {formattedTime && (
                 <span className="text-xs text-blue-500 font-bold flex items-center gap-1.5 mt-0.5">
                   <Clock size={12} /> {formattedTime}
@@ -146,10 +148,10 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
           <DragHandle />
         </div>
       ) : (
-        <div onClick={onClick} className={`bento-card p-4 pr-2 flex flex-col gap-4 cursor-pointer active:scale-[0.98] transition-all duration-300 ${isSkipped ? 'opacity-40 grayscale' : ''}`}>
+        <div onClick={onClick} className={`bento-card bg-nature-surface p-4 pr-2 flex flex-col gap-4 cursor-pointer active:scale-[0.98] transition-all duration-300 ${isSkipped ? 'opacity-40 grayscale' : ''}`}>
           <div className="flex justify-between items-stretch">
             <div className="flex items-start gap-4 flex-1">
-              <span className="text-3xl bg-gray-50 p-2.5 rounded-xl shrink-0">{CAT_ICONS[loc.cat]}</span>
+              <span className="text-3xl bg-gray-50/50 dark:bg-black/20 p-2.5 rounded-xl shrink-0">{CAT_ICONS[loc.cat]}</span>
               <div className="flex-1 pt-1">
                 <h3 className={`font-black text-xl leading-tight pr-2 ${isSkipped ? 'text-gray-400 line-through' : 'text-nature-text'}`}>
                   {loc.title || loc.notes?.split('\n')[0] || 'Ubicación'}
@@ -176,6 +178,7 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
                 if (setMobileView) {
                   hapticFeedback.light();
                   setSelectedLocationId(loc.id);
+                  setIsDetailModalOpen(true);
                   setMobileView('map');
                 }
               }}
@@ -185,13 +188,13 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
             </button>
             <button
               onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.coords?.lat},${loc.coords?.lng}`, '_blank')}
-              className="flex-1 bg-blue-50 active:bg-blue-100 text-blue-700 text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2"
+              className="flex-1 bg-blue-50 dark:bg-blue-900/30 active:bg-blue-100 dark:active:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2"
             >
               <Navigation size={16} /> Ruta GPS
             </button>
             <button
               onClick={() => window.open(`https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${loc.coords?.lat}&dropoff[longitude]=${loc.coords?.lng}`, '_blank')}
-              className="flex-1 bg-gray-900 active:bg-gray-800 text-white text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2"
+              className="flex-1 bg-gray-900 dark:bg-gray-100 active:bg-gray-800 dark:active:bg-white text-white dark:text-gray-900 text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2"
             >
               <Car size={16} /> Uber
             </button>
@@ -217,7 +220,7 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
 };
 
 export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileView?: (v: 'plan' | 'map') => void, handleEdit: (id: number) => void }) => {
-  const { activeDayVariants, addToast, setSelectedLocationId } = useAppStore();
+  const { activeDayVariants, addToast, setSelectedLocationId, setIsDetailModalOpen } = useAppStore();
   const { data: locations = [], refetch: refetchLocations } = useLocations();
   const { mutateAsync: addLocation } = useAddLocation();
   const { mutate: reorderLocation } = useReorderLocation();
@@ -225,6 +228,7 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
   const [skippedTasks, setSkippedTasks] = useState<Set<number>>(new Set());
   const [movingItemId, setMovingItemId] = useState<number | null>(null);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
+  const [isImportSheetOpen, setIsImportSheetOpen] = useState(false);
   const lastScrollY = useRef(0);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -375,6 +379,15 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
               </span>
             )}
           </button>
+          <button
+            onClick={() => {
+              hapticFeedback.selection();
+              setIsImportSheetOpen(true);
+            }}
+            className="p-3 bg-nature-mint/30 hover:bg-nature-mint/50 active:scale-95 text-nature-primary rounded-xl shrink-0 border border-nature-primary/20 transition-all font-bold flex gap-1 items-center justify-center"
+          >
+            <Ticket size={22} />
+          </button>
         </div>
       </header>
 
@@ -418,8 +431,10 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
                       onClick={() => {
                         hapticFeedback.selection();
                         setSelectedLocationId(loc.id);
+                        setIsDetailModalOpen(true);
                       }}
                       setSelectedLocationId={setSelectedLocationId}
+                      setIsDetailModalOpen={setIsDetailModalOpen}
                     />
                     {nextLoc && loc.cat !== 'free' && !isTransportCat(loc.cat) && nextLoc.cat !== 'free' && !isTransportCat(nextLoc.cat) && (
                       <div className="py-2 ml-2">
@@ -494,7 +509,11 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
         }}
       />
 
-
+      <ReservationImportSheet
+        isOpen={isImportSheetOpen}
+        onClose={() => setIsImportSheetOpen(false)}
+        targetDay={selectedDay}
+      />
     </div >
   );
 };

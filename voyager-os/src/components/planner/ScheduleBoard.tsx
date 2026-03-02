@@ -26,7 +26,6 @@ interface BoardColumnProps {
   dayLabel: string;
   isDimmed: boolean;
   locations: LocationItem[];
-  handleEdit: (id: number) => void;
   handleCardClick: (id: number) => void;
   handleAddNewToDay?: (day: string, variantId: string) => void;
   handleAddFreeTimeToDay?: (day: string, variantId: string) => void;
@@ -38,7 +37,7 @@ interface BoardColumnProps {
   onTimeConflict?: (item: LocationItem, suggestedDatetime: string, baseDate: Date) => void;
 }
 
-const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequestMove, mergeTargetId, isMovingMode, onTimeConflict }: { groupId: string, items: LocationItem[], handleEdit: any, handleCardClick: any, onRequestMove: any, mergeTargetId?: number | null, isMovingMode?: boolean, onTimeConflict?: (item: LocationItem, suggestedDatetime: string, baseDate: Date) => void }) => {
+const GroupContainer = ({ groupId, items, handleCardClick, onRequestMove, mergeTargetId, isMovingMode, onTimeConflict }: { groupId: string, items: LocationItem[], handleCardClick: any, onRequestMove: any, mergeTargetId?: number | null, isMovingMode?: boolean, onTimeConflict?: (item: LocationItem, suggestedDatetime: string, baseDate: Date) => void }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `group-${groupId}`,
   });
@@ -73,7 +72,6 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
               <div key={item.id} className="relative">
                 <SortableCard
                   item={item}
-                  onClick={() => handleEdit(item.id)}
                   onCardClick={() => handleCardClick(item.id)}
                   onRequestMove={() => onRequestMove?.(item.id)}
                   isMovingMode={isMovingMode}
@@ -94,7 +92,7 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
   );
 };
 
-const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, viewMode, onTimeConflict }: BoardColumnProps) => {
+const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, viewMode, onTimeConflict }: BoardColumnProps) => {
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
   const optimisticLocations = useAppStore(s => s.optimisticLocations);
   const { showDialog, addToast, toggleFilterDay, filterDays, activeDayVariants, setActiveDayVariant, activeGlobalVariantId } = useAppStore();
@@ -222,7 +220,6 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
             <GroupContainer
               groupId={groupBlock.groupId}
               items={groupBlock.items}
-              handleEdit={handleEdit}
               handleCardClick={handleCardClick}
               onRequestMove={onRequestMove}
               mergeTargetId={mergeTargetId}
@@ -252,7 +249,6 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
             <div className="relative z-10 w-full outline-none">
               <SortableCard
                 item={itemBlock.item}
-                onClick={() => handleEdit(itemBlock.item.id)}
                 onCardClick={() => handleCardClick(itemBlock.item.id)}
                 onRequestMove={() => onRequestMove && onRequestMove(itemBlock.item.id)}
                 isMergeTarget={itemBlock.item.id === mergeTargetId}
@@ -271,7 +267,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
     });
 
     return { locationList: list, groupElements, blockMeta };
-  }, [filteredLocations, handleEdit, handleCardClick, onRequestMove, movingItemId, mergeTargetId, isMovingMode, onTimeConflict]);
+  }, [filteredLocations, handleCardClick, onRequestMove, movingItemId, mergeTargetId, isMovingMode, onTimeConflict]);
 
   const sortableItemsIds = useMemo(() => {
     const ids: string[] = [];
@@ -419,7 +415,6 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
 };
 
 interface ScheduleBoardProps {
-  handleEdit: (id: number) => void;
   handleCardClick: (id: number) => void;
   handleAddNewToDay?: (day: string, variantId: string) => void;
   handleAddFreeTimeToDay?: (day: string, variantId: string) => void;
@@ -431,7 +426,7 @@ interface ScheduleBoardProps {
   onTimeConflict?: (item: LocationItem, suggestedDatetime: string, baseDate: Date) => void;
 }
 
-export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, onTimeConflict }: ScheduleBoardProps) => {
+export const ScheduleBoard = ({ handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, onTimeConflict }: ScheduleBoardProps) => {
   const { filterDays, activeGlobalVariantId } = useAppStore();
   const { data: locations = [] } = useLocations();
   const { data: tripVariants = [] } = useTripVariants();
@@ -480,7 +475,6 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
                 dayLabel={dayObj.label}
                 isDimmed={filterDays.length > 0 && !filterDays.includes(dayObj.id)}
                 locations={locations.filter(l => l.day === dayObj.id && (l.globalVariantId || 'default') === (activeGlobalVariantId || 'default'))}
-                handleEdit={handleEdit}
                 handleCardClick={handleCardClick}
                 handleAddNewToDay={handleAddNewToDay}
                 handleAddFreeTimeToDay={handleAddFreeTimeToDay}

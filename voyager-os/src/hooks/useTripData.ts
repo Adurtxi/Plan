@@ -101,6 +101,16 @@ export const useTransports = () => {
   });
 };
 
+export const useReservations = () => {
+  return useQuery({
+    queryKey: ['reservations'],
+    queryFn: async () => {
+      const db = await initDB();
+      return db.getAll('reservations');
+    }
+  });
+};
+
 // ==========================================
 // MUTATIONS (Locations)
 // ==========================================
@@ -256,6 +266,43 @@ export const useAddRoutePoint = () => {
       await db.put('transports', transport);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transports'] })
+  });
+};
+
+// ==========================================
+// MUTATIONS (Reservations)
+// ==========================================
+
+export const useAddReservation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (reservation: import('../types').ReservationItem) => {
+      const db = await initDB();
+      await db.put('reservations', reservation);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reservations'] })
+  });
+};
+
+export const useUpdateReservation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (reservation: import('../types').ReservationItem) => {
+      const db = await initDB();
+      await db.put('reservations', reservation);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reservations'] })
+  });
+};
+
+export const useDeleteReservation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const db = await initDB();
+      await db.delete('reservations', id);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reservations'] })
   });
 };
 

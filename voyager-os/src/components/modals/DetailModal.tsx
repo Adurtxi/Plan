@@ -1,15 +1,17 @@
 import { useEffect } from 'react';
-import { X, Trash2, Copy, Clock, UploadCloud, Plane, MapPin, Building2, Ticket, Layers } from 'lucide-react';
+import { X, Trash2, Copy, Clock, UploadCloud, Plane, MapPin, Building2, Ticket, Layers, ExternalLink } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { CAT_ICONS, CAT_LABELS, CAT_COLORS, getCatGroup, isTransportCat, isAccommodationCat } from '../../constants';
 import { useLocations, useAddLocation, useUpdateLocation, useDeleteLocation } from '../../hooks/useTripData';
+import { CardActions } from '../ui/CardActions';
 
-interface DetailModalProps {
-  onEdit: (id: number) => void;
-}
-
-export const DetailModal = ({ onEdit }: DetailModalProps) => {
-  const { selectedLocationId, setSelectedLocationId, openLightbox, showDialog, addToast } = useAppStore();
+export const DetailModal = () => {
+  const {
+    selectedLocationId, setSelectedLocationId,
+    isDetailModalOpen, setIsDetailModalOpen,
+    openLightbox, showDialog, addToast,
+    openDocumentViewer
+  } = useAppStore();
   const { data: locations = [] } = useLocations();
   const { mutateAsync: addLocation } = useAddLocation();
   const { mutateAsync: updateLocation } = useUpdateLocation();
@@ -19,13 +21,16 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedLocationId && e.key === 'Escape') setSelectedLocationId(null);
+      if (selectedLocationId && isDetailModalOpen && e.key === 'Escape') {
+        setIsDetailModalOpen(false);
+        setSelectedLocationId(null);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedLocationId, setSelectedLocationId]);
+  }, [selectedLocationId, isDetailModalOpen, setIsDetailModalOpen, setSelectedLocationId]);
 
-  if (!selectedLocation) return null;
+  if (!selectedLocation || !isDetailModalOpen) return null;
 
   const handleQuickUpload = () => {
     const input = document.createElement('input');
@@ -165,13 +170,24 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
           <span className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-2 block">Billetes / Documentos</span>
           <div className="space-y-2">
             {selectedLocation.attachments.map((att, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                <Ticket size={16} className="text-blue-500" />
+              <div
+                key={i}
+                onClick={() => openDocumentViewer({ url: att.data, name: att.name, type: att.data.startsWith('data:application/pdf') ? 'application/pdf' : 'image/jpeg' })}
+                className="flex items-center gap-3 p-3 bg-blue-50 hover:bg-blue-100 border border-blue-100 hover:border-blue-200 rounded-xl cursor-pointer transition-colors active:scale-[0.98]"
+              >
+                <Ticket size={16} className="text-blue-500 shrink-0" />
                 <span className="text-xs font-bold text-blue-700 truncate">{att.name}</span>
               </div>
             ))}
           </div>
         </div>
+      )}
+
+      {/* External Link */}
+      {selectedLocation.link && selectedLocation.link.startsWith('http') && (
+        <a href={selectedLocation.link} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-bold text-nature-primary hover:text-nature-accent transition-colors bg-nature-mint/30 p-3 rounded-xl border border-nature-primary/10 w-fit">
+          <ExternalLink size={16} /> Ver Información Original
+        </a>
       )}
 
       {/* Notes */}
@@ -230,6 +246,13 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
         ) : null}
       </div>
 
+      {/* External Link */}
+      {selectedLocation.link && selectedLocation.link.startsWith('http') && (
+        <a href={selectedLocation.link} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-bold text-nature-primary hover:text-nature-accent transition-colors bg-nature-mint/30 p-3 rounded-xl border border-nature-primary/10 w-fit">
+          <ExternalLink size={16} /> Ver Reserva / Hotel
+        </a>
+      )}
+
       {selectedLocation.notes && (
         <div className="prose prose-sm text-gray-600 font-light leading-relaxed whitespace-pre-wrap">{selectedLocation.notes}</div>
       )}
@@ -248,7 +271,7 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
 
   return (
     <div className="fixed inset-0 z-[4000] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-nature-primary/20 backdrop-blur-sm transition-opacity" onClick={() => setSelectedLocationId(null)}></div>
+      <div className="absolute inset-0 bg-nature-primary/20 backdrop-blur-sm transition-opacity" onClick={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }}></div>
       <div className="bg-white rounded-none md:rounded-bento shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] w-full md:max-w-4xl relative z-10 animate-[fadeIn_0.3s_ease-out]">
 
         {/* LEFT PANE - GALLERY (only for activities and accommodation with images) */}
@@ -309,7 +332,7 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
               ))}
             </div>
 
-            <button onClick={() => setSelectedLocationId(null)} className="text-gray-400 hover:text-nature-primary transition-colors ml-auto"><X size={24} /></button>
+            <button onClick={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }} className="text-gray-400 hover:text-nature-primary transition-colors ml-auto"><X size={24} /></button>
           </div>
 
           {/* ── Render by type ── */}
@@ -370,6 +393,14 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
                   <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-purple-700">📸 {selectedLocation.bestTimeHint}</span>
                 )}
               </div>
+
+              {/* External Link */}
+              {selectedLocation.link && selectedLocation.link.startsWith('http') && (
+                <a href={selectedLocation.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-nature-primary hover:text-nature-accent transition-colors bg-nature-mint/30 p-3 rounded-xl border border-nature-primary/10 mb-6 w-fit">
+                  <ExternalLink size={16} /> Ver Enlace Guardado
+                </a>
+              )}
+
               <div className="prose prose-sm text-gray-600 mb-8 font-light leading-relaxed whitespace-pre-wrap">
                 {selectedLocation.notes || "Añade notas útiles para esta actividad."}
               </div>
@@ -377,33 +408,33 @@ export const DetailModal = ({ onEdit }: DetailModalProps) => {
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-3 mt-auto pt-6 border-t border-gray-100">
-            {selectedLocation.link && selectedLocation.link.startsWith('http') && (
-              <a href={selectedLocation.link} target="_blank" rel="noreferrer" className="flex-1 max-w-[140px] text-center py-3 rounded-xl bg-nature-primary text-white font-medium hover:bg-opacity-90 transition-all text-sm">Ver Mapa</a>
-            )}
-            <button onClick={() => {
-              setSelectedLocationId(null);
-              setTimeout(() => onEdit(selectedLocation.id), 50);
-            }} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all text-sm font-medium">
-              Editar
-            </button>
-            <button onClick={handleDuplicate} className="px-4 py-3 rounded-xl border border-gray-200 text-gray-400 hover:bg-gray-50 hover:text-nature-primary transition-all" title="Duplicar">
-              <Copy size={20} />
-            </button>
-            <button onClick={() => {
-              showDialog({
-                type: 'confirm',
-                title: 'Eliminar destino',
-                message: `¿Seguro que quieres eliminar "${selectedLocation.title || selectedLocation.cat}" de tu viaje?`,
-                confirmText: 'Eliminar',
-                isDestructive: true,
-                onConfirm: () => {
-                  deleteLocation(selectedLocation.id);
-                  setSelectedLocationId(null);
-                  addToast('Actividad eliminada', 'success');
-                }
-              });
-            }} className="px-4 py-3 rounded-xl text-red-400 hover:bg-red-50 transition-all"><Trash2 size={20} /></button>
+          <div className="flex gap-2 mt-auto pt-6 border-t border-gray-100 flex-wrap">
+            <CardActions
+              item={selectedLocation}
+              mode="inline-labeled"
+              className="flex-1 detail-modal min-w-[280px]"
+              onCloseParent={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }}
+            />
+            <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+              <button onClick={handleDuplicate} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-gray-200 text-gray-400 hover:bg-gray-50 hover:text-nature-primary transition-all" title="Duplicar">
+                <Copy size={20} />
+              </button>
+              <button onClick={() => {
+                showDialog({
+                  type: 'confirm',
+                  title: 'Eliminar destino',
+                  message: `¿Seguro que quieres eliminar "${selectedLocation.title || selectedLocation.cat}" de tu viaje?`,
+                  confirmText: 'Eliminar',
+                  isDestructive: true,
+                  onConfirm: () => {
+                    deleteLocation(selectedLocation.id);
+                    setIsDetailModalOpen(false);
+                    setSelectedLocationId(null);
+                    addToast('Actividad eliminada', 'success');
+                  }
+                });
+              }} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-gray-200 text-red-500 hover:bg-red-50 transition-all"><Trash2 size={20} /></button>
+            </div>
           </div>
         </div>
       </div>

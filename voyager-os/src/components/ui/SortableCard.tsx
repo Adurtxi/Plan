@@ -1,11 +1,12 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
-import { Edit2, CheckCircle2, AlertCircle, Clock, Lightbulb, Lock, GripVertical, MoreVertical, LogOut, ArrowRightCircle, Plus, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Clock, Lightbulb, Lock, GripVertical, Plus, AlertTriangle } from 'lucide-react';
 import type { LocationItem } from '../../types';
 import { CAT_ICONS, CAT_LABELS, isTransportCat } from '../../constants';
 import { useAppStore } from '../../store';
+import { CardActions } from './CardActions';
 
 const formatDuration = (mins: number) => {
   return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60 ? (mins % 60) + 'm' : ''}` : `${mins}m`;
@@ -30,7 +31,6 @@ const getStatusIcon = (status?: string) => {
 
 export const CardVisual = memo(({
   item,
-  onClick,
   onCardClick,
   isOverlay,
   isOver,
@@ -44,7 +44,6 @@ export const CardVisual = memo(({
   onTimeConflict
 }: {
   item: LocationItem,
-  onClick?: () => void,
   onCardClick?: () => void,
   isOverlay?: boolean,
   isOver?: boolean,
@@ -57,8 +56,7 @@ export const CardVisual = memo(({
   onToggleSelect?: (e: React.MouseEvent) => void,
   onTimeConflict?: () => void
 }) => {
-  const { showDialog, updateLocation, extractFromGroup } = useAppStore();
-  const [showMenu, setShowMenu] = useState(false);
+  const { showDialog, updateLocation } = useAppStore();
 
   const timeToFilter = item.derivedDatetime || item.datetime;
   const formattedTime = timeToFilter ? new Date(timeToFilter).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -203,31 +201,12 @@ export const CardVisual = memo(({
         </div>
 
         {/* Action Menu Hover */}
-        {!isMovingMode && onClick && (
-          <div className="absolute top-2 right-2 z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-            <div className="relative">
-              <button onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }} onBlur={() => setTimeout(() => setShowMenu(false), 200)} className="bg-white/90 backdrop-blur shadow-sm border border-gray-100 text-gray-500 hover:text-nature-primary p-1.5 rounded-full">
-                <MoreVertical size={16} />
-              </button>
-              {showMenu && (
-                <div className="absolute right-0 top-8 w-40 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100 py-1.5 z-50 overflow-hidden" onClick={e => e.stopPropagation()}>
-                  <button onMouseDown={(e) => { e.preventDefault(); onClick(); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 hover:bg-nature-mint/30 flex items-center gap-2 text-xs font-bold text-gray-700 transition-colors">
-                    <Edit2 size={14} className="text-nature-primary" /> Editar
-                  </button>
-                  {onRequestMove && (
-                    <button onMouseDown={(e) => { e.preventDefault(); onRequestMove(); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 hover:bg-nature-mint/30 flex items-center gap-2 text-xs font-bold text-gray-700 transition-colors">
-                      <ArrowRightCircle size={14} className="text-nature-primary" /> Mover a...
-                    </button>
-                  )}
-                  {item.groupId && (
-                    <button onMouseDown={(e) => { e.preventDefault(); extractFromGroup(item.id); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 hover:bg-red-50 flex items-center gap-2 text-xs font-bold text-red-600 transition-colors">
-                      <LogOut size={14} /> Sacar Grupo
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+        {!isMovingMode && (
+          <CardActions
+            item={item}
+            onRequestMove={onRequestMove}
+            className="absolute top-2 right-2 z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+          />
         )}
       </div>
 
@@ -253,7 +232,7 @@ CardVisual.displayName = 'CardVisual';
 // -----------------------------------------
 // FREE TIME CARD (Minimal)
 // -----------------------------------------
-const FreeTimeCard = memo(({ item, isDragging, isMovingMode, attributes, listeners, onClick, onCardClick }: any) => {
+const FreeTimeCard = memo(({ item, isDragging, isMovingMode, attributes, listeners, onCardClick, onRequestMove }: any) => {
   const displayTime = item.derivedDatetime || item.datetime;
 
   return (
@@ -296,9 +275,11 @@ const FreeTimeCard = memo(({ item, isDragging, isMovingMode, attributes, listene
           ) : null}
 
           {!isMovingMode && (
-            <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="opacity-0 md:group-hover:opacity-100 text-gray-400 hover:text-nature-primary transition-colors p-1.5 bg-white rounded-md border border-gray-200 shadow-sm">
-              <Edit2 size={12} />
-            </button>
+            <CardActions
+              item={item}
+              onRequestMove={onRequestMove}
+              className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+            />
           )}
         </div>
       </div>
@@ -310,7 +291,7 @@ FreeTimeCard.displayName = 'FreeTimeCard';
 // -----------------------------------------
 // TRANSPORT CARD (Ticket Style)
 // -----------------------------------------
-const TransportCard = memo(({ item, isDragging, isMovingMode, attributes, listeners, onClick, onCardClick }: any) => {
+const TransportCard = memo(({ item, isDragging, isMovingMode, attributes, listeners, onCardClick, onRequestMove }: any) => {
   const displayTime = item.derivedDatetime || item.datetime;
 
   return (
@@ -391,12 +372,14 @@ const TransportCard = memo(({ item, isDragging, isMovingMode, attributes, listen
           </div>
         </div>
 
-        {/* Edit Button */}
-        {!isMovingMode && onClick && (
+        {/* Edit Button / Actions */}
+        {!isMovingMode && (
           <div className="pl-2">
-            <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-[#6988B3] hover:text-[#1A365D] transition-colors p-2 bg-white rounded-full shadow-sm border border-[#DEE7F2]">
-              <Edit2 size={14} />
-            </button>
+            <CardActions
+              item={item}
+              onRequestMove={onRequestMove}
+              className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+            />
           </div>
         )}
       </div>
@@ -410,7 +393,6 @@ TransportCard.displayName = 'TransportCard';
 // -----------------------------------------
 export const SortableCard = memo(({
   item,
-  onClick,
   onCardClick,
   onRequestMove,
   isMovingMode,
@@ -420,7 +402,6 @@ export const SortableCard = memo(({
   onTimeConflict
 }: {
   item: LocationItem,
-  onClick: () => void,
   onCardClick?: () => void,
   onRequestMove?: () => void,
   isMovingMode?: boolean,
@@ -453,8 +434,8 @@ export const SortableCard = memo(({
           isMovingMode={isMovingMode}
           attributes={attributes}
           listeners={listeners}
-          onClick={onClick}
           onCardClick={onCardClick}
+          onRequestMove={onRequestMove}
         />
       ) : isLogistics ? (
         <TransportCard
@@ -463,14 +444,13 @@ export const SortableCard = memo(({
           isMovingMode={isMovingMode}
           attributes={attributes}
           listeners={listeners}
-          onClick={onClick}
           onCardClick={onCardClick}
+          onRequestMove={onRequestMove}
         />
       ) : (
         <div className="w-full h-full block">
           <CardVisual
             item={item}
-            onClick={onClick}
             onCardClick={onCardClick}
             dragListeners={listeners}
             dragAttributes={attributes}

@@ -22,7 +22,7 @@ import { useLocations, useTransports, useTripVariants, useAddLocation, useUpdate
 import { useReorderLocation, useMergeLocations, useMoveToDay, useExecuteMoveHere } from '../../hooks/useTripMutations';
 
 export const PlannerTab = () => {
-  const { optimisticLocations, clearOptimisticLocations, filterDays, setSelectedLocationId, undo, activeGlobalVariantId, movingItemId, setMovingItemId, activeDayVariants, setIsDragging, mobileView, setMobileView, isTripSettingsOpen, setIsTripSettingsOpen } = useAppStore();
+  const { optimisticLocations, clearOptimisticLocations, filterDays, setSelectedLocationId, setIsDetailModalOpen, undo, activeGlobalVariantId, movingItemId, setMovingItemId, activeDayVariants, setIsDragging, mobileView, setMobileView, isTripSettingsOpen, setIsTripSettingsOpen } = useAppStore();
   const { isMobile } = useResponsive();
 
   const { data: locations = [] } = useLocations();
@@ -283,6 +283,7 @@ export const PlannerTab = () => {
     if (loc.cat === 'free') {
       setIsFreeTimeSheetOpen(true);
       setSelectedLocationId(null);
+      setIsDetailModalOpen(false);
       setIsAddMode(false);
       return;
     }
@@ -290,7 +291,7 @@ export const PlannerTab = () => {
     setTempImages(loc.images); setFormPriority(loc.priority); setFormCat(loc.cat);
     setFormSlot(loc.slot || 'Mañana'); setFormCurrency(loc.newPrice?.currency || 'EUR');
     setTimeout(() => {
-      setIsFormPanelOpen(true); setSelectedLocationId(null); setIsAddMode(false);
+      setIsFormPanelOpen(true); setSelectedLocationId(null); setIsDetailModalOpen(false); setIsAddMode(false);
     }, 0);
   };
 
@@ -305,6 +306,7 @@ export const PlannerTab = () => {
     setPreselectedVariant(variantId);
     setIsFormPanelOpen(true);
     setSelectedLocationId(null);
+    setIsDetailModalOpen(false);
     setIsAddMode(false);
 
     // LocationForm will handle default datetime now based on targetDate computed internally or handled by its effect.
@@ -316,6 +318,7 @@ export const PlannerTab = () => {
     setPreselectedVariant(variantId);
     setIsFreeTimeSheetOpen(true);
     setSelectedLocationId(null);
+    setIsDetailModalOpen(false);
     setIsAddMode(false);
   };
 
@@ -479,6 +482,7 @@ export const PlannerTab = () => {
   const handleRouteClick = (e: any, _fromId: number, toId: number) => {
     e.originalEvent.stopPropagation();
     setSelectedLocationId(toId);
+    setIsDetailModalOpen(true);
   };
 
   const routePolylines = useMemo(() => {
@@ -549,6 +553,7 @@ export const PlannerTab = () => {
 
     setIsFormPanelOpen(true);
     setSelectedLocationId(null);
+    setIsDetailModalOpen(false);
     setTimeout(() => showCoordsInForm(lat, lng), 0);
   };
 
@@ -589,7 +594,7 @@ export const PlannerTab = () => {
       return (
         <div className="flex-1 flex flex-col overflow-hidden bg-nature-bg">
           <MobileMapView routePolylines={routePolylines} />
-          <DetailModal onEdit={handleEdit} />
+          <DetailModal />
           <LocationForm
             isFormPanelOpen={isFormPanelOpen} setIsFormPanelOpen={setIsFormPanelOpen}
             formId={formId} formPriority={formPriority} setFormPriority={setFormPriority}
@@ -607,7 +612,7 @@ export const PlannerTab = () => {
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-nature-bg">
         <MobileTimelineView setMobileView={setMobileView} handleEdit={handleEdit} />
-        <DetailModal onEdit={handleEdit} />
+        <DetailModal />
         <LocationForm
           isFormPanelOpen={isFormPanelOpen} setIsFormPanelOpen={setIsFormPanelOpen}
           formId={formId} formPriority={formPriority} setFormPriority={setFormPriority}
@@ -638,7 +643,6 @@ export const PlannerTab = () => {
       <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 flex flex-col relative w-full overflow-hidden bg-nature-bg">
           <IdeaInbox
-            handleEdit={handleEdit}
             handleCardClick={setSelectedLocationId}
             handleAddNew={() => { resetForm(); setIsFormPanelOpen(true); setSelectedLocationId(null); setIsAddMode(false); }}
           />
@@ -724,8 +728,7 @@ export const PlannerTab = () => {
                 )}
                 <div className="flex-1 overflow-hidden relative">
                   <ScheduleBoard
-                    handleEdit={handleEdit}
-                    handleCardClick={setSelectedLocationId}
+                    handleCardClick={(id) => { setSelectedLocationId(id); setIsDetailModalOpen(true); }}
                     handleAddNewToDay={handleAddNewToDay}
                     handleAddFreeTimeToDay={handleAddFreeTimeToDay}
                     viewMode={viewMode}
@@ -769,7 +772,7 @@ export const PlannerTab = () => {
 
           </div>
         </div>
-        <DetailModal onEdit={handleEdit} />
+        <DetailModal />
         <LocationForm
           isFormPanelOpen={isFormPanelOpen} setIsFormPanelOpen={setIsFormPanelOpen}
           formId={formId} formPriority={formPriority} setFormPriority={setFormPriority}

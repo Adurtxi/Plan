@@ -34,7 +34,7 @@ const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
 
 const MapUpdater = ({ locations, reframeTrigger }: { locations: LocationItem[], reframeTrigger: number }) => {
   const map = useMap();
-  const { isDrawingRouteFor, selectedLocationId, reframeMapCoordinates, setReframeMapCoordinates } = useAppStore();
+  const { isDrawingRouteFor, reframeMapCoordinates, setReframeMapCoordinates } = useAppStore();
   const locationsRef = useRef(locations);
 
   useEffect(() => {
@@ -61,15 +61,7 @@ const MapUpdater = ({ locations, reframeTrigger }: { locations: LocationItem[], 
     }
   }, [reframeTrigger, map, isDrawingRouteFor]);
 
-  // Handle zooming to selected location
-  useEffect(() => {
-    if (selectedLocationId) {
-      const selectedLoc = locationsRef.current.find(l => l.id === selectedLocationId);
-      if (selectedLoc?.coords && !isDrawingRouteFor) {
-        map.flyTo([selectedLoc.coords.lat, selectedLoc.coords.lng], 16, { duration: 0.8 });
-      }
-    }
-  }, [selectedLocationId, map, isDrawingRouteFor]);
+
 
   // Handle initial load - fit bounds once if there are locations
   const [hasDoneInitialFit, setHasDoneInitialFit] = useState(false);

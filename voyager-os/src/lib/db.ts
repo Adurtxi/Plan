@@ -1,18 +1,19 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { ChecklistItem, LocationItem, TransportSegment, TripVariant } from '../types';
+import type { ChecklistItem, LocationItem, TransportSegment, TripVariant, ReservationItem } from '../types';
 
 interface VoyagerDB extends DBSchema {
   locations: { key: number; value: LocationItem };
   checklist: { key: number; value: ChecklistItem; indexes: { 'by-id': number } };
   transports: { key: string; value: TransportSegment };
   tripVariants: { key: string; value: TripVariant };
+  reservations: { key: string; value: ReservationItem };
 }
 
 let dbPromise: Promise<IDBPDatabase<VoyagerDB>>;
 
 export const initDB = () => {
   if (!dbPromise) {
-    dbPromise = openDB<VoyagerDB>('VoyagerV3_Nature', 3, {
+    dbPromise = openDB<VoyagerDB>('VoyagerV3_Nature', 4, {
       upgrade(db, oldVersion, _newVersion, transaction) {
         if (!db.objectStoreNames.contains('locations')) {
           db.createObjectStore('locations', { keyPath: 'id' });
@@ -25,6 +26,9 @@ export const initDB = () => {
         }
         if (!db.objectStoreNames.contains('tripVariants')) {
           db.createObjectStore('tripVariants', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('reservations')) {
+          db.createObjectStore('reservations', { keyPath: 'id' });
         }
 
         if (oldVersion < 2 && db.objectStoreNames.contains('locations')) {

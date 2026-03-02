@@ -1,20 +1,20 @@
 import { useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext } from '@dnd-kit/sortable';
-import { X, Inbox, Plus, Calendar, Search, Filter } from 'lucide-react';
+import { X, Inbox, Plus, Calendar, Search, Filter, Ticket } from 'lucide-react';
 import { SortableCard } from '../ui/SortableCard';
+import { ReservationImportSheet } from './ReservationImportSheet';
 import { useAppStore } from '../../store';
 import { DAYS, isTransportCat, getCatGroup } from '../../constants';
 import { useLocations, useTripVariants } from '../../hooks/useTripData';
 import { useMoveToDay } from '../../hooks/useTripMutations';
 
 interface IdeaInboxProps {
-  handleEdit: (id: number) => void;
   handleCardClick: (id: number) => void;
   handleAddNew: () => void;
 }
 
-export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInboxProps) => {
+export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => {
   const { activeGlobalVariantId, isDragging, activeDayVariants } = useAppStore();
   const { data: locations = [] } = useLocations();
   const { data: tripVariants = [] } = useTripVariants();
@@ -26,6 +26,7 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [activeCityFilter, setActiveCityFilter] = useState<string>('all');
   const [activeTagFilter, setActiveTagFilter] = useState<string>('all');
+  const [isImportSheetOpen, setIsImportSheetOpen] = useState(false);
 
   const toggleSelection = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
@@ -151,9 +152,14 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
         </div>
 
         <div className="px-6 pt-4 pb-0 shrink-0 flex flex-col gap-3">
-          <button onClick={handleAddNew} className="w-full bg-nature-primary text-white py-3 rounded-xl shadow-[0_10px_20px_-10px_rgba(45,90,39,0.5)] font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-nature-primary/90 transition-all hover:-translate-y-0.5 active:scale-[0.98]">
-            <Plus size={18} /> Nueva Idea
-          </button>
+          <div className="flex gap-2">
+            <button onClick={handleAddNew} className="flex-1 bg-nature-primary text-white py-3 rounded-xl shadow-[0_10px_20px_-10px_rgba(45,90,39,0.5)] font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-nature-primary/90 transition-all hover:-translate-y-0.5 active:scale-[0.98]">
+              <Plus size={18} /> Nueva Idea
+            </button>
+            <button onClick={() => setIsImportSheetOpen(true)} className="flex-1 bg-nature-mint text-nature-primary py-3 rounded-xl border border-nature-primary/20 font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-nature-mint/80 transition-all hover:-translate-y-0.5 active:scale-[0.98]">
+              <Ticket size={18} /> Billetera
+            </button>
+          </div>
 
           <div className="flex flex-col gap-2 mt-2">
             <div className="relative">
@@ -263,7 +269,6 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
                     <SortableCard
                       key={item.id}
                       item={item}
-                      onClick={() => handleEdit(item.id)}
                       onCardClick={() => handleCardClick(item.id)}
                       isSelected={selectedIds.includes(item.id)}
                       onToggleSelect={(e: React.MouseEvent) => toggleSelection(e, item.id)}
@@ -290,7 +295,7 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
                   <div className="space-y-2 pl-2 border-l-2 border-nature-primary/10">
                     {group.items.map(item => (
                       <div key={item.id} className="opacity-70 hover:opacity-100 transition-opacity">
-                        <SortableCard item={item} onClick={() => handleEdit(item.id)} onCardClick={() => handleCardClick(item.id)} />
+                        <SortableCard item={item} onCardClick={() => handleCardClick(item.id)} />
                       </div>
                     ))}
                   </div>
@@ -327,6 +332,12 @@ export const IdeaInbox = ({ handleEdit, handleCardClick, handleAddNew }: IdeaInb
           </div>
         )}
       </div>
+
+      <ReservationImportSheet
+        isOpen={isImportSheetOpen}
+        onClose={() => setIsImportSheetOpen(false)}
+        targetDay="unassigned"
+      />
     </>
   );
 };

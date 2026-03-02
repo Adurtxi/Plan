@@ -1,4 +1,4 @@
-import { Map, Briefcase, Download, Trash2, LineChart, Moon, Sun, Image as ImageIcon } from 'lucide-react';
+import { Map, Briefcase, Download, Trash2, LineChart, Moon, Sun, Image as ImageIcon, Ticket } from 'lucide-react';
 import { NavLink } from 'react-router';
 import { useAppStore } from '../../store';
 import { useLocations, useChecklist, useDeleteLocation, useDeleteChecklistItem } from '../../hooks/useTripData';
@@ -42,6 +42,7 @@ export const Sidebar = () => {
       <NavLink to="/" className={navLinkClass} title="Itinerario"><Map size={24} strokeWidth={1.5} /></NavLink>
       <NavLink to="/gallery" className={navLinkClass} title="Galería"><ImageIcon size={24} strokeWidth={1.5} /></NavLink>
       <NavLink to="/analytics" className={navLinkClass} title="Análisis"><LineChart size={24} strokeWidth={1.5} /></NavLink>
+      <NavLink to="/logistics" className={navLinkClass} title="Reservas"><Ticket size={24} strokeWidth={1.5} /></NavLink>
       <NavLink to="/checklist" className={navLinkClass} title="Equipaje"><Briefcase size={24} strokeWidth={1.5} /></NavLink>
       <div className="mt-auto flex flex-col gap-6 w-full px-2 md:px-4 items-center">
         <div className="text-[10px] font-bold tracking-widest text-gray-400 uppercase text-center hidden md:block">Total<div className="text-nature-primary text-sm font-sans mt-1">{currencySymbol}{totalCost.toFixed(0)}</div></div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
-import { Map, MapPin, CheckSquare, BarChart3, Moon, Sun, Image as ImageIcon } from 'lucide-react';
+import { Map, MapPin, CheckSquare, Moon, Sun, Image as ImageIcon, Ticket } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { hapticFeedback } from '../../utils/haptics';
 
@@ -8,8 +8,8 @@ const tabs = [
   { id: 'planner' as const, icon: MapPin, label: 'Plan', path: '/' },
   { id: 'planner' as const, icon: Map, label: 'Mapa', mobileView: 'map' as const, path: '/' },
   { id: 'gallery' as const, icon: ImageIcon, label: 'Fotos', path: '/gallery' },
+  { id: 'logistics' as const, icon: Ticket, label: 'Cartera', path: '/logistics' },
   { id: 'checklist' as const, icon: CheckSquare, label: 'Check', path: '/checklist' },
-  { id: 'analytics' as const, icon: BarChart3, label: 'Datos', path: '/analytics' },
 ];
 
 export const MobileBottomBar = ({ mobileView, setMobileView }: { mobileView: 'plan' | 'map'; setMobileView: (v: 'plan' | 'map') => void }) => {

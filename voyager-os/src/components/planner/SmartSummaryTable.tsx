@@ -6,7 +6,7 @@ import { isTransportCat, isAccommodationCat } from '../../constants';
 import { useLocations } from '../../hooks/useTripData';
 
 export const SmartSummaryTable = () => {
-  const { setSelectedLocationId } = useAppStore();
+  const { setSelectedLocationId, setIsDetailModalOpen } = useAppStore();
   const { data: locations = [] } = useLocations();
   const navigate = useNavigate();
 
@@ -14,6 +14,7 @@ export const SmartSummaryTable = () => {
     navigate('/');
     setTimeout(() => {
       setSelectedLocationId(id);
+      setIsDetailModalOpen(true);
     }, 100);
   };
 

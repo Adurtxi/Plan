@@ -1,21 +1,170 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useMemo, useState, useEffect } from 'react';
 import { useAppStore } from '../../store';
-import { ImageIcon, Layers, MapPin, Map, Navigation, MoreVertical, Info } from 'lucide-react';
-import { CAT_ICONS, DAYS } from '../../constants';
-import { hapticFeedback } from '../../utils/haptics';
+import { ImageIcon, Layers, MapPin } from 'lucide-react';
+import { CAT_ICONS, DAYS, isTransportCat, isAccommodationCat } from '../../constants';
 import { useLocations, useTripVariants } from '../../hooks/useTripData';
 import { DetailModal } from '../modals/DetailModal';
+import { CardActions } from '../ui/CardActions';
+import { LocationForm } from '../planner/LocationForm';
+import { useUpdateLocation } from '../../hooks/useTripData';
+import type { Category, Priority, LocationItem } from '../../types';
 
 export const GalleryTab = () => {
-  const { activeGlobalVariantId, openLightbox, setFilterDays, setSelectedLocationId, setMobileView } = useAppStore();
+  const { activeGlobalVariantId, openLightbox } = useAppStore();
   const { data: locations = [] } = useLocations();
   const { data: tripVariants = [] } = useTripVariants();
-  const navigate = useNavigate();
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const [activeCityFilter, setActiveCityFilter] = useState<string>('all');
   const [activeTagFilter, setActiveTagFilter] = useState<string>('all');
   const [groupBy, setGroupBy] = useState<'days' | 'cities' | 'tags'>('days');
+
+  // Editing state for LocationForm
+  const [formId, setFormId] = useState<number | null>(null);
+  const [tempImages, setTempImages] = useState<{ data: string; name: string }[]>([]);
+  const [tempAttachments, setTempAttachments] = useState<{ data: string; name: string; type?: string }[]>([]);
+  const [formPriority, setFormPriority] = useState<Priority>('optional');
+  const [formCat, setFormCat] = useState<Category>('sight');
+  const [formSlot, setFormSlot] = useState<string>('Mañana');
+  const [formCurrency, setFormCurrency] = useState<string>('EUR');
+  const [isFormPanelOpen, setIsFormPanelOpen] = useState(false);
+
+  const { mutateAsync: updateLocation } = useUpdateLocation();
+
+  const resetForm = () => {
+    setFormId(null); setTempImages([]); setTempAttachments([]); setFormPriority('optional'); setFormCat('sight');
+    setFormSlot('Mañana'); setFormCurrency('EUR');
+  };
+
+  const handleEdit = (id: number) => {
+    const loc = locations.find(l => l.id === id);
+    if (!loc) return;
+    setFormId(loc.id);
+
+    if (loc.cat === 'free') {
+      return;
+    }
+
+    setTempImages(loc.images || []);
+    setFormPriority(loc.priority);
+    setFormCat(loc.cat);
+    setFormSlot(loc.slot || 'Mañana');
+    setFormCurrency(loc.newPrice?.currency || 'EUR');
+    setTimeout(() => {
+      setIsFormPanelOpen(true);
+      useAppStore.getState().setSelectedLocationId(null);
+      useAppStore.getState().setIsDetailModalOpen(false);
+    }, 0);
+  };
+
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) setTimeout(() => handleEdit(customEvent.detail), 10);
+    };
+    window.addEventListener('open-edit', listener);
+    return () => window.removeEventListener('open-edit', listener);
+  }, [locations]);
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    Array.from(files).forEach(f => {
+      if (f.size > 5 * 1024 * 1024) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target?.result as string;
+        if (f.type.startsWith('image/')) {
+          setTempImages(prev => [...prev, { data, name: f.name }]);
+        } else {
+          setTempAttachments(prev => [...prev, { data, name: f.name, type: f.type }]);
+        }
+      };
+      reader.readAsDataURL(f);
+    });
+  };
+
+  const handleAddLocation = async (data: any) => {
+    const link = data.link as string;
+    let coords: { lat: number; lng: number } | undefined = undefined;
+    const m1 = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    const m2 = link.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+    if (m2) coords = { lat: parseFloat(m2[1]), lng: parseFloat(m2[2]) };
+    else if (m1) coords = { lat: parseFloat(m1[1]), lng: parseFloat(m1[2]) };
+
+    if (!coords) {
+      const mapCoordsVal = data.mapCoords as string;
+      if (mapCoordsVal) {
+        const parts = mapCoordsVal.split(',');
+        if (parts.length === 2) {
+          coords = { lat: parseFloat(parts[0]), lng: parseFloat(parts[1]) };
+        }
+      }
+    }
+
+    const priceAmount = data.priceAmount ? parseFloat(data.priceAmount) : 0;
+    const isTransportation = isTransportCat(formCat);
+    const isAccommodation = isAccommodationCat(formCat);
+    const userDateTime = data.datetime as string;
+    const isPinnedTime = data.isPinnedTime === true || data.isPinnedTime === 'on' || ((isTransportation || isAccommodation) && !!userDateTime);
+
+    const rawTags = data.tags as string || '';
+    const parsedTags = rawTags.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
+    const durationValue = data.durationMinutes ? parseInt(data.durationMinutes, 10) : undefined;
+    const finalDuration = durationValue && !isNaN(durationValue) && durationValue > 0 ? durationValue : undefined;
+
+    const specializedFields = {
+      company: data.company || undefined,
+      flightNumber: data.flightNumber || undefined,
+      terminal: data.terminal || undefined,
+      gate: data.gate || undefined,
+      platform: data.platform || undefined,
+      seat: data.seat || undefined,
+      station: data.station || undefined,
+      pickupPoint: data.pickupPoint || undefined,
+      dropoffPoint: data.dropoffPoint || undefined,
+      transportApp: data.transportApp || undefined,
+      address: data.address || undefined,
+      roomNumber: data.roomNumber || undefined,
+      lateCheckout: data.lateCheckout === true || data.lateCheckout === 'on',
+      mealType: data.mealType || undefined,
+      bestTimeHint: data.bestTimeHint || undefined,
+      city: data.city || undefined,
+      tags: parsedTags.length > 0 ? parsedTags : undefined,
+    };
+
+    if (formId) {
+      const existing = locations.find(l => l.id === formId);
+      if (existing) {
+        let finalCoords = coords;
+        if (!coords) finalCoords = existing.coords || undefined;
+
+        await updateLocation({
+          ...existing,
+          title: data.title || undefined,
+          link,
+          coords: finalCoords,
+          priority: formPriority,
+          cat: formCat,
+          cost: data.cost || '0',
+          newPrice: { amount: priceAmount, currency: formCurrency || 'EUR' },
+          slot: formSlot,
+          datetime: data.datetime ? new Date(data.datetime).toISOString() : undefined,
+          isPinnedTime,
+          checkOutDatetime: data.checkOutDatetime ? new Date(data.checkOutDatetime).toISOString() : undefined,
+          notes: data.notes || '',
+          images: tempImages.length > 0 ? (tempImages as any) : existing.images,
+          reservationStatus: data.reservationStatus || 'idea',
+          bookingRef: data.bookingRef || undefined,
+          logisticsConfirmation: data.logisticsConfirmation || undefined,
+          logisticsDetail: data.logisticsDetail || undefined,
+          durationMinutes: finalDuration !== undefined ? finalDuration : existing.durationMinutes,
+          attachments: (tempAttachments.length > 0 ? tempAttachments : existing.attachments || []) as any,
+          ...specializedFields,
+        } as LocationItem);
+      }
+    }
+
+    setIsFormPanelOpen(false);
+    resetForm();
+  };
 
   const { groupedData, dayLabels, availableCities, availableTags } = useMemo(() => {
     const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
@@ -116,34 +265,8 @@ export const GalleryTab = () => {
     return a.localeCompare(b);
   });
 
-  const handleGoToMap = (loc: any) => {
-    hapticFeedback.light();
-    navigate('/');
-    setFilterDays([loc.day]);
-    if (loc.coords) {
-      useAppStore.getState().setReframeMapCoordinates(loc.coords);
-      setSelectedLocationId(null);
-    }
-    setMobileView('map');
-  };
-
-  const handleShowDetail = (loc: any) => {
-    hapticFeedback.light();
-    setSelectedLocationId(loc.id);
-  };
-
-  const handleOpenGoogleMaps = (loc: any) => {
-    if (!loc?.coords) return;
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.coords.lat},${loc.coords.lng}`, '_blank');
-  };
-
-  const toggleMenu = (e: React.MouseEvent, id: number) => {
-    e.stopPropagation();
-    setActiveMenuId(activeMenuId === id ? null : id);
-  };
-
   return (
-    <div className="flex-1 w-full bg-nature-bg h-full overflow-y-auto custom-scroll" onClick={() => setActiveMenuId(null)}>
+    <div className="flex-1 w-full bg-nature-bg h-full overflow-y-auto custom-scroll">
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 md:px-8 py-8 md:py-12 pb-32">
         <header className="mb-6 md:mb-10 text-center md:text-left flex flex-col items-center md:items-start">
           {/* Segmented Control for Grouping */}
@@ -247,12 +370,12 @@ export const GalleryTab = () => {
                           className="w-full h-auto object-cover block"
                         />
 
-                        <div className="bg-gray-900 p-4 md:p-5 z-10 flex flex-col justify-end pointer-events-none border-t border-gray-800">
-                          <h4 className="font-bold text-white text-base md:text-xl leading-tight truncate mb-1">
+                        <div className="bg-nature-surface/90 backdrop-blur-md p-4 md:p-5 z-10 flex flex-col justify-end pointer-events-none border-t border-nature-border">
+                          <h4 className="font-bold text-nature-text text-base md:text-xl leading-tight truncate mb-1">
                             {loc.title || loc.notes?.split('\n')[0] || 'Ubicación'}
                           </h4>
                           {(loc.title || loc.address) && (
-                            <p className="text-gray-300 text-[10px] md:text-[11px] uppercase tracking-wider font-bold flex items-center gap-1.5 truncate">
+                            <p className="text-gray-500 text-[10px] md:text-[11px] uppercase tracking-wider font-bold flex items-center gap-1.5 truncate">
                               <MapPin size={10} className="shrink-0 md:w-3 md:h-3" /> {loc.address || 'Ubicación guardada'}
                             </p>
                           )}
@@ -270,30 +393,10 @@ export const GalleryTab = () => {
                         )}
                       </div>
 
-                      <div className="absolute top-3 right-3 z-30">
-                        <button
-                          onClick={(e) => toggleMenu(e, loc.id)}
-                          className="bg-black text-white hover:bg-nature-primary p-2 rounded-full transition-colors border border-gray-800"
-                        >
-                          <MoreVertical size={18} />
-                        </button>
-
-                        {activeMenuId === loc.id && (
-                          <div className="absolute top-12 right-0 bg-white rounded-2xl border border-gray-200 py-1.5 w-48 z-50 animate-in fade-in zoom-in-95" onClick={e => e.stopPropagation()}>
-                            <button onClick={() => { handleShowDetail(loc); setActiveMenuId(null); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 text-sm font-bold text-gray-700 transition-colors">
-                              <Info size={16} className="text-nature-primary" /> Detalle
-                            </button>
-                            <button onClick={() => { handleGoToMap(loc); setActiveMenuId(null); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 text-sm font-bold text-gray-700 transition-colors">
-                              <Map size={16} className="text-nature-accent" /> Ver en Mapa
-                            </button>
-                            {loc.coords && (
-                              <button onClick={() => { handleOpenGoogleMaps(loc); setActiveMenuId(null); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 text-sm font-bold text-gray-700 transition-colors border-t border-gray-100 mt-1 pt-2.5">
-                                <Navigation size={16} className="text-blue-500" /> Google Maps
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                      <CardActions
+                        item={loc}
+                        className="absolute top-3 right-3 z-30"
+                      />
                     </div>
                   ))}
                 </div>
@@ -303,12 +406,18 @@ export const GalleryTab = () => {
         )}
       </div>
 
-      <DetailModal onEdit={(id) => {
-        navigate('/');
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('open-edit', { detail: id }));
-        }, 100);
-      }} />
+      <DetailModal />
+      <LocationForm
+        isFormPanelOpen={isFormPanelOpen} setIsFormPanelOpen={setIsFormPanelOpen}
+        formId={formId} formPriority={formPriority} setFormPriority={setFormPriority}
+        formCat={formCat} setFormCat={setFormCat}
+        formSlot={formSlot} setFormSlot={setFormSlot}
+        formCurrency={formCurrency} setFormCurrency={setFormCurrency}
+        tempImages={tempImages} setTempImages={setTempImages}
+        tempAttachments={tempAttachments} setTempAttachments={setTempAttachments}
+        handleAddLocation={handleAddLocation} handleFiles={handleFiles} resetForm={resetForm}
+        locations={locations} handleEdit={handleEdit}
+      />
     </div>
   );
 };

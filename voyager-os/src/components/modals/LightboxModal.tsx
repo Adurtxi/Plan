@@ -1,14 +1,12 @@
 import { useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router';
-import { ChevronLeft, ChevronRight, Info, Map, Navigation } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../store';
-import { hapticFeedback } from '../../utils/haptics';
 import { useLocations } from '../../hooks/useTripData';
+import { CardActions } from '../ui/CardActions';
 
 export const LightboxModal = () => {
-  const { lightboxImages, lightboxIndex, lightboxLocationId, setLightboxIndex, closeLightbox, setSelectedLocationId, setFilterDays, setMobileView } = useAppStore();
+  const { lightboxImages, lightboxIndex, lightboxLocationId, setLightboxIndex, closeLightbox } = useAppStore();
   const { data: locations = [] } = useLocations();
-  const navigate = useNavigate();
 
   const loc = useMemo(() => {
     return lightboxLocationId ? locations.find(l => l.id === lightboxLocationId) : null;
@@ -27,32 +25,6 @@ export const LightboxModal = () => {
   }, [lightboxImages, lightboxIndex, setLightboxIndex, closeLightbox]);
 
   if (!lightboxImages || lightboxImages.length === 0) return null;
-
-  const handleGoToMap = () => {
-    if (!loc) return;
-    hapticFeedback.light();
-    closeLightbox();
-    navigate('/');
-    setFilterDays([loc.day]);
-    if (setMobileView) setMobileView('map');
-
-    if (loc.coords) {
-      useAppStore.getState().setReframeMapCoordinates(loc.coords);
-      // Evitar que se abra el detalle también
-      setSelectedLocationId(null);
-    }
-  };
-
-  const handleShowDetail = () => {
-    if (!loc) return;
-    hapticFeedback.light();
-    setSelectedLocationId(loc.id);
-  };
-
-  const handleOpenGoogleMaps = () => {
-    if (!loc?.coords) return;
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.coords.lat},${loc.coords.lng}`, '_blank');
-  };
 
   return (
     <div
@@ -92,28 +64,12 @@ export const LightboxModal = () => {
         </div>
 
         {loc && (
-          <div className="flex gap-4">
-            <button
-              onClick={(e) => { e.stopPropagation(); handleShowDetail(); }}
-              className="px-6 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full backdrop-blur-md flex items-center justify-center gap-2 transition-colors text-sm font-bold border border-gray-600 shadow-lg cursor-pointer"
-            >
-              <Info size={16} /> Detalle
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleGoToMap(); }}
-              className="px-6 py-2.5 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full backdrop-blur-md flex items-center justify-center gap-2 transition-colors text-sm font-bold border border-gray-600 shadow-lg cursor-pointer"
-            >
-              <Map size={16} /> Mapa
-            </button>
-            {loc.coords && (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleOpenGoogleMaps(); }}
-                className="px-6 py-2.5 bg-[#C1E8C3] hover:bg-[#C1E8C3] text-white rounded-full backdrop-blur-md flex items-center justify-center gap-2 transition-colors text-sm font-bold border border-[#4285F4]/50 shadow-lg cursor-pointer"
-              >
-                <Navigation size={16} /> Maps
-              </button>
-            )}
-          </div>
+          <CardActions
+            item={loc}
+            mode="inline-labeled"
+            onCloseParent={closeLightbox}
+            className="px-4 max-w-3xl"
+          />
         )}
       </div>
     </div>

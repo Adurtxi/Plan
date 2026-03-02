@@ -6,7 +6,7 @@ import { hapticFeedback } from '../../utils/haptics';
 import { useLocations } from '../../hooks/useTripData';
 
 export const MapBottomSheet = ({ selectedDay }: { selectedDay: string }) => {
-  const { activeDayVariants, setSelectedLocationId } = useAppStore();
+  const { activeDayVariants, setSelectedLocationId, setIsDetailModalOpen } = useAppStore();
   const { data: locations = [] } = useLocations();
   const [snapState, setSnapState] = useState<0 | 1 | 2>(1);
   const [isDragging, setIsDragging] = useState(false);
@@ -103,6 +103,7 @@ export const MapBottomSheet = ({ selectedDay }: { selectedDay: string }) => {
                 onClick={() => {
                   hapticFeedback.selection();
                   setSelectedLocationId(loc.id);
+                  setIsDetailModalOpen(true);
                   setSnapState(1); // minimize sheet to half to show map
                 }}
                 className="w-full text-left bg-gray-50 hover:bg-nature-mint/20 active:bg-nature-mint/30 border border-gray-100 p-4 rounded-2xl flex items-center gap-4 transition-colors"
