@@ -169,16 +169,16 @@ export const DetailModal = () => {
       {/* Attachments (tickets) */}
       {selectedLocation.attachments?.length > 0 && (
         <div>
-          <span className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-2 block">Billetes / Documentos</span>
+          <span className="text-[10px] font-bold tracking-widest uppercase text-text-muted mb-2 block">Billetes / Documentos</span>
           <div className="space-y-2">
             {selectedLocation.attachments.map((att, i) => (
               <div
                 key={i}
                 onClick={() => openDocumentViewer({ url: att.data, name: att.name, type: att.data.startsWith('data:application/pdf') ? 'application/pdf' : 'image/jpeg' })}
-                className="flex items-center gap-3 p-3 bg-blue-50 hover:bg-blue-100 border border-blue-100 hover:border-blue-200 rounded-xl cursor-pointer transition-colors active:scale-[0.98]"
+                className="flex items-center gap-3 p-3 bg-bg-surface-elevated hover:bg-border-subtle border border-border-strong rounded-xl cursor-pointer transition-colors active:scale-[0.98]"
               >
-                <Ticket size={16} className="text-blue-500 shrink-0" />
-                <span className="text-xs font-bold text-blue-700 truncate">{att.name}</span>
+                <Ticket size={16} className="text-text-primary shrink-0" />
+                <span className="text-xs font-bold text-text-primary truncate">{att.name}</span>
               </div>
             ))}
           </div>
@@ -194,7 +194,7 @@ export const DetailModal = () => {
 
       {/* Notes */}
       {selectedLocation.notes && (
-        <div className="prose prose-sm text-gray-600 font-light leading-relaxed whitespace-pre-wrap">{selectedLocation.notes}</div>
+        <div className="prose prose-sm text-text-secondary font-light leading-relaxed whitespace-pre-wrap">{selectedLocation.notes}</div>
       )}
     </div>
   );
@@ -256,16 +256,16 @@ export const DetailModal = () => {
       )}
 
       {selectedLocation.notes && (
-        <div className="prose prose-sm text-gray-600 font-light leading-relaxed whitespace-pre-wrap">{selectedLocation.notes}</div>
+        <div className="prose prose-sm text-text-secondary font-light leading-relaxed whitespace-pre-wrap">{selectedLocation.notes}</div>
       )}
     </div>
   );
 
   // ─── Generic Info Chip ───
   const InfoChip = ({ label, value, icon, mono, highlight, fullWidth }: { label: string; value: string; icon?: React.ReactNode; mono?: boolean; highlight?: boolean; fullWidth?: boolean }) => (
-    <div className={`p-3 rounded-xl border ${highlight ? 'bg-nature-mint/20 border-nature-primary/20' : 'bg-gray-50 border-gray-100'} ${fullWidth ? 'col-span-2' : ''}`}>
-      <span className="text-[9px] font-bold tracking-widest uppercase text-gray-400 block mb-1">{label}</span>
-      <div className={`flex items-center gap-1.5 text-sm font-bold ${highlight ? 'text-nature-primary' : 'text-nature-text'} ${mono ? 'font-mono tracking-widest uppercase' : ''}`}>
+    <div className={`p-3 rounded-xl border ${highlight ? 'bg-nature-mint/20 border-nature-primary/20' : 'bg-bg-surface-elevated border-border-subtle'} ${fullWidth ? 'col-span-2' : ''}`}>
+      <span className="text-[9px] font-bold tracking-widest uppercase text-text-muted block mb-1">{label}</span>
+      <div className={`flex items-center gap-1.5 text-sm font-bold ${highlight ? 'text-nature-primary' : 'text-text-primary'} ${mono ? 'font-mono tracking-widest uppercase' : ''}`}>
         {icon} {value}
       </div>
     </div>
@@ -274,10 +274,10 @@ export const DetailModal = () => {
   return (
     <div className={`fixed inset-0 z-[4000] flex items-center justify-center p-4 transition-opacity duration-300 ${isHiddenByLightbox ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       <div className="absolute inset-0 bg-nature-primary/20 backdrop-blur-sm" onClick={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }}></div>
-      <div className="bg-white rounded-none md:rounded-bento shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] w-full md:max-w-4xl relative z-10 animate-[fadeIn_0.3s_ease-out]">
+      <div className="bg-bg-surface rounded-none md:rounded-bento shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] w-full md:max-w-4xl relative z-10 animate-[fadeIn_0.3s_ease-out]">
         {/* LEFT PANE - GALLERY (only for activities and accommodation with images) */}
         {catGroup === 'activity' && (
-          <div className={`w-full md:w-5/12 bg-gray-100 relative ${selectedLocation.images?.length > 0 ? 'h-64' : 'h-24'} md:h-auto group overflow-hidden`}>
+          <div className={`w-full md:w-5/12 bg-bg-surface-elevated relative ${selectedLocation.images?.length > 0 ? 'h-64' : 'h-24'} md:h-auto group overflow-hidden`}>
             {selectedLocation.images?.length > 0 ? (
               <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory custom-scroll hide-scroll-mobile">
                 {selectedLocation.images.map((img, i) => (
@@ -292,10 +292,10 @@ export const DetailModal = () => {
                 ))}
               </div>
             ) : (
-              <button onClick={handleQuickUpload} className="w-full h-full flex flex-col items-center justify-center text-nature-primary/40 bg-nature-mint/10 border-r border-gray-100 hover:bg-nature-mint/20 hover:text-nature-primary transition-all">
+              <button onClick={handleQuickUpload} className="w-full h-full flex flex-col items-center justify-center text-nature-primary/40 bg-nature-mint/10 border-r border-border-subtle hover:bg-nature-mint/20 hover:text-nature-primary transition-all">
                 <UploadCloud size={48} strokeWidth={1} className="mb-3 opacity-50" />
                 <span className="text-sm font-medium">Añadir Fotos</span>
-                <span className="text-[10px] mt-1 text-gray-400">Click para subir galería</span>
+                <span className="text-[10px] mt-1 text-text-muted">Click para subir galería</span>
               </button>
             )}
           </div>
@@ -303,7 +303,7 @@ export const DetailModal = () => {
 
         {/* Accommodation gallery */}
         {catGroup === 'accommodation' && selectedLocation.images?.length > 0 && (
-          <div className="w-full md:w-5/12 bg-gray-100 relative h-64 md:h-auto group overflow-hidden">
+          <div className="w-full md:w-5/12 bg-bg-surface-elevated relative h-64 md:h-auto group overflow-hidden">
             <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory custom-scroll hide-scroll-mobile">
               {selectedLocation.images.map((img, i) => (
                 <div key={i} className="min-w-full h-full snap-center relative cursor-pointer" onClick={() => openLightbox(selectedLocation.images)}>
@@ -333,7 +333,7 @@ export const DetailModal = () => {
               ))}
             </div>
 
-            <button onClick={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }} className="text-gray-400 hover:text-nature-primary transition-colors ml-auto"><X size={24} /></button>
+            <button onClick={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }} className="text-text-muted hover:text-nature-primary transition-colors ml-auto"><X size={24} /></button>
           </div>
 
           {/* ── Render by type ── */}
@@ -346,12 +346,12 @@ export const DetailModal = () => {
               <h2 className="text-4xl font-sans text-nature-text mb-6 leading-tight">{selectedLocation.title || 'Tiempo Libre'}</h2>
               <div className="flex gap-3 mb-8 flex-wrap">
                 {selectedLocation.durationMinutes && (
-                  <span className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-bg-surface-elevated text-text-secondary border border-border-subtle flex items-center gap-1.5">
                     <Clock size={12} /> {selectedLocation.durationMinutes >= 60 ? `${Math.floor(selectedLocation.durationMinutes / 60)}h ${selectedLocation.durationMinutes % 60 ? (selectedLocation.durationMinutes % 60) + 'm' : ''}` : `${selectedLocation.durationMinutes}m`}
                   </span>
                 )}
               </div>
-              <div className="prose prose-sm text-gray-600 font-light leading-relaxed whitespace-pre-wrap">
+              <div className="prose prose-sm text-text-secondary font-light leading-relaxed whitespace-pre-wrap">
                 {selectedLocation.notes || "Bloque de tiempo sin asignar. Úsalo para descansar o reasignarlo más tarde."}
               </div>
             </div>
@@ -367,11 +367,11 @@ export const DetailModal = () => {
                     <MapPin size={12} /> {selectedLocation.city}
                   </span>
                 )}
-                <span className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">
+                <span className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-bg-surface-elevated border border-border-subtle text-text-secondary">
                   {selectedLocation.priority === 'necessary' ? 'Esencial' : 'Opcional'}
                 </span>
                 {formattedTime && (
-                  <span className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-bg-surface-elevated border border-border-subtle text-text-secondary flex items-center gap-1.5">
                     <Clock size={12} /> {formattedTime}
                   </span>
                 )}
@@ -395,14 +395,14 @@ export const DetailModal = () => {
                 )}
               </div>
 
-              <div className="prose prose-sm text-gray-600 mb-8 font-light leading-relaxed whitespace-pre-wrap">
+              <div className="prose prose-sm text-text-secondary mb-8 font-light leading-relaxed whitespace-pre-wrap">
                 {selectedLocation.notes || "Añade notas útiles para esta actividad."}
               </div>
             </div>
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-2 mt-auto pt-6 border-t border-gray-100 flex-wrap">
+          <div className="flex gap-2 mt-auto pt-6 border-t border-border-strong flex-wrap">
             <CardActions
               item={selectedLocation}
               mode="inline-labeled"
@@ -410,7 +410,7 @@ export const DetailModal = () => {
               onCloseParent={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }}
             />
             <div className="flex gap-2 shrink-0 w-full sm:w-auto">
-              <button onClick={handleDuplicate} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-nature-primary dark:hover:text-nature-primary transition-all" title="Duplicar">
+              <button onClick={handleDuplicate} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-border-strong text-text-muted hover:bg-bg-surface-elevated hover:text-nature-primary transition-all" title="Duplicar">
                 <Copy size={20} />
               </button>
               <button onClick={() => {
@@ -427,7 +427,7 @@ export const DetailModal = () => {
                     addToast('Actividad eliminada', 'success');
                   }
                 });
-              }} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-gray-200 dark:border-gray-600 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"><Trash2 size={20} /></button>
+              }} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-border-strong text-red-500/80 hover:bg-red-500/10 transition-all"><Trash2 size={20} /></button>
             </div>
           </div>
         </div>

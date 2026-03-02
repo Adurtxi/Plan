@@ -56,7 +56,7 @@ const GroupContainer = ({ groupId, items, handleCardClick, onRequestMove, mergeT
       <div
         {...attributes}
         {...listeners}
-        className="bg-gray-800 text-white rounded-t-xl px-4 py-2 w-max cursor-grab active:cursor-grabbing flex items-center gap-2 relative z-10 font-bold uppercase tracking-wider text-[10px] shadow-sm ml-4"
+        className="bg-bg-surface-elevated text-text-primary rounded-t-xl px-4 py-2 w-max cursor-grab active:cursor-grabbing flex items-center gap-2 relative z-10 font-bold uppercase tracking-wider text-[10px] shadow-sm ml-4 border border-border-subtle border-b-0"
       >
         <span className="opacity-50">⣿</span> Grupo de Actividades
         <button onClick={(e) => { e.stopPropagation(); ungroupLocationGroup(groupId); }} className="ml-2 bg-white/10 hover:bg-red-500 hover:text-white rounded px-1.5 py-0.5 text-[9px] transition-colors border border-white/10 opacity-0 group-hover/container:opacity-100">
@@ -64,7 +64,7 @@ const GroupContainer = ({ groupId, items, handleCardClick, onRequestMove, mergeT
         </button>
       </div>
 
-      <div className="bg-gray-100/80 border border-gray-200/80 rounded-[28px] rounded-tl-sm p-3 relative z-0 shadow-inner flex flex-col gap-2 ring-1 ring-white inset-0">
+      <div className="bg-bg-surface-elevated/80 border border-border-subtle rounded-[28px] rounded-tl-sm p-3 relative z-0 shadow-inner flex flex-col gap-2 ring-1 ring-border-subtle inset-0">
         <SortableContext items={items.map((i) => i.id.toString())} strategy={() => null}>
           {items.map((item, index) => {
             const nextItem = index < items.length - 1 ? items[index + 1] : null;
@@ -303,8 +303,8 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
   }, [filteredLocations]);
 
   return (
-    <div className={`flex-none ${viewMode === 'split-vertical' ? 'w-full max-w-[360px] mx-auto' : 'w-[340px]'} flex flex-col min-h-full h-auto bg-white border border-gray-100 rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed ? 'opacity-40' : ''}`}>
-      <div className="p-5 pb-3 border-b border-gray-50 flex flex-col shrink-0">
+    <div className={`flex-none ${viewMode === 'split-vertical' ? 'w-full max-w-[360px] mx-auto' : 'w-[340px]'} flex flex-col min-h-full h-auto bg-bg-surface border border-border-strong rounded-[32px] overflow-hidden group shadow-sm transition-all hover:shadow-md ${isDimmed ? 'opacity-40' : ''}`}>
+      <div className="p-5 pb-3 border-b border-border-strong flex flex-col shrink-0">
         <div className="flex justify-between items-end mb-3">
           <label className="flex items-center gap-2 cursor-pointer group">
             <input
@@ -315,20 +315,20 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
               title="Mostrar/ocultar ruta en el mapa"
             />
             <span
-              className={`font-sans text-2xl font-medium transition-colors ${filterDays.includes(dayId) ? 'text-nature-primary' : 'text-gray-400 group-hover:text-nature-primary'}`}
+              className={`font-sans text-2xl font-medium transition-colors ${filterDays.includes(dayId) ? 'text-nature-primary' : 'text-text-muted group-hover:text-nature-primary'}`}
             >
               {dayLabel}
             </span>
           </label>
-          <span className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Itinerario</span>
+          <span className="text-[10px] text-text-muted font-bold tracking-widest uppercase">Itinerario</span>
         </div>
 
-        <div className="flex bg-gray-50 p-1 rounded-xl">
+        <div className="flex bg-bg-surface-elevated p-1 rounded-xl">
           {dayVariants.map(v => (
             <button
               key={v}
               onClick={() => setActiveDayVariant(dayId, v)}
-              className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${activeVariant === v ? 'bg-white text-nature-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${activeVariant === v ? 'bg-bg-surface-elevated text-nature-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
             >
               {v === 'default' ? 'Ruta 1' : v.replace('option-', 'Ruta ')}
             </button>
@@ -348,7 +348,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
                 }
               }
             });
-          }} className="px-3 text-gray-400 hover:text-nature-primary transition-colors">+</button>
+          }} className="px-3 text-text-muted hover:text-nature-primary transition-colors">+</button>
         </div>
 
         {handleAddNewToDay && (
@@ -362,7 +362,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
                 if (handleAddFreeTimeToDay) {
                   handleAddFreeTimeToDay(dayId, activeVariant);
                 }
-              }} className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 py-2 rounded-xl border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1 shrink-0" title="Añadir Hueco Libre">
+              }} className="flex-1 bg-bg-surface-elevated hover:bg-border-subtle/30 border border-border-subtle text-text-secondary py-2 rounded-xl border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1 shrink-0" title="Añadir Hueco Libre">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 Libre
               </button>
@@ -371,7 +371,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
         )}
       </div>
 
-      <div ref={setNodeRef} className={`flex-1 overflow-y-auto p-4 custom-scroll ${isOver ? 'bg-nature-mint/30' : 'bg-gray-50/30'} flex flex-col gap-3 transition-colors relative`}>
+      <div ref={setNodeRef} className={`flex-1 overflow-y-auto p-4 custom-scroll ${isOver ? 'bg-nature-mint/30' : 'bg-bg-surface-elevated/30'} flex flex-col gap-3 transition-colors relative`}>
         {isMovingMode && !movingItemIsHere && locationList.length === 0 && executeMoveHere ? (
           /* Empty day — single large move slot */
           <MoveSlot
@@ -379,10 +379,10 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
             onClick={() => executeMoveHere(movingItemId!, dayId, activeVariant, undefined, null)}
           />
         ) : locationList.length === 0 ? (
-          <div className="m-auto text-center space-y-3 opacity-50 border-2 border-dashed border-gray-200 rounded-3xl p-8 bg-white flex flex-col items-center justify-center w-full min-h-[160px]">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Día Libre</p>
-            <p className="text-[10px] text-gray-400 leading-relaxed max-w-[150px]">Arrastra actividades aquí desde el buzón o crea nuevas</p>
+          <div className="m-auto text-center space-y-3 opacity-50 border-2 border-dashed border-border-strong rounded-3xl p-8 bg-bg-surface flex flex-col items-center justify-center w-full min-h-[160px]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <p className="text-xs text-text-secondary font-bold uppercase tracking-widest">Día Libre</p>
+            <p className="text-[10px] text-text-muted leading-relaxed max-w-[150px]">Arrastra actividades aquí desde el buzón o crea nuevas</p>
           </div>
         ) : (
           <SortableContext items={sortableItemsIds} strategy={() => null}>
@@ -468,12 +468,12 @@ export const ScheduleBoard = ({ handleCardClick, handleAddNewToDay, handleAddFre
   }, [viewMode, filterDays, tripVariants, activeGlobalVariantId]);
 
   return (
-    <div className={`h-full w-full ${viewMode === 'split-vertical' ? 'overflow-hidden' : 'overflow-x-auto'} pb-12 bg-nature-bg custom-scroll transition-colors relative`}>
+    <div className={`h-full w-full ${viewMode === 'split-vertical' ? 'overflow-hidden' : 'overflow-x-auto'} pb-12 bg-bg-body custom-scroll transition-colors relative`}>
       {false ? (
         <div />
       ) : (
         <div className="flex flex-col flex-1 min-h-0">
-          <div className={`${viewMode === 'split-vertical' ? 'flex justify-center p-4' : 'flex gap-6 min-w-max p-6 pb-20'} flex-1 min-h-0 bg-nature-bg custom-scroll`}>
+          <div className={`${viewMode === 'split-vertical' ? 'flex justify-center p-4' : 'flex gap-6 min-w-max p-6 pb-20'} flex-1 min-h-0 bg-bg-body custom-scroll`}>
             {displayDays.map(dayObj => (
               <BoardColumn
                 key={dayObj.id}

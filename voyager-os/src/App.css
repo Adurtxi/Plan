@@ -22,6 +22,18 @@
   --color-gray-800: var(--theme-gray-800);
   --color-gray-900: var(--theme-gray-900);
 
+  /* Semantic Variables (Mapped to UI layer) */
+  --color-bg-body: var(--bg-body);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-surface-elevated: var(--bg-surface-elevated);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
   --font-sans: "Inter", sans-serif;
 
   --radius-4xl: 2rem;
@@ -53,32 +65,45 @@
   --theme-gray-700: #374151;
   --theme-gray-800: #1f2937;
   --theme-gray-900: #111827;
+  --theme-black: #000000;
+
+  /* --- Semantic Variables (Light Theme Default) --- */
+  --bg-body: var(--theme-nature-bg);
+  --bg-surface: var(--theme-white);
+  --bg-surface-elevated: var(--theme-gray-50);
+  
+  --text-primary: var(--theme-nature-text);
+  --text-secondary: var(--theme-gray-500);
+  --text-muted: var(--theme-gray-400);
+
+  --border-subtle: var(--theme-nature-border);
+  --border-strong: var(--theme-gray-200);
 }
 
 :root.dark {
-  /* Dark Theme - Maximum Contrast */
-  --theme-nature-bg: #000000; /* True black background */
-  --theme-nature-surface: #1C1C1E; /* Elevated surface (iOS Dark Mode style) */
-  --theme-nature-text: #FFFFFF; /* Pure white text */
-  --theme-nature-textLight: #F4F4F5; /* Extremely bright text for secondary info */
-  --theme-nature-primary: #34D399; /* Bright minted green */
-  --theme-nature-accent: #FBBF24; /* Bright amber */
-  --theme-nature-mint: #064E3B; /* Background tint for mint */
-  --theme-nature-border: #38383A; /* Visible borders */
+  /* Dark Theme - Nature Overrides */
+  --theme-nature-bg: #000000;
+  --theme-nature-surface: #1C1C1E;
+  --theme-nature-text: #FFFFFF;
+  --theme-nature-textLight: #F4F4F5;
+  --theme-nature-primary: #34D399;
+  --theme-nature-accent: #FBBF24;
+  --theme-nature-mint: #064E3B;
+  --theme-nature-border: #38383A;
 
-  --theme-white: #1C1C1E; /* Re-map white to the elevated surface */
-  --theme-gray-50: #000000;
-  --theme-gray-100: #1C1C1E;
-  --theme-gray-200: #2C2C2E;
-  --theme-gray-300: #3A3A3C;
-  
-  /* Lighter text grays for maximum readability */
-  --theme-gray-400: #A1A1AA; /* 400 is often used for placeholders/icons */
-  --theme-gray-500: #D4D4D8; /* 500 is often used for secondary text */
-  --theme-gray-600: #E4E4E7; 
-  --theme-gray-700: #F4F4F5;
-  --theme-gray-800: #FAFAFA;
-  --theme-gray-900: #FFFFFF;
+  /* --- Semantic Variables (Dark Theme Reassignments) --- */
+  /* Here we swap what surface, text, and border mean.
+     We DO NOT override the absolute meaning of gray-900 or white here! */
+  --bg-body: var(--theme-black);
+  --bg-surface: #1C1C1E;
+  --bg-surface-elevated: #2C2C2E;
+
+  --text-primary: var(--theme-white);
+  --text-secondary: #A1A1AA;
+  --text-muted: #71717A;
+
+  --border-subtle: #38383A;
+  --border-strong: #52525B;
 }
 
 body {

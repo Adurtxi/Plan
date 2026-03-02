@@ -191,7 +191,7 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
           <div className="flex items-center gap-2">
             <PenTool size={16} className="shrink-0" /> <span className="text-sm">Añadiendo puntos...</span>
           </div>
-          <button onClick={() => setDrawingRouteFor(null)} className="shrink-0 flex items-center gap-1.5 bg-white text-nature-accent hover:bg-gray-100 px-3 py-1.5 rounded-full text-xs font-bold transition-colors">
+          <button onClick={() => setDrawingRouteFor(null)} className="shrink-0 flex items-center gap-1.5 bg-bg-surface text-nature-accent hover:bg-bg-surface-elevated px-3 py-1.5 rounded-full text-xs font-bold transition-colors">
             <CheckCircle2 size={14} /> Listo
           </button>
         </div>
@@ -205,23 +205,23 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
       )}
 
       <div className="absolute top-6 right-6 z-[400] flex flex-col gap-2">
-        <button onClick={() => setCenterMeTrigger(prev => prev + 1)} className="bg-white/90 backdrop-blur text-nature-primary hover:bg-white p-3 rounded-full shadow-lg transition-colors border border-gray-100" title="Centrar en mí">
+        <button onClick={() => setCenterMeTrigger(prev => prev + 1)} className="bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface p-3 rounded-full shadow-lg transition-colors border border-border-strong" title="Centrar en mí">
           <LocateFixed size={20} />
         </button>
-        <button onClick={() => setReframeTrigger(prev => prev + 1)} className="bg-white/90 backdrop-blur text-nature-primary hover:bg-white p-3 rounded-full shadow-lg transition-colors border border-gray-100" title="Reencuadrar Mapa (Ver todo)">
+        <button onClick={() => setReframeTrigger(prev => prev + 1)} className="bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface p-3 rounded-full shadow-lg transition-colors border border-border-strong" title="Reencuadrar Mapa (Ver todo)">
           <Maximize size={20} />
         </button>
-        <button onClick={() => setIsAddMode(!isAddMode)} className={`p-3 rounded-full shadow-lg transition-colors border ${isAddMode ? 'bg-nature-primary text-white border-nature-primary' : 'bg-white/90 backdrop-blur text-nature-primary hover:bg-white border-gray-100'}`} title="Añadir Destino en Mapa">
+        <button onClick={() => setIsAddMode(!isAddMode)} className={`p-3 rounded-full shadow-lg transition-colors border ${isAddMode ? 'bg-nature-primary text-white border-nature-primary' : 'bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface border-border-strong'}`} title="Añadir Destino en Mapa">
           <MapPin size={20} />
         </button>
-        <button onClick={() => setMapType(prev => prev === 'm' ? 's' : 'm')} className="bg-white/90 backdrop-blur text-nature-primary hover:bg-white p-3 rounded-full shadow-lg transition-colors border border-gray-100" title="Cambiar Vista">
+        <button onClick={() => setMapType(prev => prev === 'm' ? 's' : 'm')} className="bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface p-3 rounded-full shadow-lg transition-colors border border-border-strong" title="Cambiar Vista">
           {mapType === 'm' ? <Layers size={20} /> : <MapPin size={20} />}
         </button>
         <button onClick={() => setIsFormPanelOpen(true)} className="md:hidden bg-nature-primary text-white p-3 rounded-full shadow-lg"><MapPin size={20} /></button>
       </div>
 
 
-      <div className="absolute bottom-6 left-6 z-[400] bg-white/80 backdrop-blur px-4 py-2 rounded-full border border-white text-[10px] text-gray-600 shadow-sm pointer-events-none flex gap-4">
+      <div className="absolute bottom-6 left-6 z-[400] bg-bg-surface/80 backdrop-blur px-4 py-2 rounded-full border border-border-strong text-[10px] text-text-secondary shadow-sm pointer-events-none flex gap-4">
         <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-nature-primary"></span>Esencial</div>
         <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-nature-accent"></span>Opcional</div>
       </div>

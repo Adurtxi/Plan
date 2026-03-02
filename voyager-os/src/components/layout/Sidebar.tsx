@@ -34,10 +34,10 @@ export const Sidebar = () => {
     });
   };
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) => `cursor-pointer p-4 flex items-center justify-center rounded-2xl transition-all duration-300 active:scale-90 ${isActive ? 'bg-nature-mint/50 text-nature-primary shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-nature-bg'}`;
+  const navLinkClass = ({ isActive }: { isActive: boolean }) => `cursor-pointer p-4 flex items-center justify-center rounded-2xl transition-all duration-300 active:scale-90 ${isActive ? 'bg-nature-mint/50 text-nature-primary shadow-sm' : 'text-text-muted hover:text-nature-primary hover:bg-bg-body'}`;
 
   return (
-    <aside className="w-20 md:w-24 bg-white border-r border-nature-border hidden lg:flex flex-col items-center py-8 gap-8 z-30 shadow-soft shrink-0">
+    <aside className="w-20 md:w-24 bg-bg-surface border-r border-border-strong hidden lg:flex flex-col items-center py-8 gap-8 z-30 shadow-soft shrink-0">
       <div className="w-10 h-10 md:w-12 md:h-12 bg-nature-primary text-white rounded-full flex items-center justify-center font-sans font-bold text-xl md:text-2xl shadow-lg shadow-nature-primary/20">V</div>
       <NavLink to="/" className={navLinkClass} title="Itinerario"><Map size={24} strokeWidth={1.5} /></NavLink>
       <NavLink to="/gallery" className={navLinkClass} title="Galería"><ImageIcon size={24} strokeWidth={1.5} /></NavLink>
@@ -45,18 +45,18 @@ export const Sidebar = () => {
       <NavLink to="/logistics" className={navLinkClass} title="Reservas"><Ticket size={24} strokeWidth={1.5} /></NavLink>
       <NavLink to="/checklist" className={navLinkClass} title="Equipaje"><Briefcase size={24} strokeWidth={1.5} /></NavLink>
       <div className="mt-auto flex flex-col gap-6 w-full px-2 md:px-4 items-center">
-        <div className="text-[10px] font-bold tracking-widest text-gray-400 uppercase text-center hidden md:block">Total<div className="text-nature-primary text-sm font-sans mt-1">{currencySymbol}{totalCost.toFixed(0)}</div></div>
+        <div className="text-[10px] font-bold tracking-widest text-text-muted uppercase text-center hidden md:block">Total<div className="text-nature-primary text-sm font-sans mt-1">{currencySymbol}{totalCost.toFixed(0)}</div></div>
 
         <button
           onClick={toggleTheme}
-          className="cursor-pointer p-3 text-gray-400 hover:text-nature-primary hover:bg-nature-bg rounded-xl transition-all active:scale-90"
+          className="cursor-pointer p-3 text-text-muted hover:text-nature-primary hover:bg-bg-body rounded-xl transition-all active:scale-90"
           title="Cambiar Tema"
         >
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 
-        <button className="cursor-pointer p-3 text-gray-400 hover:text-nature-primary hover:bg-nature-bg rounded-xl transition-all active:scale-90" title="Guardar Viaje"><Download size={20} /></button>
-        <button onClick={handleReset} className="cursor-pointer p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-90" title="Reiniciar"><Trash2 size={20} /></button>
+        <button className="cursor-pointer p-3 text-text-muted hover:text-nature-primary hover:bg-bg-body rounded-xl transition-all active:scale-90" title="Guardar Viaje"><Download size={20} /></button>
+        <button onClick={handleReset} className="cursor-pointer p-3 text-text-muted hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-all active:scale-90" title="Reiniciar"><Trash2 size={20} /></button>
       </div>
     </aside>
   );

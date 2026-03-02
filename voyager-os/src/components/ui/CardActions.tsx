@@ -88,9 +88,9 @@ export const CardActions = memo(({
   if (mode === 'inline' || mode === 'inline-labeled') {
     const isDetailModal = className.includes('detail-modal');
 
-    // Estilos responsivos adaptados 100% al Dark Mode usando Tailwind variants
+    // Estilos responsivos adaptados al Dark Mode usando Tailwind variants semánticos
     const detailBtnClass = isDetailModal
-      ? 'flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm font-medium flex justify-center items-center gap-2'
+      ? 'flex-1 py-3 rounded-xl border border-border-strong text-text-secondary hover:bg-bg-surface-elevated transition-all text-sm font-medium flex justify-center items-center gap-2'
       : 'py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md flex items-center justify-center gap-2 transition-colors text-sm font-bold border border-white/10 shadow-lg cursor-pointer flex-1';
 
     const highlightBtnClass = isDetailModal
@@ -98,12 +98,12 @@ export const CardActions = memo(({
       : 'flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md flex items-center justify-center gap-2 transition-colors text-sm font-bold border border-white/10 shadow-lg cursor-pointer';
 
     const linkBtnClass = isDetailModal
-      ? 'flex-1 py-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all text-sm flex justify-center items-center gap-2'
-      : 'flex-1 p-2.5 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full backdrop-blur-md flex items-center justify-center transition-colors border border-gray-600 shadow-lg cursor-pointer';
+      ? 'flex-1 py-3 rounded-xl bg-bg-surface-elevated border border-border-strong text-text-primary hover:border-nature-primary/50 transition-all text-sm flex justify-center items-center gap-2 font-bold'
+      : 'flex-1 p-2.5 bg-bg-surface-elevated/80 hover:bg-border-strong text-text-primary rounded-full backdrop-blur-md flex items-center justify-center transition-colors border border-border-strong shadow-lg cursor-pointer';
 
     const routeBtnClass = isDetailModal
-      ? 'flex-1 py-3 rounded-xl bg-nature-mint/50 dark:bg-nature-mint/10 text-nature-primary dark:text-nature-primary font-bold hover:bg-nature-mint/80 dark:hover:bg-nature-mint/20 transition-all text-sm flex justify-center items-center gap-2'
-      : 'flex-1 p-2.5 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full backdrop-blur-md flex items-center justify-center transition-colors border border-gray-600 shadow-lg cursor-pointer';
+      ? 'flex-1 py-3 rounded-xl bg-nature-mint/50 border border-nature-primary/20 text-nature-primary font-bold hover:bg-nature-mint/80 transition-all text-sm flex justify-center items-center gap-2'
+      : 'flex-1 p-2.5 bg-bg-surface-elevated/80 hover:bg-border-strong text-text-primary rounded-full backdrop-blur-md flex items-center justify-center transition-colors border border-border-strong shadow-lg cursor-pointer';
 
     const hasWebLink = item.link && item.link.startsWith('http');
 
@@ -131,7 +131,7 @@ export const CardActions = memo(({
         {/* Link del Archivo (Web) */}
         {hasWebLink && (
           <button onClick={handleOpenWebLink} className={linkBtnClass} title="Abrir enlace guardado">
-            <ArrowRightCircle size={16} /> {mode === 'inline-labeled' && 'Google Maps'}
+            <ArrowRightCircle size={16} /> {mode === 'inline-labeled' && 'Enlace'}
           </button>
         )}
 

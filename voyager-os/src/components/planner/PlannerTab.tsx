@@ -510,7 +510,7 @@ export const PlannerTab = () => {
             <Polyline positions={latlngs} color="white" weight={10} opacity={0.5} lineCap="round" lineJoin="round" eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }} />
             <Polyline positions={latlngs} color={hasPolyline ? (segment.mode === 'car' ? '#3b82f6' : '#2D5A27') : "#9ca3af"} weight={4} dashArray={hasPolyline ? undefined : "10, 10"} opacity={1} eventHandlers={{ click: (e) => handleRouteClick(e, item.id, nextItem.id) }}>
               {midPoint && segment?.durationCalculated && (
-                <Tooltip position={midPoint} permanent direction="center" className="bg-white/90 backdrop-blur border-none shadow-md text-nature-primary font-bold text-[10px] px-2 py-1 rounded-full relative z-[500] pointer-events-none mt-0 ml-0 before:hidden" opacity={1}>
+                <Tooltip position={midPoint} permanent direction="center" className="bg-bg-surface-elevated/90 backdrop-blur border-none shadow-md text-nature-primary font-bold text-[10px] px-2 py-1 rounded-full relative z-[500] pointer-events-none mt-0 ml-0 before:hidden" opacity={1}>
                   {segment.durationCalculated >= 60 ? `${Math.floor(segment.durationCalculated / 60)}h ${segment.durationCalculated % 60 ? (segment.durationCalculated % 60) + 'm' : ''}` : `${segment.durationCalculated}m`}
                 </Tooltip>
               )}
@@ -592,7 +592,7 @@ export const PlannerTab = () => {
   if (isMobile) {
     if (mobileView === 'map') {
       return (
-        <div className="flex-1 flex flex-col overflow-hidden bg-nature-bg">
+        <div className="flex-1 flex flex-col overflow-hidden bg-bg-body">
           <MobileMapView routePolylines={routePolylines} />
           <DetailModal />
           <LocationForm
@@ -609,8 +609,9 @@ export const PlannerTab = () => {
         </div>
       );
     }
+
     return (
-      <div className="flex-1 flex flex-col overflow-hidden bg-nature-bg">
+      <div className="flex-1 flex flex-col overflow-hidden bg-bg-body">
         <MobileTimelineView setMobileView={setMobileView} handleEdit={handleEdit} />
         <DetailModal />
         <LocationForm
@@ -641,7 +642,7 @@ export const PlannerTab = () => {
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
       <div className="flex-1 flex overflow-hidden relative">
-        <div className="flex-1 flex flex-col relative w-full overflow-hidden bg-nature-bg">
+        <div className="flex-1 flex flex-col relative w-full overflow-hidden bg-bg-body">
           <IdeaInbox
             handleCardClick={setSelectedLocationId}
             handleAddNew={() => { resetForm(); setIsFormPanelOpen(true); setSelectedLocationId(null); setIsAddMode(false); }}
@@ -667,7 +668,7 @@ export const PlannerTab = () => {
 
           {moveToDayModal.isOpen && (
             <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+              <div className="bg-bg-surface rounded-2xl p-6 w-full max-w-sm shadow-xl">
                 <h3 className="text-lg font-bold text-nature-primary mb-4">Mover Actividad</h3>
                 <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto custom-scroll">
                   {availableDays.map(day => (
@@ -678,20 +679,20 @@ export const PlannerTab = () => {
                         if (moveToDayModal.itemId) moveToDay({ id: moveToDayModal.itemId, targetDay: day, targetVariant });
                         setMoveToDayModal({ isOpen: false, itemId: null });
                       }}
-                      className="text-left px-4 py-3 bg-gray-50 hover:bg-nature-mint/30 rounded-xl text-sm font-bold text-gray-700 transition-colors"
+                      className="text-left px-4 py-3 bg-bg-surface-elevated hover:bg-nature-mint/30 rounded-xl text-sm font-bold text-text-secondary transition-colors"
                     >
                       {day === 'unassigned' ? '📥 Buzón de Ideas' : day.replace('-', ' ')}
                     </button>
                   ))}
                 </div>
-                <button onClick={() => setMoveToDayModal({ isOpen: false, itemId: null })} className="mt-4 w-full py-2 text-center text-sm text-gray-400 hover:text-gray-600">Cancelar</button>
+                <button onClick={() => setMoveToDayModal({ isOpen: false, itemId: null })} className="mt-4 w-full py-2 text-center text-sm text-text-muted hover:text-text-primary">Cancelar</button>
               </div>
             </div>
           )}
 
           <div className={`flex flex-1 w-full h-full overflow-hidden ${viewMode === 'split-horizontal' ? 'flex-col' : viewMode === 'split-vertical' ? 'flex-row' : 'flex-col'}`}>
             {viewMode !== 'board-only' && (
-              <div className={`${viewMode === 'map-only' ? 'w-full h-full' : viewMode === 'split-vertical' ? 'flex-1 h-full border-r border-gray-200' : 'w-full h-[55%] border-b border-gray-200'} shrink-0 transition-all duration-300 relative`}>
+              <div className={`${viewMode === 'map-only' ? 'w-full h-full' : viewMode === 'split-vertical' ? 'flex-1 h-full border-r border-border-strong' : 'w-full h-[55%] border-b border-border-strong'} shrink-0 transition-all duration-300 relative`}>
                 <MapView
                   routePolylines={routePolylines}
                   setIsFormPanelOpen={setIsFormPanelOpen}
@@ -701,22 +702,22 @@ export const PlannerTab = () => {
                 />
                 {/* View mode selector — over the map */}
                 <div className="absolute bottom-4 right-4 z-[600]">
-                  <div className="bg-white/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-white">
-                    <button onClick={() => setIsTripSettingsOpen(true)} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50 mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
-                    <div className="w-px h-6 bg-gray-200 mr-2"></div>
-                    <button onClick={() => setViewMode('split-horizontal')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-horizontal' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
-                    <button onClick={() => setViewMode('split-vertical')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-vertical' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
-                    <button onClick={() => setViewMode('map-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'map-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-gray-50'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>
-                    <button onClick={() => setViewMode('board-only')} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                  <div className="bg-bg-surface-elevated/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-border-strong">
+                    <button onClick={() => setIsTripSettingsOpen(true)} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+                    <div className="w-px h-6 bg-border-strong mr-2"></div>
+                    <button onClick={() => setViewMode('split-horizontal')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-horizontal' ? 'bg-nature-primary text-white shadow-sm' : 'text-text-muted hover:text-nature-primary hover:bg-border-subtle'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
+                    <button onClick={() => setViewMode('split-vertical')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-vertical' ? 'bg-nature-primary text-white shadow-sm' : 'text-text-muted hover:text-nature-primary hover:bg-border-subtle'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
+                    <button onClick={() => setViewMode('map-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'map-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-text-muted hover:text-nature-primary hover:bg-border-subtle'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>
+                    <button onClick={() => setViewMode('board-only')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
                   </div>
                 </div>
               </div>
             )}
 
             {viewMode !== 'map-only' && (
-              <div className={`${viewMode === 'board-only' ? 'w-full h-full flex flex-col' : viewMode === 'split-vertical' ? 'w-[400px] shrink-0 h-full bg-white border-l border-gray-100 flex flex-col' : 'w-full flex-1 min-h-0 flex flex-col'} transition-all duration-300 relative`}>
+              <div className={`${viewMode === 'board-only' ? 'w-full h-full flex flex-col' : viewMode === 'split-vertical' ? 'w-[400px] shrink-0 h-full bg-bg-surface border-l border-border-strong flex flex-col' : 'w-full flex-1 min-h-0 flex flex-col'} transition-all duration-300 relative`}>
                 {viewMode === 'split-vertical' && (
-                  <div className="p-4 border-b border-gray-50 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+                  <div className="p-4 border-b border-border-strong bg-bg-surface/80 backdrop-blur-md sticky top-0 z-50">
                     <div className="flex items-center justify-between mb-2 px-1">
                       <span className="text-[10px] font-black uppercase tracking-widest text-nature-primary/50">Día seleccionado</span>
                     </div>
@@ -741,12 +742,12 @@ export const PlannerTab = () => {
                 </div>
                 {viewMode === 'board-only' && (
                   <div className="absolute bottom-4 right-4 z-[600]">
-                    <div className="bg-white/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-white">
-                      <button onClick={() => setIsTripSettingsOpen(true)} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50 mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
-                      <div className="w-px h-6 bg-gray-200 mr-2"></div>
-                      <button onClick={() => setViewMode('split-horizontal')} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
-                      <button onClick={() => setViewMode('split-vertical')} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
-                      <button onClick={() => setViewMode('map-only')} className="p-2 rounded-lg transition-colors text-gray-400 hover:text-nature-primary hover:bg-gray-50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>
+                    <div className="bg-bg-surface-elevated/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-border-strong">
+                      <button onClick={() => setIsTripSettingsOpen(true)} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+                      <div className="w-px h-6 bg-border-strong mr-2"></div>
+                      <button onClick={() => setViewMode('split-horizontal')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
+                      <button onClick={() => setViewMode('split-vertical')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
+                      <button onClick={() => setViewMode('map-only')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>
                       <button onClick={() => setViewMode('board-only')} className="p-2 rounded-lg transition-colors bg-nature-primary text-white shadow-sm"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
                     </div>
                   </div>
@@ -805,7 +806,7 @@ export const PlannerTab = () => {
             <CardVisual item={activeItem} isOverlay />
           </div>
         ) : activeId?.startsWith('group-') ? (
-          <div style={{ cursor: 'grabbing', opacity: 0.9, transform: 'scale(1.05)' }} className="bg-white/90 border-2 border-dashed border-gray-300 rounded-[24px] p-4 font-bold text-gray-500 shadow-xl flex items-center justify-center min-w-[300px] h-[100px]">
+          <div style={{ cursor: 'grabbing', opacity: 0.9, transform: 'scale(1.05)' }} className="bg-bg-surface-elevated/90 border-2 border-dashed border-border-strong rounded-[24px] p-4 font-bold text-text-muted shadow-xl flex items-center justify-center min-w-[300px] h-[100px]">
             <span className="opacity-50 mr-2">⣿</span> Moviendo Paquete
           </div>
         ) : null}

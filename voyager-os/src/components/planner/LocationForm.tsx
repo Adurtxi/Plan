@@ -265,7 +265,7 @@ export const LocationForm = ({
     <button
       type="button"
       onClick={() => setActiveTab(id)}
-      className={`flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold tracking-widest uppercase transition-colors ${activeTab === id ? 'border-nature-primary text-nature-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+      className={`flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold tracking-widest uppercase transition-colors ${activeTab === id ? 'border-nature-primary text-nature-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}
     >
       <Icon size={14} /> {label}
     </button>
@@ -284,22 +284,22 @@ export const LocationForm = ({
   };
 
   return (
-    <div className={`w-full md:w-[480px] shrink-0 bg-white border-r border-gray-100 flex flex-col z-[520] shadow-[10px_0_30px_rgba(0,0,0,0.1)] h-full absolute top-0 bottom-0 left-0 transform ${isFormPanelOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
-      <button type="button" onClick={() => setIsFormPanelOpen(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-nature-primary z-50 bg-white/50 rounded-full backdrop-blur transition-colors"><X size={24} /></button>
+    <div className={`w-full md:w-[480px] shrink-0 bg-bg-surface border-r border-border-strong flex flex-col z-[520] shadow-[10px_0_30px_rgba(0,0,0,0.1)] h-full absolute top-0 bottom-0 left-0 transform ${isFormPanelOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
+      <button type="button" onClick={() => setIsFormPanelOpen(false)} className="absolute top-4 right-4 p-2 text-text-muted hover:text-nature-primary z-50 bg-bg-surface-elevated/50 rounded-full backdrop-blur transition-colors"><X size={24} /></button>
 
-      <div className="p-8 pb-4 bg-gray-50/50">
+      <div className="p-8 pb-4 bg-bg-surface/50">
         <div className="flex items-center gap-3 mb-1">
           {catConfig && <span className="text-3xl">{catConfig.icon}</span>}
           <h2 className="text-3xl font-sans text-nature-primary">{formTitle}</h2>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-text-muted">
           {catGroup === 'transport' ? 'Configura los detalles de tu trayecto.' :
             catGroup === 'accommodation' ? 'Configura tu estancia.' :
               'Diseña tu experiencia con precisión.'}
         </p>
       </div>
 
-      <div className="flex px-6 border-b border-gray-100 overflow-x-auto no-scrollbar">
+      <div className="flex px-6 border-b border-border-strong overflow-x-auto no-scrollbar">
         <TabButton id="general" label={tabLabels.general} icon={MapPin} />
         {catGroup === 'activity' && <TabButton id="time" label={tabLabels.time} icon={Calendar} />}
         <TabButton id="finance" label={tabLabels.finance} icon={CreditCard} />
@@ -320,7 +320,7 @@ export const LocationForm = ({
               <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">
                 {catGroup === 'accommodation' ? 'Nombre del Hotel' : catGroup === 'transport' ? 'Título / Descripción' : 'Título (Opcional)'}
               </label>
-              <input {...register('title')} type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all font-bold"
+              <input {...register('title')} type="text" className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-4 text-text-primary placeholder-text-muted outline-none text-xs transition-all font-bold"
                 placeholder={catGroup === 'accommodation' ? 'Ej. Hotel Hilton Barcelona' : catGroup === 'transport' ? 'Ej. Vuelo a Madrid' : 'Ej. Visita al Coliseo'} />
             </div>
 
@@ -329,7 +329,7 @@ export const LocationForm = ({
               <>
                 <div>
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Google Maps Link (Opcional)</label>
-                  <input {...register('link')} type="url" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="https://maps.app.goo.gl/..." />
+                  <input {...register('link')} type="url" className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-4 text-text-primary placeholder-text-muted outline-none text-xs transition-all" placeholder="https://maps.app.goo.gl/..." />
                   <input {...register('mapCoords')} type="hidden" />
                 </div>
 
@@ -345,7 +345,7 @@ export const LocationForm = ({
                       {(['breakfast', 'lunch', 'dinner', 'snack', 'tapas'] as const).map(meal => (
                         <label key={meal} className="cursor-pointer">
                           <input type="radio" {...register('mealType')} value={meal} className="peer hidden" />
-                          <div className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-bold text-gray-400 peer-checked:bg-nature-accent peer-checked:text-white peer-checked:border-nature-accent transition-all">
+                          <div className="px-3 py-2 rounded-lg border border-border-strong text-xs font-bold text-text-muted peer-checked:bg-nature-accent peer-checked:text-white peer-checked:border-nature-accent transition-all">
                             {meal === 'breakfast' ? '🌅 Desayuno' : meal === 'lunch' ? '☀️ Almuerzo' : meal === 'dinner' ? '🌙 Cena' : meal === 'snack' ? '🍿 Snack' : '🍺 Tapas'}
                           </div>
                         </label>
@@ -357,7 +357,7 @@ export const LocationForm = ({
                 {formCat === 'photos' && (
                   <div>
                     <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Mejor Momento para Fotos</label>
-                    <input {...register('bestTimeHint')} type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="Ej. Golden hour 18:30, amanecer..." />
+                    <input {...register('bestTimeHint')} type="text" className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-4 text-text-primary placeholder-text-muted outline-none text-xs transition-all" placeholder="Ej. Golden hour 18:30, amanecer..." />
                   </div>
                 )}
 
@@ -376,13 +376,13 @@ export const LocationForm = ({
                       )}
                     </div>
                     {predefinedCities.length > 0 ? (
-                      <select {...register('city')} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text outline-none text-xs transition-all font-bold cursor-pointer">
+                      <select {...register('city')} className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-4 text-text-primary outline-none text-xs transition-all font-bold cursor-pointer">
                         <option value="">Seleccionar ciudad...</option>
                         {predefinedCities.map(city => <option key={city} value={city}>{city}</option>)}
                       </select>
                     ) : (
                       <>
-                        <input {...register('city')} list="cities-list" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="Ej. Dubai Marina, Tokio..." />
+                        <input {...register('city')} list="cities-list" type="text" className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-4 text-text-primary placeholder-text-muted outline-none text-xs transition-all" placeholder="Ej. Dubai Marina, Tokio..." />
                         <datalist id="cities-list">
                           {availableCities.map(city => <option key={city} value={city} />)}
                         </datalist>
@@ -391,7 +391,7 @@ export const LocationForm = ({
                   </div>
                   <div>
                     <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Etiquetas (Enter para añadir)</label>
-                    <div className="w-full bg-gray-50 border border-gray-100 focus-within:border-nature-mint focus-within:bg-white rounded-xl p-2.5 flex flex-wrap gap-2 transition-all min-h-[50px] items-center">
+                    <div className="w-full bg-bg-surface-elevated border border-border-strong focus-within:border-nature-mint focus-within:bg-bg-surface rounded-xl p-2.5 flex flex-wrap gap-2 transition-all min-h-[50px] items-center">
                       {currentTags.map(tag => (
                         <span key={tag} className="bg-nature-mint text-nature-primary text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
                           #{tag}
@@ -405,7 +405,7 @@ export const LocationForm = ({
                         value={tagInputValue}
                         onChange={(e) => setTagInputValue(e.target.value)}
                         onKeyDown={handleTagKeyDown}
-                        className="flex-1 min-w-[100px] bg-transparent outline-none text-xs text-nature-text placeholder-gray-300"
+                        className="flex-1 min-w-[100px] bg-transparent outline-none text-xs text-text-primary placeholder-text-muted"
                         placeholder={currentTags.length === 0 ? "Ej. playa, relax..." : ""}
                       />
                     </div>
@@ -416,11 +416,11 @@ export const LocationForm = ({
                 <div className="grid grid-cols-2 gap-3">
                   <label className="cursor-pointer">
                     <input type="radio" name="priority" value="optional" checked={formPriority === 'optional'} onChange={() => setFormPriority('optional')} className="peer hidden" />
-                    <div className="py-3 text-center rounded-xl bg-white border border-gray-200 text-xs font-medium text-gray-400 peer-checked:bg-nature-mint peer-checked:text-nature-primary peer-checked:border-nature-mint transition-all">Opcional</div>
+                    <div className="py-3 text-center rounded-xl bg-bg-surface border border-border-strong text-xs font-medium text-text-secondary peer-checked:bg-nature-mint peer-checked:text-nature-primary peer-checked:border-nature-mint transition-all">Opcional</div>
                   </label>
                   <label className="cursor-pointer">
                     <input type="radio" name="priority" value="necessary" checked={formPriority === 'necessary'} onChange={() => setFormPriority('necessary')} className="peer hidden" />
-                    <div className="py-3 text-center rounded-xl bg-white border border-gray-200 text-xs font-medium text-gray-400 peer-checked:bg-nature-primary peer-checked:text-white peer-checked:border-nature-primary transition-all">Esencial</div>
+                    <div className="py-3 text-center rounded-xl bg-bg-surface border border-border-strong text-xs font-medium text-text-secondary peer-checked:bg-nature-primary peer-checked:text-white peer-checked:border-nature-primary transition-all">Esencial</div>
                   </label>
                 </div>
               </>
@@ -428,22 +428,22 @@ export const LocationForm = ({
 
             {/* ── Transport-specific fields ── */}
             {catGroup === 'transport' && (
-              <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 space-y-4 animate-in fade-in slide-in-from-top-2">
+              <div className="bg-blue-500/10 p-6 rounded-2xl border border-blue-500/20 space-y-4 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-blue-500 italic text-lg">✈️</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-800/40">Detalles del Transporte</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#93c5fd]">Detalles del Transporte</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Compañía</label>
-                    <input {...register('company')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Ej. Ryanair, Alsa..." />
+                    <label className="text-[9px] tracking-wider font-bold text-[#60a5fa] uppercase mb-2 block">Compañía</label>
+                    <input {...register('company')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Ej. Ryanair, Alsa..." />
                   </div>
                   <div>
-                    <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">
+                    <label className="text-[9px] tracking-wider font-bold text-[#60a5fa] uppercase mb-2 block">
                       {formCat.startsWith('flight') ? 'Nº Vuelo' : formCat.startsWith('train') ? 'Nº Tren/Línea' : 'Nº Línea'}
                     </label>
-                    <input {...register('flightNumber')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="FR1234" />
+                    <input {...register('flightNumber')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="FR1234" />
                   </div>
                 </div>
 
@@ -451,11 +451,11 @@ export const LocationForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Terminal</label>
-                      <input {...register('terminal')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="T1, T4S..." />
+                      <input {...register('terminal')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="T1, T4S..." />
                     </div>
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Puerta</label>
-                      <input {...register('gate')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="B24" />
+                      <input {...register('gate')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="B24" />
                     </div>
                   </div>
                 )}
@@ -464,11 +464,11 @@ export const LocationForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Estación</label>
-                      <input {...register('station')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Estación Sur..." />
+                      <input {...register('station')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="Estación Sur..." />
                     </div>
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Andén</label>
-                      <input {...register('platform')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Andén 3" />
+                      <input {...register('platform')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="Andén 3" />
                     </div>
                   </div>
                 )}
@@ -476,11 +476,11 @@ export const LocationForm = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Asiento</label>
-                    <input {...register('seat')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="12A" />
+                    <input {...register('seat')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="12A" />
                   </div>
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Confirmación / PNR</label>
-                    <input {...register('logisticsConfirmation')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="ABC123" />
+                    <input {...register('logisticsConfirmation')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none text-text-primary" placeholder="ABC123" />
                   </div>
                 </div>
 
@@ -488,11 +488,11 @@ export const LocationForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto de Recogida</label>
-                      <input {...register('pickupPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Hotel lobby..." />
+                      <input {...register('pickupPoint')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="Hotel lobby..." />
                     </div>
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">App / Servicio</label>
-                      <input {...register('transportApp')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Uber, Bolt..." />
+                      <input {...register('transportApp')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="Uber, Bolt..." />
                     </div>
                   </div>
                 )}
@@ -501,11 +501,11 @@ export const LocationForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto Recogida</label>
-                      <input {...register('pickupPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Aeropuerto T1..." />
+                      <input {...register('pickupPoint')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="Aeropuerto T1..." />
                     </div>
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto Devolución</label>
-                      <input {...register('dropoffPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Ciudad centro..." />
+                      <input {...register('dropoffPoint')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="Ciudad centro..." />
                     </div>
                   </div>
                 )}
@@ -513,7 +513,7 @@ export const LocationForm = ({
                 {formCat === 'transfer' && (
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto de Recogida</label>
-                    <input {...register('pickupPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Terminal 2 Llegadas..." />
+                    <input {...register('pickupPoint')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="Terminal 2 Llegadas..." />
                   </div>
                 )}
 
@@ -521,11 +521,11 @@ export const LocationForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Puerto Salida</label>
-                      <input {...register('pickupPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Puerto de Barcelona..." />
+                      <input {...register('pickupPoint')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="Puerto de Barcelona..." />
                     </div>
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Puerto Llegada</label>
-                      <input {...register('dropoffPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Puerto de Palma..." />
+                      <input {...register('dropoffPoint')} type="text" className="w-full bg-bg-surface border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="Puerto de Palma..." />
                     </div>
                   </div>
                 )}
@@ -538,31 +538,31 @@ export const LocationForm = ({
 
             {/* ── Accommodation-specific fields ── */}
             {catGroup === 'accommodation' && (
-              <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-100 space-y-4 animate-in fade-in slide-in-from-top-2">
+              <div className="bg-amber-500/10 p-6 rounded-2xl border border-amber-500/20 space-y-4 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-amber-600 text-lg">🏨</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-800/40">Detalles del Alojamiento</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#fbbf24]">Detalles del Alojamiento</span>
                 </div>
 
                 <div>
-                  <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Dirección</label>
-                  <input {...register('address')} type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="C/ Gran Via 123, Barcelona..." />
+                  <label className="text-[9px] tracking-wider font-bold text-[#f59e0b] uppercase mb-2 block">Dirección</label>
+                  <input {...register('address')} type="text" className="w-full bg-bg-surface border border-amber-500/20 focus:border-amber-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="C/ Gran Via 123, Barcelona..." />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Nº Habitación</label>
-                    <input {...register('roomNumber')} type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="Suite 401" />
+                    <label className="text-[9px] tracking-wider font-bold text-[#f59e0b] uppercase mb-2 block">Nº Habitación</label>
+                    <input {...register('roomNumber')} type="text" className="w-full bg-bg-surface border border-amber-500/20 focus:border-amber-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="Suite 401" />
                   </div>
                   <div>
-                    <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Confirmación</label>
-                    <input {...register('logisticsConfirmation')} type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="CONF123" />
+                    <label className="text-[9px] tracking-wider font-bold text-[#f59e0b] uppercase mb-2 block">Confirmación</label>
+                    <input {...register('logisticsConfirmation')} type="text" className="w-full bg-bg-surface border border-amber-500/20 focus:border-amber-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none text-text-primary" placeholder="CONF123" />
                   </div>
                 </div>
 
                 <div>
                   <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Google Maps Link (Opcional)</label>
-                  <input {...register('link')} type="url" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="https://maps.app.goo.gl/..." />
+                  <input {...register('link')} type="url" className="w-full bg-bg-surface border border-amber-500/20 focus:border-amber-400 rounded-xl p-3 text-xs outline-none text-text-primary" placeholder="https://maps.app.goo.gl/..." />
                   <input {...register('mapCoords')} type="hidden" />
                 </div>
 
@@ -597,7 +597,7 @@ export const LocationForm = ({
                               'Inicio (Opcional)'}
                         </span>
                       </label>
-                      <input {...register('datetime')} type="time" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all font-mono" />
+                      <input {...register('datetime')} type="time" className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-3 text-xs outline-none text-nature-primary transition-all font-mono" />
                     </div>
                   </div>
 
@@ -605,7 +605,7 @@ export const LocationForm = ({
                     {catGroup === 'accommodation' && formCat === 'hotel-checkin' ? (
                       <div className="w-1/2">
                         <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Noches</label>
-                        <select {...register('nights')} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all cursor-pointer font-bold text-nature-primary">
+                        <select {...register('nights')} className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-3 text-xs outline-none transition-all cursor-pointer font-bold text-nature-primary">
                           {[...Array(14)].map((_, i) => (
                             <option key={i + 1} value={i + 1}>{i + 1} Noche{i > 0 ? 's' : ''}</option>
                           ))}
@@ -614,9 +614,9 @@ export const LocationForm = ({
                     ) : (
                       <div className="w-1/2">
                         <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración</label>
-                        <div className="flex bg-gray-50 border border-gray-100 focus-within:border-nature-mint focus-within:bg-white rounded-xl overflow-hidden transition-all">
+                        <div className="flex bg-bg-surface-elevated border border-border-strong focus-within:border-nature-mint focus-within:bg-bg-surface rounded-xl overflow-hidden transition-all">
                           <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
-                          <div className="w-px bg-gray-200 my-2"></div>
+                          <div className="w-px bg-border-strong my-2"></div>
                           <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
                         </div>
                       </div>
@@ -625,13 +625,13 @@ export const LocationForm = ({
                       <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">
                         {catGroup === 'accommodation' ? (formCat === 'hotel-checkin' ? 'Hora Check-out' : 'Check-in') : 'Fin / Hora Llegada'}
                       </label>
-                      <input {...register('checkOutDatetime')} type="time" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all font-mono text-gray-500" />
+                      <input {...register('checkOutDatetime')} type="time" className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-3 text-xs outline-none transition-all font-mono text-gray-500" />
                     </div>
                   </div>
 
                   <div>
                     <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas</label>
-                    <textarea {...register('notes')} rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
+                    <textarea {...register('notes')} rows={4} className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
                       placeholder={catGroup === 'transport' ? 'Info del trayecto, escalas...' : catGroup === 'accommodation' ? 'Wifi, desayuno incluido...' : 'Recordar entradas, dress code...'}></textarea>
                   </div>
                 </div>
@@ -655,7 +655,7 @@ export const LocationForm = ({
                       { value: 'Tarde', label: 'Tarde' },
                       { value: 'Noche', label: 'Noche' }
                     ]}
-                    buttonClassName="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-nature-text font-bold"
+                    buttonClassName="w-full bg-bg-surface-elevated border border-border-strong rounded-xl p-3 text-sm text-text-primary font-bold"
                   />
                 </div>
                 <div className="w-1/2">
@@ -666,28 +666,28 @@ export const LocationForm = ({
                       <span className="normal-case text-[9px] text-nature-primary opacity-80">Fijar Hora</span>
                     </label>
                   </label>
-                  <input {...register('datetime')} type="time" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all font-mono" />
+                  <input {...register('datetime')} type="time" className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-3 text-xs outline-none text-nature-primary transition-all font-mono" />
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <div className="w-1/2">
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Fin / Hora Llegada</label>
-                  <input {...register('checkOutDatetime')} type="time" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all font-mono" />
+                  <input {...register('checkOutDatetime')} type="time" className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-3 text-xs outline-none transition-all font-mono" />
                 </div>
                 <div className="w-1/2">
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración</label>
-                  <div className="flex bg-gray-50 border border-gray-100 focus-within:border-nature-mint focus-within:bg-white rounded-xl overflow-hidden transition-all">
-                    <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
-                    <div className="w-px bg-gray-200 my-2"></div>
-                    <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
+                  <div className="flex bg-bg-surface-elevated border border-border-strong focus-within:border-nature-mint focus-within:bg-bg-surface rounded-xl overflow-hidden transition-all">
+                    <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-text-primary" placeholder="H" />
+                    <div className="w-px bg-border-strong my-2"></div>
+                    <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-text-primary" placeholder="Min" />
                   </div>
                 </div>
               </div>
 
               <div>
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas</label>
-                <textarea {...register('notes')} rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
+                <textarea {...register('notes')} rows={4} className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-4 text-text-primary placeholder-text-muted resize-none text-sm outline-none leading-relaxed transition-all"
                   placeholder="Recordar entradas, dress code..."></textarea>
               </div>
             </div>
@@ -697,9 +697,9 @@ export const LocationForm = ({
           <div className={`${activeTab === 'finance' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
             <div>
               <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-3 block">Estado</label>
-              <div className="flex bg-gray-100 rounded-xl p-1">
+              <div className="flex bg-bg-surface-elevated rounded-xl p-1">
                 {(['idea', 'pending', 'booked'] as ReservationStatus[]).map(status => (
-                  <button type="button" key={status} onClick={() => setResStatus(status)} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${resStatus === status ? 'bg-white text-nature-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                  <button type="button" key={status} onClick={() => setResStatus(status)} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-all ${resStatus === status ? 'bg-bg-surface text-nature-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}>
                     {status === 'idea' ? 'Idea' : status === 'pending' ? 'Falta' : 'Reservado'}
                   </button>
                 ))}
@@ -709,7 +709,7 @@ export const LocationForm = ({
             <div className="flex gap-4">
               <div className="flex-1">
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Coste/Precio</label>
-                <input {...register('priceAmount')} type="number" step="0.01" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-lg font-mono outline-none transition-all" placeholder="0.00" />
+                <input {...register('priceAmount')} type="number" step="0.01" className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-4 text-lg font-mono outline-none transition-all text-text-primary" placeholder="0.00" />
                 <input {...register('cost')} type="hidden" value="0" />
               </div>
               <div className="flex-[0.5]">
@@ -727,23 +727,23 @@ export const LocationForm = ({
                     { value: 'SGD', label: 'S$ SGD' },
                     { value: 'MYR', label: 'RM MYR' },
                   ]}
-                  buttonClassName="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 text-sm font-bold text-nature-text"
+                  buttonClassName="w-full bg-bg-surface-elevated border border-border-strong rounded-xl p-4 text-sm font-bold text-text-primary"
                 />
               </div>
             </div>
 
             <div>
               <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Referencia (Booking/Vuelo)</label>
-              <input {...register('bookingRef')} type="text" className="w-full bg-gray-50 border text-center font-mono tracking-widest uppercase border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-sm outline-none placeholder-gray-200 transition-all" placeholder="XYZ123" />
+              <input {...register('bookingRef')} type="text" className="w-full bg-bg-surface-elevated border text-center font-mono tracking-widest uppercase border-border-strong focus:border-nature-mint focus:bg-bg-surface rounded-xl p-3 text-sm outline-none placeholder-text-muted transition-all text-text-primary" placeholder="XYZ123" />
             </div>
           </div>
 
           {/* ═══ TAB: ARCHIVOS ═══ */}
           <div className={`${activeTab === 'assets' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
             <label className="cursor-pointer">
-              <div className="border-2 border-dashed border-gray-200 hover:border-nature-primary hover:bg-nature-mint/30 bg-gray-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all group shadow-sm hover:shadow-md">
-                <ImageIcon size={32} className="text-gray-300 group-hover:text-nature-primary mb-3 transition-colors" />
-                <p className="text-xs text-gray-400 group-hover:text-nature-primary font-medium">
+              <div className="border-2 border-dashed border-border-strong hover:border-nature-primary hover:bg-nature-mint/30 bg-bg-surface-elevated rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all group shadow-sm hover:shadow-md">
+                <ImageIcon size={32} className="text-text-muted group-hover:text-nature-primary mb-3 transition-colors" />
+                <p className="text-xs text-text-muted group-hover:text-nature-primary font-medium">
                   {catGroup === 'transport' ? 'Billetes, Boarding Pass, Confirmaciones' : 'Fotos y Documentos'}
                 </p>
                 <input type="file" multiple hidden onChange={(e) => handleFiles(e.target.files)} />
@@ -756,7 +756,7 @@ export const LocationForm = ({
                 <div className="grid grid-cols-4 gap-2">
                   {tempImages.map((img, i) => (
                     <div key={i} className="relative group">
-                      <img src={img.data} alt="temp" className="w-full aspect-square object-cover rounded-xl shadow-sm border border-gray-100" />
+                      <img src={img.data} alt="temp" className="w-full aspect-square object-cover rounded-xl shadow-sm border border-border-strong" />
                       <button type="button" onClick={() => setTempImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-400 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button>
                     </div>
                   ))}
@@ -783,12 +783,12 @@ export const LocationForm = ({
           </div>
 
           {/* Sticky footer for submit */}
-          <div className="pt-6 sticky bottom-0 bg-white border-t border-gray-50">
+          <div className="pt-6 sticky bottom-0 bg-bg-surface border-t border-border-strong">
             <button type="submit" className={`w-full ${formId ? 'bg-gray-800' : 'bg-nature-primary'} text-white font-bold tracking-wide py-4 text-sm rounded-xl shadow-[0_10px_20px_-10px_rgba(45,90,39,0.5)] hover:shadow-2xl hover:-translate-y-0.5 transition-all transform active:scale-[0.98]`}
               style={!formId && catConfig ? { backgroundColor: catConfig.color } : {}}>
               {formId ? 'Confirmar Edición' : `Añadir ${CAT_LABELS[formCat] || 'Actividad'}`}
             </button>
-            {formId && <button type="button" onClick={resetForm} className="w-full text-xs text-gray-400 hover:text-red-500 py-3 font-bold uppercase tracking-widest mt-2 transition-colors">Cancelar</button>}
+            {formId && <button type="button" onClick={resetForm} className="w-full text-xs text-text-muted hover:text-red-500 py-3 font-bold uppercase tracking-widest mt-2 transition-colors">Cancelar</button>}
           </div>
         </form>
       </div >

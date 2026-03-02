@@ -84,21 +84,21 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[600] bg-gray-50 flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] animate-in slide-in-from-bottom-full duration-300">
+    <div className="fixed inset-0 z-[600] bg-bg-body flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] animate-in slide-in-from-bottom-full duration-300">
 
       {/* Header */}
-      <div className="bg-white px-4 py-4 border-b border-nature-border flex justify-between items-center shadow-sm shrink-0">
+      <div className="bg-bg-surface px-4 py-4 border-b border-border-strong flex justify-between items-center shadow-sm shrink-0">
         <div className="flex items-center gap-2">
           <Inbox className="text-nature-primary" size={24} />
           <h2 className="text-2xl font-sans text-nature-primary">Buzón de Ideas</h2>
         </div>
-        <button onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500 active:bg-gray-200">
+        <button onClick={onClose} className="p-2 bg-bg-surface-elevated rounded-full text-text-muted active:bg-border-strong">
           <X size={20} />
         </button>
       </div>
 
       {/* Inputs Area */}
-      <div className="px-4 py-4 bg-white border-b border-nature-border shrink-0 space-y-3">
+      <div className="px-4 py-4 bg-bg-surface border-b border-border-strong shrink-0 space-y-3">
         <button onClick={handleAddNew} className="w-full bg-nature-primary text-white py-3.5 rounded-xl shadow-md font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-nature-primary/90 transition-all active:scale-[0.98]">
           <Plus size={18} /> Añadir Idea al Buzón
         </button>
@@ -112,7 +112,7 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
             placeholder="Buscar idea..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-nature-primary/20 focus:border-nature-primary transition-all placeholder:text-gray-400"
+            className="w-full pl-10 pr-4 py-3 bg-bg-surface-elevated border border-border-strong rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-nature-primary/20 focus:border-nature-primary transition-all placeholder:text-text-muted text-text-primary"
           />
         </div>
 
@@ -123,7 +123,7 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
               onClick={() => setActiveFilter(opt.id)}
               className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${activeFilter === opt.id
                 ? 'bg-nature-primary text-white border-nature-primary shadow-sm'
-                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                : 'bg-bg-surface text-text-secondary border-border-strong hover:border-text-muted'
                 }`}
             >
               <div className="flex items-center gap-1.5">
@@ -149,13 +149,13 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
             return (
               <div
                 key={loc.id}
-                className={`p-4 rounded-2xl border-2 transition-all ${isSelected ? 'border-nature-primary bg-nature-mint/10' : 'border-nature-border bg-nature-surface'} `}
+                className={`p-4 rounded-2xl border-2 transition-all ${isSelected ? 'border-nature-primary bg-nature-mint/10' : 'border-border-strong bg-bg-surface-elevated'} `}
                 onClick={(e) => toggleSelection(e, loc.id)}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-start gap-3 flex-1">
                     <div className="relative">
-                      <span className="text-2xl bg-gray-50 p-2 rounded-xl mt-1 block">{CAT_ICONS[loc.cat]}</span>
+                      <span className="text-2xl bg-bg-surface p-2 rounded-xl mt-1 block">{CAT_ICONS[loc.cat]}</span>
                       {isSelected && (
                         <div className="absolute -top-2 -right-2 bg-nature-primary text-white p-1 rounded-full shadow-sm animate-in zoom-in duration-200">
                           <CheckSquare size={12} />
@@ -173,7 +173,7 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
                 <div className="flex gap-2 mt-4">
                   <button
                     onClick={(e) => { e.stopPropagation(); handleEdit(loc.id); }}
-                    className="flex-1 py-2 text-xs font-bold text-gray-500 bg-gray-100 rounded-lg active:bg-gray-200"
+                    className="flex-1 py-2 text-xs font-bold text-text-secondary bg-bg-surface rounded-lg active:bg-border-subtle"
                   >
                     Editar
                   </button>
@@ -211,20 +211,20 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
       {showMoveModal && (
         <div className="fixed inset-0 z-[620] flex flex-col justify-end">
           <div className="absolute inset-0 bg-nature-primary/40 backdrop-blur-sm" onClick={() => setShowMoveModal(false)} />
-          <div className="bg-white rounded-t-3xl p-6 relative z-10 animate-in slide-in-from-bottom-full">
+          <div className="bg-bg-surface rounded-t-3xl p-6 relative z-10 animate-in slide-in-from-bottom-full">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="font-sans text-xl text-nature-primary">Asignar al día</h3>
-                <p className="text-xs text-gray-500 mt-1">{selectedIds.length} actividades seleccionadas</p>
+                <p className="text-xs text-text-muted mt-1">{selectedIds.length} actividades seleccionadas</p>
               </div>
-              <button onClick={() => setShowMoveModal(false)} className="p-2 bg-gray-100 rounded-full text-gray-500"><X size={16} /></button>
+              <button onClick={() => setShowMoveModal(false)} className="p-2 bg-bg-surface-elevated rounded-full text-text-muted"><X size={16} /></button>
             </div>
             <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto custom-scroll pb-8">
               {dayOptions.map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => handleBulkMove(opt.value)}
-                  className="p-4 rounded-xl font-bold text-sm flex items-center justify-center bg-gray-50 border border-gray-100 text-gray-600 active:bg-nature-mint/30 active:text-nature-primary active:border-nature-primary/30 transition-all"
+                  className="p-4 rounded-xl font-bold text-sm flex items-center justify-center bg-bg-surface-elevated border border-border-strong text-text-secondary active:bg-nature-mint/30 active:text-nature-primary active:border-nature-primary/30 transition-all"
                 >
                   {opt.label}
                 </button>

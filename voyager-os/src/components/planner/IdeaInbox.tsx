@@ -126,7 +126,7 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className={`absolute top-6 left-6 z-[400] bg-white/90 backdrop-blur-md text-nature-primary p-3 rounded-full shadow-lg border border-white hover:bg-white transition-all ${isOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
+        className={`absolute top-6 left-6 z-[400] bg-bg-surface-elevated/90 backdrop-blur-md text-nature-primary p-3 rounded-full shadow-lg border border-border-strong hover:bg-bg-surface transition-all ${isOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
         title="Buzón de Ideas"
       >
         <div className="relative">
@@ -139,12 +139,12 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
         </div>
       </button>
 
-      <div className={`w-full md:w-[460px] shrink-0 bg-white border-r border-gray-100 flex flex-col z-[510] shadow-[10px_0_30px_rgba(0,0,0,0.1)] h-full absolute top-0 bottom-0 left-0 transform ${isOpen && !isDragging ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
-        <button type="button" onClick={() => setIsOpen(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-nature-primary z-50 bg-white/50 rounded-full backdrop-blur transition-colors">
+      <div className={`w-full md:w-[460px] shrink-0 bg-bg-surface border-r border-border-strong flex flex-col z-[510] shadow-[10px_0_30px_rgba(0,0,0,0.1)] h-full absolute top-0 bottom-0 left-0 transform ${isOpen && !isDragging ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
+        <button type="button" onClick={() => setIsOpen(false)} className="absolute top-4 right-4 p-2 text-text-muted hover:text-nature-primary z-50 bg-bg-surface-elevated/50 rounded-full backdrop-blur transition-colors">
           <X size={24} />
         </button>
 
-        <div className="p-8 pb-4 bg-gray-50/50">
+        <div className="p-8 pb-4 bg-bg-surface-elevated/50">
           <h2 className="text-xl font-sans text-nature-primary flex items-center gap-2">
             <Inbox size={20} /> Buzón de Ideas
           </h2>
@@ -171,7 +171,7 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
                 placeholder="Buscar en buzón..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-gray-100 border-transparent focus:bg-white focus:border-nature-primary focus:ring-2 focus:ring-nature-primary/20 rounded-xl text-sm transition-all outline-none"
+                className="w-full pl-9 pr-4 py-2 bg-bg-surface-elevated border-transparent focus:bg-bg-surface focus:border-nature-primary focus:ring-2 focus:ring-nature-primary/20 rounded-xl text-sm transition-all outline-none"
               />
             </div>
 
@@ -182,7 +182,7 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
                     <span className="text-[10px] uppercase font-bold text-gray-400 shrink-0 mr-1">Zonas</span>
                     <button
                       onClick={() => setActiveCityFilter('all')}
-                      className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === 'all' ? 'bg-nature-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === 'all' ? 'bg-nature-primary text-white shadow-sm' : 'bg-bg-surface border border-border-strong text-text-secondary hover:bg-bg-surface-elevated'}`}
                     >
                       Todas
                     </button>
@@ -190,7 +190,7 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
                       <button
                         key={city}
                         onClick={() => setActiveCityFilter(city)}
-                        className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === city ? 'bg-nature-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                        className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === city ? 'bg-nature-primary text-white shadow-sm' : 'bg-bg-surface border border-border-strong text-text-secondary hover:bg-bg-surface-elevated'}`}
                       >
                         {city}
                       </button>
@@ -235,11 +235,11 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
                   className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5
                     ${activeFilter === opt.id
                       ? 'bg-nature-primary text-white shadow-sm'
-                      : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'
+                      : 'bg-bg-surface border border-border-strong text-text-secondary hover:bg-bg-surface-elevated'
                     }`}
                 >
                   {opt.label}
-                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeFilter === opt.id ? 'bg-white/20' : 'bg-gray-100'}`}>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeFilter === opt.id ? 'bg-white/20' : 'bg-bg-surface-elevated'}`}>
                     {count}
                   </span>
                 </button>
@@ -248,17 +248,17 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
           </div>
         </div>
 
-        <div ref={setNodeRef} className={`flex-1 overflow-y-auto p-6 custom-scroll ${isOver ? 'bg-nature-mint/20' : 'bg-white'} transition-colors border-t border-gray-100`}>
+        <div ref={setNodeRef} className={`flex-1 overflow-y-auto p-6 custom-scroll ${isOver ? 'bg-nature-mint/20' : 'bg-bg-surface'} transition-colors border-t border-border-strong`}>
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-sm">📥</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Sin asignar</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Sin asignar</span>
               {unassigned.length > 0 && (
-                <span className="text-[9px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">{unassigned.length}</span>
+                <span className="text-[9px] font-bold bg-red-100/20 text-red-500 px-1.5 py-0.5 rounded-full">{unassigned.length}</span>
               )}
             </div>
             {unassigned.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-gray-400 opacity-50 py-6 space-y-2 border-2 border-dashed border-gray-200 rounded-2xl">
+              <div className="flex flex-col items-center justify-center text-text-muted opacity-50 py-6 space-y-2 border-2 border-dashed border-border-strong rounded-2xl">
                 <Inbox size={32} />
                 <p className="text-[10px] text-center px-4">No hay ideas pendientes.<br />Arrastra aquí o crea nuevas.</p>
               </div>
@@ -281,7 +281,7 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
 
           {assignedByDay.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 mb-3 pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-2 mb-3 pt-4 border-t border-border-strong">
                 <Calendar size={14} className="text-nature-primary" />
                 <span className="text-[10px] font-bold uppercase tracking-widest text-nature-primary">Ya colocadas</span>
               </div>
@@ -289,8 +289,8 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
                 <div key={group.dayId} className="mb-4">
                   <div className="flex items-center gap-2 mb-2 ml-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-nature-primary/50"></div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{group.label}</span>
-                    <span className="text-[9px] text-gray-300">{group.items.length}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{group.label}</span>
+                    <span className="text-[9px] text-text-muted/70">{group.items.length}</span>
                   </div>
                   <div className="space-y-2 pl-2 border-l-2 border-nature-primary/10">
                     {group.items.map(item => (
@@ -307,10 +307,10 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
 
         {/* Bulk Action Bar */}
         {selectedIds.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] z-50 flex flex-col gap-3">
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-bg-surface-elevated border-t border-border-strong shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] z-50 flex flex-col gap-3">
             <div className="flex justify-between items-center px-2">
               <span className="text-sm font-bold text-nature-primary">{selectedIds.length} seleccionadas</span>
-              <button onClick={() => setSelectedIds([])} className="text-[10px] uppercase font-bold text-gray-400 hover:text-gray-600">Cancelar</button>
+              <button onClick={() => setSelectedIds([])} className="text-[10px] uppercase font-bold text-text-muted hover:text-text-primary">Cancelar</button>
             </div>
             {showMoveModal ? (
               <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto custom-scroll">
@@ -318,7 +318,7 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
                   <button
                     key={opt.value}
                     onClick={() => handleBulkMove(opt.value)}
-                    className={`text-left px-4 py-3 rounded-xl text-sm font-bold transition-colors ${opt.value === 'unassigned' ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' : 'bg-gray-50 text-gray-700 hover:bg-nature-mint/30'}`}
+                    className={`text-left px-4 py-3 rounded-xl text-sm font-bold transition-colors ${opt.value === 'unassigned' ? 'bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20' : 'bg-bg-surface text-text-secondary hover:bg-nature-mint/30'}`}
                   >
                     {opt.label}
                   </button>

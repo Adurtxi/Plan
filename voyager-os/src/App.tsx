@@ -38,7 +38,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="h-screen flex overflow-hidden text-sm selection:bg-nature-mint selection:text-nature-primary bg-nature-bg">
+    <div className="h-screen flex overflow-hidden text-sm selection:bg-nature-mint selection:text-nature-primary bg-bg-body">
       <Sidebar />
       <motion.div
         initial={{ opacity: 0, x: 20 }}

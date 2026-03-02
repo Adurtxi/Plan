@@ -47,7 +47,7 @@ export const MobileBottomBar = ({ mobileView, setMobileView }: { mobileView: 'pl
   };
 
   return (
-    <nav className={`fixed bottom-0 left-0 right-0 z-[500] bg-white/95 backdrop-blur-lg border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)] transition-transform duration-300 ${isVisible ? 'translate-y-0' : 'translate-y-[150%]'}`}>
+    <nav className={`fixed bottom-0 left-0 right-0 z-[500] bg-bg-surface/95 backdrop-blur-lg border-t border-border-strong shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)] transition-transform duration-300 ${isVisible ? 'translate-y-0' : 'translate-y-[150%]'}`}>
       <div className="flex justify-around items-center h-16 relative">
         {tabs.map((tab, i) => {
           const active = isActive(tab);
@@ -57,7 +57,7 @@ export const MobileBottomBar = ({ mobileView, setMobileView }: { mobileView: 'pl
               onClick={() => handleTabClick(tab)}
               className={`cursor-pointer flex flex-col items-center justify-center gap-0.5 px-4 py-2 rounded-xl transition-all duration-200 active:scale-90 min-w-[64px] ${active
                 ? 'text-nature-primary'
-                : 'text-gray-400 active:text-gray-600'
+                : 'text-text-muted active:text-text-primary'
                 }`}
             >
               <div className={`relative transition-transform duration-200 ${active ? 'scale-110' : ''}`}>
@@ -74,7 +74,7 @@ export const MobileBottomBar = ({ mobileView, setMobileView }: { mobileView: 'pl
         })}
         <button
           onClick={useAppStore.getState().toggleTheme}
-          className="cursor-pointer absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-nature-primary rounded-xl transition-all active:scale-90"
+          className="cursor-pointer absolute right-2 top-1/2 -translate-y-1/2 p-2 text-text-muted hover:text-nature-primary rounded-xl transition-all active:scale-90"
         >
           {useAppStore.getState().theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>

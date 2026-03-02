@@ -121,8 +121,8 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
               left: menuPos.left
             }}
           >
-            <div className="bg-white dark:bg-nature-surface rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-nature-border p-1.5 min-w-[200px] flex flex-col gap-0.5 overflow-hidden ring-1 ring-black/5">
-              <div className="px-3 py-2 text-[9px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100/50 mb-1">
+            <div className="bg-bg-surface-elevated rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] border border-border-strong p-1.5 min-w-[200px] flex flex-col gap-0.5 overflow-hidden ring-1 ring-black/5">
+              <div className="px-3 py-2 text-[9px] font-bold text-text-muted uppercase tracking-widest border-b border-border-subtle mb-1">
                 Modo de Transporte
               </div>
 

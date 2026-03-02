@@ -53,7 +53,7 @@ export const ReservationCard: React.FC<Props> = ({ reservation, onEdit }) => {
   const formattedEndLabel = reservation.type === 'hotel' ? 'Check-out' : 'Fin';
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col group relative overflow-hidden">
+    <div className="bg-bg-surface rounded-2xl p-5 border border-border-strong shadow-sm hover:shadow-md transition-shadow flex flex-col group relative overflow-hidden">
       <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: color }}></div>
 
       {/* Header */}
@@ -63,22 +63,22 @@ export const ReservationCard: React.FC<Props> = ({ reservation, onEdit }) => {
             <Icon size={20} />
           </div>
           <div className="overflow-hidden">
-            <h3 className="font-bold text-base text-gray-800 truncate">{reservation.title}</h3>
-            {reservation.company && <p className="text-xs text-gray-500 font-medium truncate">{reservation.company}</p>}
+            <h3 className="font-bold text-base text-text-primary truncate">{reservation.title}</h3>
+            {reservation.company && <p className="text-xs text-text-secondary font-medium truncate">{reservation.company}</p>}
           </div>
         </div>
 
         <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => onEdit(reservation)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"><Edit2 size={16} /></button>
-          <button onClick={handleDelete} className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"><Trash2 size={16} /></button>
+          <button onClick={() => onEdit(reservation)} className="p-1.5 text-text-muted hover:text-blue-600 rounded-lg hover:bg-blue-500/10 transition-colors"><Edit2 size={16} /></button>
+          <button onClick={handleDelete} className="p-1.5 text-text-muted hover:text-red-600 rounded-lg hover:bg-red-500/10 transition-colors"><Trash2 size={16} /></button>
         </div>
       </div>
 
       {/* Body Items */}
       <div className="flex-1 space-y-3 pl-3">
         {reservation.bookingReference && (
-          <div className="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded-lg border border-gray-100 truncate w-max max-w-full">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest shrink-0">REF/PNR</span>
+          <div className="flex items-center gap-2 text-sm bg-bg-surface-elevated p-2 rounded-lg border border-border-strong truncate w-max max-w-full">
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest shrink-0">REF/PNR</span>
             <span className="font-mono font-bold text-gray-700">{reservation.bookingReference}</span>
           </div>
         )}
@@ -96,7 +96,7 @@ export const ReservationCard: React.FC<Props> = ({ reservation, onEdit }) => {
       </div>
 
       {/* Footer (Attachments and Link) */}
-      <div className="mt-4 pt-4 border-t border-gray-100 pl-3 flex flex-wrap gap-2 items-center justify-between">
+      <div className="mt-4 pt-4 border-t border-border-strong pl-3 flex flex-wrap gap-2 items-center justify-between">
         <div className="flex gap-2">
           {reservation.attachments && reservation.attachments.length > 0 ? (
             reservation.attachments.map((att, i) => (
@@ -109,7 +109,7 @@ export const ReservationCard: React.FC<Props> = ({ reservation, onEdit }) => {
               </button>
             ))
           ) : (
-            <span className="text-[10px] text-gray-400">Sin doc. adjuntos</span>
+            <span className="text-[10px] text-text-muted">Sin doc. adjuntos</span>
           )}
         </div>
 
@@ -118,7 +118,7 @@ export const ReservationCard: React.FC<Props> = ({ reservation, onEdit }) => {
             href={reservation.link}
             target="_blank"
             rel="noreferrer"
-            className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
+            className="p-1.5 bg-bg-surface-elevated text-text-secondary rounded-lg hover:bg-border-strong"
             title="Ir al enlace original"
           >
             <ExternalLink size={16} />
@@ -134,8 +134,8 @@ function rowInfo(label: string, dt?: string) {
   if (!dt) return null;
   const d = new Date(dt);
   return (
-    <div className="flex items-center gap-2 text-xs text-gray-600">
-      <Calendar size={14} className="text-gray-400 shrink-0" />
+    <div className="flex items-center gap-2 text-xs text-text-secondary">
+      <Calendar size={14} className="text-text-muted shrink-0" />
       <span className="font-bold w-14 shrink-0">{label}:</span>
       {d.toLocaleDateString()} a las <b>{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</b>
     </div>

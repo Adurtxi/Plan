@@ -82,8 +82,8 @@ export const CardVisual = memo(({
   const content = (
     <div onClick={onCardClick} className={`
       relative group cursor-pointer overflow-hidden
-      bg-white rounded-3xl border transition-all duration-300
-      ${item.priority === 'necessary' ? 'border-nature-primary/20 shadow-soft' : 'border-gray-100 shadow-sm hover:shadow-md'}
+      bg-bg-surface rounded-3xl border transition-all duration-300
+      ${item.priority === 'necessary' ? 'border-nature-primary/20 shadow-soft' : 'border-border-subtle shadow-sm hover:shadow-md'}
       ${isOverlay ? 'shadow-2xl scale-105 rotate-2' : ''}
       ${isMergeTarget ? 'ring-2 ring-nature-primary bg-nature-mint/10 scale-[1.03]' : ''}
       ${isOver ? 'ring-2 ring-nature-accent bg-nature-mint/5 scale-[1.02]' : ''}
@@ -92,15 +92,15 @@ export const CardVisual = memo(({
     `}>
       <div className="flex items-stretch min-h-[5rem]">
         {/* DRAG HANDLE & SELECTION */}
-        <div className={`flex flex-col items-center justify-center p-1.5 shrink-0 w-8 border-r border-gray-50 bg-gray-50/50 ${(dragListeners && !isMovingMode) ? 'touch-none' : ''}`}>
+        <div className={`flex flex-col items-center justify-center p-1.5 shrink-0 w-8 border-r border-border-subtle bg-bg-surface-elevated/50 ${(dragListeners && !isMovingMode) ? 'touch-none' : ''}`}>
           {dragListeners && !isMovingMode && (
-            <div {...dragListeners} {...dragAttributes} className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-nature-primary p-2 w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+            <div {...dragListeners} {...dragAttributes} className="cursor-grab active:cursor-grabbing text-text-muted hover:text-nature-primary p-2 w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
               <GripVertical size={16} />
             </div>
           )}
           {onToggleSelect && (
             <div onClick={onToggleSelect} className="mt-auto mb-2 flex items-center justify-center w-full">
-              {isSelected ? <CheckCircle2 size={16} className="text-nature-primary" /> : <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300" />}
+              {isSelected ? <CheckCircle2 size={16} className="text-nature-primary" /> : <div className="w-3.5 h-3.5 rounded-full border-2 border-border-strong" />}
             </div>
           )}
         </div>
@@ -111,15 +111,15 @@ export const CardVisual = memo(({
             <div className="flex-1 min-w-0">
               {/* Metadata Header */}
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm bg-gray-100 p-1.5 rounded-lg border border-gray-200/50 text-gray-600">{CAT_ICONS[item.cat] || '📍'}</span>
-                <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 truncate">
+                <span className="text-sm bg-bg-surface-elevated p-1.5 rounded-lg border border-border-subtle text-text-secondary">{CAT_ICONS[item.cat] || '📍'}</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-text-muted truncate">
                   {CAT_LABELS[item.cat] || 'Actividad'}
                 </span>
                 {getStatusIcon(item.reservationStatus)}
               </div>
 
               {/* Title */}
-              <h3 className="text-[15px] md:text-base font-black text-gray-800 leading-tight truncate mb-2">
+              <h3 className="text-[15px] md:text-base font-black text-text-primary leading-tight truncate mb-2">
                 {item.title || item.notes?.split('\n')[0] || "Ubicación Sin Nombre"}
               </h3>
 
@@ -150,7 +150,7 @@ export const CardVisual = memo(({
                     </div>
                   );
                 })() : formattedTime ? (
-                  <div className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                  <div className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-text-secondary bg-bg-surface-elevated px-2 py-1 rounded-md border border-border-subtle">
                     <Clock size={12} className="text-nature-primary/70" />
                     <span className="flex items-center gap-0.5">
                       {formattedTime}
@@ -169,13 +169,13 @@ export const CardVisual = memo(({
                     {formatDuration(item.durationMinutes)}
                   </button>
                 ) : (
-                  <button onClick={handleEditDuration} className="text-[10px] font-bold px-2 py-1 rounded-md bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-200 text-gray-400 transition-colors opacity-0 group-hover:opacity-100 flex items-center z-20">
+                  <button onClick={handleEditDuration} className="text-[10px] font-bold px-2 py-1 rounded-md bg-bg-surface-elevated hover:bg-border-subtle border border-dashed border-border-strong text-text-muted transition-colors opacity-0 group-hover:opacity-100 flex items-center z-20">
                     <Plus size={10} /> Duración
                   </button>
                 )}
 
                 {displayPrice && (
-                  <span className="text-[10px] font-black tracking-wider text-green-700 bg-green-50 border border-green-100 px-2 py-1 rounded-md">
+                  <span className="text-[10px] font-black tracking-wider text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800 px-2 py-1 rounded-md">
                     {displayPrice}
                   </span>
                 )}
@@ -183,7 +183,7 @@ export const CardVisual = memo(({
 
               {/* Urgency Badge */}
               {(item.priority === 'necessary' && item.reservationStatus === 'pending') && (
-                <div className="mt-2 text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded flex items-center gap-1 w-fit border border-amber-100">
+                <div className="mt-2 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded flex items-center gap-1 w-fit border border-amber-100 dark:border-amber-800">
                   <AlertCircle size={10} /> Urgente Reservar
                 </div>
               )}
@@ -192,7 +192,7 @@ export const CardVisual = memo(({
             {/* Thumbnail */}
             {item.images?.length > 0 && (
               <div className="shrink-0 ml-1">
-                <img src={item.images[0].data} className="w-16 h-16 md:w-20 md:h-20 rounded-2xl object-cover shadow-sm border border-gray-100" alt="thumb" />
+                <img src={item.images[0].data} className="w-16 h-16 md:w-20 md:h-20 rounded-2xl object-cover shadow-sm border border-border-subtle" alt="thumb" />
               </div>
             )}
           </div>
@@ -236,39 +236,39 @@ const FreeTimeCard = memo(({ item, isDragging, isMovingMode, attributes, listene
   return (
     <div onClick={onCardClick} className={`
       my-2 group relative overflow-hidden
-      bg-gray-50/80 hover:bg-gray-100/80 border border-dashed border-gray-200 
+      bg-bg-surface-elevated/80 hover:bg-border-subtle/50 border border-dashed border-border-strong 
       rounded-2xl transition-all flex items-center h-12
       ${isDragging ? 'opacity-50 scale-[1.01] shadow-sm' : ''} 
       ${isMovingMode ? 'opacity-40 grayscale pointer-events-none' : 'cursor-pointer'}
     `}>
       {!isMovingMode && (
-        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing hover:bg-gray-200/50 text-gray-400 flex items-center justify-center w-8 h-full shrink-0 touch-none" onClick={e => e.stopPropagation()}>
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing hover:bg-border-subtle/50 text-text-muted flex items-center justify-center w-8 h-full shrink-0 touch-none" onClick={e => e.stopPropagation()}>
           <GripVertical size={14} />
         </div>
       )}
 
       <div className={`flex-1 flex items-center min-w-0 pr-3 ${isMovingMode ? 'pl-4' : 'pl-1'}`}>
         <span className="text-xl mr-3 opacity-60">☕</span>
-        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest truncate">
+        <span className="text-xs font-bold text-text-secondary uppercase tracking-widest truncate">
           {item.title || 'Tiempo Libre'}
         </span>
 
         <div className="ml-auto flex items-center gap-2 shrink-0">
           {displayTime && item.durationMinutes ? (
-            <div className="text-[10px] font-bold text-gray-500 bg-white px-2.5 py-1 rounded-md border border-gray-100 flex items-center gap-1.5 shadow-sm">
-              <Clock size={10} className="text-gray-400" />
+            <div className="text-[10px] font-bold text-text-secondary bg-bg-surface px-2.5 py-1 rounded-md border border-border-subtle flex items-center gap-1.5 shadow-sm">
+              <Clock size={10} className="text-text-muted" />
               {new Date(displayTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              <span className="text-gray-300">-</span>
+              <span className="text-border-strong">-</span>
               {(() => {
                 const end = new Date(displayTime);
                 end.setMinutes(end.getMinutes() + item.durationMinutes);
                 return end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               })()}
-              {item.isPinnedTime && <Lock size={8} className="text-gray-400" />}
+              {item.isPinnedTime && <Lock size={8} className="text-text-muted" />}
             </div>
           ) : item.durationMinutes ? (
-            <div className="text-[10px] font-bold text-gray-500 bg-white px-2.5 py-1 rounded-md border border-gray-100 flex items-center gap-1.5 shadow-sm">
-              <Clock size={10} className="text-gray-400" /> {formatDuration(item.durationMinutes)}
+            <div className="text-[10px] font-bold text-text-secondary bg-bg-surface px-2.5 py-1 rounded-md border border-border-subtle flex items-center gap-1.5 shadow-sm">
+              <Clock size={10} className="text-text-muted" /> {formatDuration(item.durationMinutes)}
             </div>
           ) : null}
 
@@ -295,32 +295,32 @@ const TransportCard = memo(({ item, isDragging, isMovingMode, attributes, listen
   return (
     <div onClick={onCardClick} className={`
       my-2 group relative overflow-hidden
-      bg-[#F4F7FB] border border-[#DEE7F2] rounded-3xl
+      bg-bg-surface-elevated border border-border-strong rounded-3xl
       transition-all
-      ${isDragging ? 'opacity-60 scale-[1.01] shadow-xl ring-2 ring-[#6988B3]/20' : 'hover:shadow-md cursor-pointer'}
+      ${isDragging ? 'opacity-60 scale-[1.01] shadow-xl ring-2 ring-border-strong' : 'hover:shadow-md cursor-pointer'}
       ${isMovingMode ? 'opacity-40 grayscale pointer-events-none' : ''}
     `}>
       {/* Ticket Header */}
-      <div className="bg-[#EAF0F8] px-3 py-2 border-b border-[#DEE7F2] flex justify-between items-center">
+      <div className="bg-bg-surface border-b border-border-strong px-3 py-2 flex justify-between items-center opacity-80">
         <div className="flex items-center gap-2">
           {!isMovingMode && (
-            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-[#6988B3] hover:text-[#2A528A] -ml-1 p-1 touch-none" onClick={e => e.stopPropagation()}>
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-text-muted hover:text-text-primary -ml-1 p-1 touch-none" onClick={e => e.stopPropagation()}>
               <GripVertical size={14} />
             </div>
           )}
           <span className="text-sm">{CAT_ICONS[item.cat] || '🚆'}</span>
-          <span className="text-[9px] font-black uppercase text-[#6988B3] tracking-widest">
+          <span className="text-[9px] font-black uppercase text-text-secondary tracking-widest">
             {CAT_LABELS[item.cat] || 'Transporte'}
           </span>
         </div>
 
         {/* Ticket Reference */}
         {(item.company || item.flightNumber) ? (
-          <span className="text-[9px] font-mono font-bold text-[#2A528A] uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-[#DEE7F2]">
+          <span className="text-[9px] font-mono font-bold text-text-primary uppercase tracking-wider bg-bg-surface-elevated px-2 py-0.5 rounded border border-border-subtle">
             {[item.company, item.flightNumber].filter(Boolean).join(' ')}
           </span>
         ) : (item.logisticsConfirmation || item.bookingRef) ? (
-          <span className="text-[9px] font-mono font-bold text-[#2A528A] uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-[#DEE7F2]">
+          <span className="text-[9px] font-mono font-bold text-text-primary uppercase tracking-wider bg-bg-surface-elevated px-2 py-0.5 rounded border border-border-subtle">
             REF: {item.logisticsConfirmation || item.bookingRef}
           </span>
         ) : null}
@@ -332,37 +332,37 @@ const TransportCard = memo(({ item, isDragging, isMovingMode, attributes, listen
           {/* Departure Time Block */}
           {displayTime && (
             <div className="text-center shrink-0 min-w-[3.5rem]">
-              <div className="text-lg md:text-xl font-black text-[#1A365D]">
+              <div className="text-lg md:text-xl font-black text-text-primary">
                 {new Date(displayTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
-              {item.isPinnedTime && <Lock size={10} className="mx-auto text-[#6988B3] mt-0.5" />}
+              {item.isPinnedTime && <Lock size={10} className="mx-auto text-text-muted mt-0.5" />}
             </div>
           )}
 
           <div className="flex flex-col min-w-0 flex-1 pt-0.5">
-            <h4 className="text-sm md:text-base font-black text-[#2A528A] leading-tight truncate">
+            <h4 className="text-sm md:text-base font-black text-text-primary leading-tight truncate">
               {item.title || 'Desplazamiento'}
             </h4>
 
             {/* Meta details (Terminal, Gate, Seat, Duration) */}
             <div className="flex flex-wrap gap-1.5 md:gap-2 mt-2">
               {item.terminal && (
-                <div className="text-[9px] uppercase font-bold text-[#4A6791] bg-[#DEE7F2]/50 px-1.5 py-0.5 rounded border border-[#DEE7F2]">
-                  Terminal <span className="text-[#1A365D] block md:inline">{item.terminal}</span>
+                <div className="text-[9px] uppercase font-bold text-text-secondary bg-bg-surface-elevated px-1.5 py-0.5 rounded border border-border-subtle">
+                  Terminal <span className="text-text-primary block md:inline">{item.terminal}</span>
                 </div>
               )}
               {item.gate && (
-                <div className="text-[9px] uppercase font-bold text-[#4A6791] bg-[#DEE7F2]/50 px-1.5 py-0.5 rounded border border-[#DEE7F2]">
-                  Puerta <span className="text-[#1A365D] block md:inline">{item.gate}</span>
+                <div className="text-[9px] uppercase font-bold text-text-secondary bg-bg-surface-elevated px-1.5 py-0.5 rounded border border-border-subtle">
+                  Puerta <span className="text-text-primary block md:inline">{item.gate}</span>
                 </div>
               )}
               {item.seat && (
-                <div className="text-[9px] uppercase font-bold text-[#4A6791] bg-[#DEE7F2]/50 px-1.5 py-0.5 rounded border border-[#DEE7F2]">
-                  Asiento <span className="text-[#1A365D] block md:inline">{item.seat}</span>
+                <div className="text-[9px] uppercase font-bold text-text-secondary bg-bg-surface-elevated px-1.5 py-0.5 rounded border border-border-subtle">
+                  Asiento <span className="text-text-primary block md:inline">{item.seat}</span>
                 </div>
               )}
               {item.durationMinutes && (
-                <div className="text-[9px] uppercase font-bold text-[#4A6791] bg-[#DEE7F2]/50 px-2 py-0.5 rounded border border-[#DEE7F2] flex items-center gap-1">
+                <div className="text-[9px] uppercase font-bold text-text-secondary bg-bg-surface-elevated px-2 py-0.5 rounded border border-border-subtle flex items-center gap-1">
                   <Clock size={10} /> {formatDuration(item.durationMinutes)}
                 </div>
               )}

@@ -29,10 +29,10 @@ export const LogisticsTab = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-nature-bg relative overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 p-4 md:p-8 bg-white border-b border-nature-border flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between z-10">
+      <div className="shrink-0 p-4 md:p-8 bg-bg-surface border-b border-border-strong flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between z-10">
         <div>
           <h1 className="text-3xl font-sans text-nature-text leading-tight">Cartera de Reservas</h1>
-          <p className="text-gray-500 font-medium text-sm mt-1">
+          <p className="text-text-secondary font-medium text-sm mt-1">
             Gestiona tus vuelos, hoteles, trenes y actividades maestras.
           </p>
         </div>
@@ -51,13 +51,13 @@ export const LogisticsTab = () => {
             <div className="w-24 h-24 bg-nature-mint/30 rounded-full flex items-center justify-center mb-6">
               <span className="text-4xl">🎫</span>
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">No tienes reservas todavía</h3>
-            <p className="text-gray-500 mb-8">
+            <h3 className="text-xl font-bold text-text-primary mb-2">No tienes reservas todavía</h3>
+            <p className="text-text-secondary mb-8">
               Añade tus vuelos, trenes, hoteles o tickets de actividades. Luego podrás inyectarlos automáticamente en tu planificación diaria.
             </p>
             <button
               onClick={() => { setEditingRes(null); setIsFormOpen(true); }}
-              className="flex items-center gap-2 bg-white border-2 border-nature-primary text-nature-primary px-6 py-3 rounded-xl font-bold hover:bg-nature-mint/10 transition-all shadow-sm"
+              className="flex items-center gap-2 bg-bg-surface border-2 border-nature-primary text-nature-primary px-6 py-3 rounded-xl font-bold hover:bg-nature-mint/10 transition-all shadow-sm"
             >
               <Plus size={20} /> Crear mi primera reserva
             </button>

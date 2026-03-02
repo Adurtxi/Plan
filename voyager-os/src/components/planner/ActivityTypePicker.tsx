@@ -39,9 +39,9 @@ export const ActivityTypePicker = ({ value, onChange }: ActivityTypePickerProps)
                 onClick={() => setSelectedGroup(group)}
                 className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${isSelected
                   ? 'shadow-sm scale-[1.02]'
-                  : 'border-nature-border hover:border-nature-primary bg-nature-surface'
+                  : 'border-border-strong hover:border-nature-primary bg-bg-surface-elevated'
                   }`}
-                style={isSelected ? { borderColor: meta.color, backgroundColor: `${meta.color}20`, color: 'var(--color-nature-text)' } : {}}
+                style={isSelected ? { borderColor: meta.color, backgroundColor: `${meta.color}20`, color: 'var(--text-primary)' } : {}}
               >
                 <span className="text-2xl">{meta.icon}</span>
                 <span className="text-[10px] font-black uppercase tracking-widest">{meta.label}</span>
@@ -67,7 +67,7 @@ export const ActivityTypePicker = ({ value, onChange }: ActivityTypePickerProps)
                   onClick={() => onChange(config.value)}
                   className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all ${isActive
                     ? 'shadow-sm scale-[1.03]'
-                    : 'border-nature-border hover:border-nature-primary bg-nature-surface text-gray-500 hover:text-nature-text'
+                    : 'border-border-strong hover:border-nature-primary bg-bg-surface-elevated text-text-secondary hover:text-text-primary'
                     }`}
                   style={isActive ? { borderColor: config.color, backgroundColor: config.color, color: '#FFFFFF' } : {}}
                 >

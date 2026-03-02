@@ -32,22 +32,22 @@ export const GlobalDialog = () => {
   return (
     <>
       <div className="fixed inset-0 bg-nature-primary/40 backdrop-blur-sm z-[9998] transition-opacity animate-fade-in" onClick={handleCancel} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] md:w-[400px] bg-white rounded-[32px] shadow-2xl z-[9999] p-6 flex flex-col animate-scale-in">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] md:w-[400px] bg-bg-surface rounded-[32px] shadow-2xl z-[9999] p-6 flex flex-col animate-scale-in">
 
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-3 text-nature-primary">
             <div className={`p-2 rounded-2xl ${dialog.isDestructive ? 'bg-red-50 text-red-500' : 'bg-nature-mint/50'}`}>
               <Icon size={24} />
             </div>
-            <h2 className="text-xl font-sans font-bold text-gray-800">{dialog.title}</h2>
+            <h2 className="text-xl font-sans font-bold text-text-primary">{dialog.title}</h2>
           </div>
-          <button onClick={handleCancel} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-50 transition-colors">
+          <button onClick={handleCancel} className="p-2 text-text-muted hover:text-text-primary rounded-full hover:bg-bg-surface-elevated transition-colors">
             <X size={20} />
           </button>
         </div>
 
         {dialog.message && (
-          <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+          <p className="text-sm text-text-secondary mb-6 leading-relaxed">
             {dialog.message}
           </p>
         )}
@@ -63,7 +63,7 @@ export const GlobalDialog = () => {
               if (e.key === 'Enter') handleConfirm();
               if (e.key === 'Escape') handleCancel();
             }}
-            className="w-full bg-gray-50 border border-gray-100 focus:border-nature-primary rounded-xl p-4 text-sm outline-none transition-all mb-6 font-medium text-nature-text"
+            className="w-full bg-bg-surface-elevated border border-border-strong focus:border-nature-primary rounded-xl p-4 text-sm outline-none transition-all mb-6 font-medium text-text-primary"
           />
         )}
 
@@ -71,7 +71,7 @@ export const GlobalDialog = () => {
           {dialog.type !== 'alert' && (
             <button
               onClick={handleCancel}
-              className="px-6 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-colors text-sm"
+              className="px-6 py-2.5 rounded-xl font-bold text-text-secondary hover:bg-bg-surface-elevated transition-colors text-sm"
             >
               {dialog.cancelText || 'Cancelar'}
             </button>

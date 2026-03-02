@@ -270,7 +270,7 @@ export const GalleryTab = () => {
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 md:px-8 py-8 md:py-12 pb-32">
         <header className="mb-6 md:mb-10 text-center md:text-left flex flex-col items-center md:items-start">
           {/* Segmented Control for Grouping */}
-          <div className="inline-flex bg-white/60 backdrop-blur border border-gray-200 rounded-2xl p-1.5 shadow-sm">
+          <div className="inline-flex bg-bg-surface-elevated/60 backdrop-blur border border-border-strong rounded-2xl p-1.5 shadow-sm">
             {[
               { id: 'days', label: 'Días' },
               { id: 'cities', label: 'Zonas' },
@@ -281,7 +281,7 @@ export const GalleryTab = () => {
                 onClick={() => setGroupBy(option.id as any)}
                 className={`py-2 px-6 rounded-xl text-sm font-bold tracking-widest uppercase transition-all duration-300 ${groupBy === option.id
                   ? 'bg-nature-primary text-white shadow-md scale-100'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-nature-primary dark:hover:text-nature-primary hover:bg-white/50 dark:hover:bg-gray-800 scale-95'
+                  : 'text-text-secondary hover:text-nature-primary hover:bg-bg-surface/50 scale-95'
                   }`}
               >
                 {option.label}
@@ -294,10 +294,10 @@ export const GalleryTab = () => {
           <div className="flex flex-col gap-3 mb-8 md:mb-12">
             {availableCities.length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-2">
-                <span className="text-[11px] uppercase font-bold text-gray-400 shrink-0 mr-2">Zonas</span>
+                <span className="text-[11px] uppercase font-bold text-text-muted shrink-0 mr-2">Zonas</span>
                 <button
                   onClick={() => setActiveCityFilter('all')}
-                  className={`shrink-0 px-4 py-2 mx-0.5 rounded-full text-xs font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === 'all' ? 'bg-nature-primary text-white shadow-md' : 'bg-white dark:bg-gray-800 border-2 border-transparent hover:border-gray-200 dark:hover:border-gray-700 text-gray-500 dark:text-gray-400 shadow-sm'}`}
+                  className={`shrink-0 px-4 py-2 mx-0.5 rounded-full text-xs font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === 'all' ? 'bg-nature-primary text-white shadow-md' : 'bg-bg-surface border-2 border-transparent hover:border-border-strong text-text-secondary shadow-sm'}`}
                 >
                   <MapPin size={12} /> Todas las Zonas
                 </button>
@@ -305,7 +305,7 @@ export const GalleryTab = () => {
                   <button
                     key={c}
                     onClick={() => setActiveCityFilter(c)}
-                    className={`shrink-0 px-4 py-2 mx-0.5 rounded-full text-xs font-bold tracking-widest uppercase transition-colors ${activeCityFilter === c ? 'bg-nature-primary text-white shadow-md' : 'bg-white dark:bg-gray-800 border-2 border-transparent hover:border-gray-200 dark:hover:border-gray-700 text-gray-500 dark:text-gray-400 shadow-sm'}`}
+                    className={`shrink-0 px-4 py-2 mx-0.5 rounded-full text-xs font-bold tracking-widest uppercase transition-colors ${activeCityFilter === c ? 'bg-nature-primary text-white shadow-md' : 'bg-bg-surface border-2 border-transparent hover:border-border-strong text-text-secondary shadow-sm'}`}
                   >
                     {c}
                   </button>
@@ -315,10 +315,10 @@ export const GalleryTab = () => {
 
             {availableTags.length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-2 mt-1">
-                <span className="text-[11px] uppercase font-bold text-gray-400 shrink-0 mr-2">Estilos</span>
+                <span className="text-[11px] uppercase font-bold text-text-muted shrink-0 mr-2">Estilos</span>
                 <button
                   onClick={() => setActiveTagFilter('all')}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition-colors ${activeTagFilter === 'all' ? 'bg-nature-accent text-white shadow-md' : 'bg-nature-mint/30 dark:bg-nature-mint/10 border border-nature-primary/10 text-nature-primary shadow-sm'}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition-colors ${activeTagFilter === 'all' ? 'bg-nature-accent text-white shadow-md' : 'bg-nature-mint/30 border border-nature-primary/10 text-nature-primary shadow-sm'}`}
                 >
                   Todos
                 </button>
@@ -326,7 +326,7 @@ export const GalleryTab = () => {
                   <button
                     key={t}
                     onClick={() => setActiveTagFilter(t)}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition-colors ${activeTagFilter === t ? 'bg-nature-accent text-white shadow-md' : 'bg-nature-mint/30 dark:bg-nature-mint/10 border border-nature-primary/10 text-nature-primary shadow-sm'}`}
+                    className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition-colors ${activeTagFilter === t ? 'bg-nature-accent text-white shadow-md' : 'bg-nature-mint/30 border border-nature-primary/10 text-nature-primary shadow-sm'}`}
                   >
                     #{t}
                   </button>
@@ -337,12 +337,12 @@ export const GalleryTab = () => {
         )}
 
         {sortedGroups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 py-24 md:py-32 bg-white dark:bg-nature-surface border border-gray-200 dark:border-nature-border mx-auto max-w-2xl text-center px-4 md:px-8 rounded-[32px]">
-            <div className="bg-white dark:bg-black/20 p-6 rounded-full border border-gray-100 dark:border-nature-border mb-6 inline-block">
-              <ImageIcon size={48} strokeWidth={1.5} className="text-gray-300 dark:text-gray-600" />
+          <div className="flex flex-col items-center justify-center text-text-secondary py-24 md:py-32 bg-bg-surface border border-border-strong mx-auto max-w-2xl text-center px-4 md:px-8 rounded-[32px]">
+            <div className="bg-bg-surface-elevated p-6 rounded-full border border-border-subtle mb-6 inline-block">
+              <ImageIcon size={48} strokeWidth={1.5} className="text-text-muted" />
             </div>
-            <h3 className="text-xl md:text-2xl font-black text-nature-text mb-2">Tu galería está vacía</h3>
-            <p className="text-sm md:text-base text-gray-500 max-w-md">Añade fotos desde los detalles de tus actividades en el itinerario para verlas aquí.</p>
+            <h3 className="text-xl md:text-2xl font-black text-text-primary mb-2">Tu galería está vacía</h3>
+            <p className="text-sm md:text-base text-text-secondary max-w-md">Añade fotos desde los detalles de tus actividades en el itinerario para verlas aquí.</p>
           </div>
         ) : (
           <div className="space-y-12 md:space-y-20">
@@ -360,7 +360,7 @@ export const GalleryTab = () => {
                   {groupedData[groupId].map(loc => (
                     <div
                       key={loc.id}
-                      className="break-inside-avoid relative rounded-2xl md:rounded-3xl group bg-white dark:bg-nature-surface cursor-pointer transition-all duration-300 border border-gray-200 dark:border-nature-border hover:border-nature-primary dark:hover:border-nature-primary w-full block overflow-hidden"
+                      className="break-inside-avoid relative rounded-2xl md:rounded-3xl group bg-bg-surface cursor-pointer transition-all duration-300 border border-border-strong hover:border-nature-primary w-full block overflow-hidden"
                       onClick={() => openLightbox(loc.images, 0, loc.id)}
                     >
                       <div className="relative w-full h-full">
@@ -370,12 +370,12 @@ export const GalleryTab = () => {
                           className="w-full h-auto object-cover block"
                         />
 
-                        <div className="bg-nature-surface/90 backdrop-blur-md p-4 md:p-5 z-10 flex flex-col justify-end pointer-events-none border-t border-nature-border">
-                          <h4 className="font-bold text-nature-text text-base md:text-xl leading-tight truncate mb-1">
+                        <div className="bg-bg-surface/90 backdrop-blur-md p-4 md:p-5 z-10 flex flex-col justify-end pointer-events-none border-t border-border-strong">
+                          <h4 className="font-bold text-text-primary text-base md:text-xl leading-tight truncate mb-1">
                             {loc.title || loc.notes?.split('\n')[0] || 'Ubicación'}
                           </h4>
                           {(loc.title || loc.address) && (
-                            <p className="text-gray-500 text-[10px] md:text-[11px] uppercase tracking-wider font-bold flex items-center gap-1.5 truncate">
+                            <p className="text-text-secondary text-[10px] md:text-[11px] uppercase tracking-wider font-bold flex items-center gap-1.5 truncate">
                               <MapPin size={10} className="shrink-0 md:w-3 md:h-3" /> {loc.address || 'Ubicación guardada'}
                             </p>
                           )}
@@ -383,7 +383,7 @@ export const GalleryTab = () => {
                       </div>
 
                       <div className="absolute top-3 left-3 flex gap-2 z-20 pointer-events-none">
-                        <div className="bg-white dark:bg-nature-surface border border-gray-200 dark:border-nature-border rounded-xl p-1.5 md:p-2 text-lg md:text-xl leading-none">
+                        <div className="bg-bg-surface border border-border-strong rounded-xl p-1.5 md:p-2 text-lg md:text-xl leading-none">
                           {CAT_ICONS[loc.cat]}
                         </div>
                         {loc.images.length > 1 && (
