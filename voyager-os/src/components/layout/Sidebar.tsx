@@ -34,7 +34,7 @@ export const Sidebar = () => {
     });
   };
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) => `p-4 flex items-center justify-center rounded-2xl transition-all duration-300 ${isActive ? 'bg-nature-mint/50 text-nature-primary shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-nature-bg'}`;
+  const navLinkClass = ({ isActive }: { isActive: boolean }) => `cursor-pointer p-4 flex items-center justify-center rounded-2xl transition-all duration-300 active:scale-90 ${isActive ? 'bg-nature-mint/50 text-nature-primary shadow-sm' : 'text-gray-400 hover:text-nature-primary hover:bg-nature-bg'}`;
 
   return (
     <aside className="w-20 md:w-24 bg-white border-r border-nature-border hidden lg:flex flex-col items-center py-8 gap-8 z-30 shadow-soft shrink-0">
@@ -48,14 +48,14 @@ export const Sidebar = () => {
 
         <button
           onClick={toggleTheme}
-          className="p-3 text-gray-400 hover:text-nature-primary hover:bg-nature-bg rounded-xl transition-all"
+          className="cursor-pointer p-3 text-gray-400 hover:text-nature-primary hover:bg-nature-bg rounded-xl transition-all active:scale-90"
           title="Cambiar Tema"
         >
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 
-        <button className="p-3 text-gray-400 hover:text-nature-primary hover:bg-nature-bg rounded-xl transition-all" title="Guardar Viaje"><Download size={20} /></button>
-        <button onClick={handleReset} className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Reiniciar"><Trash2 size={20} /></button>
+        <button className="cursor-pointer p-3 text-gray-400 hover:text-nature-primary hover:bg-nature-bg rounded-xl transition-all active:scale-90" title="Guardar Viaje"><Download size={20} /></button>
+        <button onClick={handleReset} className="cursor-pointer p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-90" title="Reiniciar"><Trash2 size={20} /></button>
       </div>
     </aside>
   );

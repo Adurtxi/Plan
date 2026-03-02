@@ -55,7 +55,7 @@ export const MobileBottomBar = ({ mobileView, setMobileView }: { mobileView: 'pl
             <button
               key={i}
               onClick={() => handleTabClick(tab)}
-              className={`flex flex-col items-center justify-center gap-0.5 px-4 py-2 rounded-xl transition-all duration-200 min-w-[64px] ${active
+              className={`cursor-pointer flex flex-col items-center justify-center gap-0.5 px-4 py-2 rounded-xl transition-all duration-200 active:scale-90 min-w-[64px] ${active
                 ? 'text-nature-primary'
                 : 'text-gray-400 active:text-gray-600'
                 }`}
@@ -74,7 +74,7 @@ export const MobileBottomBar = ({ mobileView, setMobileView }: { mobileView: 'pl
         })}
         <button
           onClick={useAppStore.getState().toggleTheme}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-nature-primary rounded-xl transition-all"
+          className="cursor-pointer absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-nature-primary rounded-xl transition-all active:scale-90"
         >
           {useAppStore.getState().theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>

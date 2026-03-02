@@ -260,3 +260,27 @@ h1, h2, h3 {
 .hide-scroll-mobile::-webkit-scrollbar {
   display: none;
 }
+
+:root input[type="time"],
+:root input[type="date"],
+:root input[type="datetime-local"] {
+  color-scheme: light;
+}
+
+:root.dark input[type="time"],
+:root.dark input[type="date"],
+:root.dark input[type="datetime-local"] {
+  color-scheme: dark;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+button {
+  cursor: pointer !important;
+}

@@ -146,11 +146,6 @@ export const GalleryTab = () => {
     <div className="flex-1 w-full bg-nature-bg h-full overflow-y-auto custom-scroll" onClick={() => setActiveMenuId(null)}>
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 md:px-8 py-8 md:py-12 pb-32">
         <header className="mb-6 md:mb-10 text-center md:text-left flex flex-col items-center md:items-start">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-sans font-black text-nature-primary mb-2 md:mb-3 tracking-tight">Galería</h1>
-          <p className="text-nature-textLight font-medium text-sm sm:text-base md:text-xl mb-6">
-            Tu viaje organizado en recuerdos visuales.
-          </p>
-
           {/* Segmented Control for Grouping */}
           <div className="inline-flex bg-white/60 backdrop-blur border border-gray-200 rounded-2xl p-1.5 shadow-sm">
             {[
@@ -176,7 +171,7 @@ export const GalleryTab = () => {
           <div className="flex flex-col gap-3 mb-8 md:mb-12">
             {availableCities.length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-2">
-                <span className="text-[11px] uppercase font-bold text-gray-400 shrink-0 mr-2">Filtro Zonas</span>
+                <span className="text-[11px] uppercase font-bold text-gray-400 shrink-0 mr-2">Zonas</span>
                 <button
                   onClick={() => setActiveCityFilter('all')}
                   className={`shrink-0 px-4 py-2 mx-0.5 rounded-full text-xs font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === 'all' ? 'bg-nature-primary text-white shadow-md' : 'bg-white border-2 border-transparent hover:border-gray-200 text-gray-500 shadow-sm'}`}
@@ -197,7 +192,7 @@ export const GalleryTab = () => {
 
             {availableTags.length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-2">
-                <span className="text-[11px] uppercase font-bold text-gray-400 shrink-0 mr-2">Filtro Tags</span>
+                <span className="text-[11px] uppercase font-bold text-gray-400 shrink-0 mr-2">Etiquetas</span>
                 <button
                   onClick={() => setActiveTagFilter('all')}
                   className={`shrink-0 px-4 py-2 mx-0.5 rounded-full text-xs font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeTagFilter === 'all' ? 'bg-nature-primary text-white shadow-md' : 'bg-white border-2 border-transparent hover:border-gray-200 text-gray-500 shadow-sm'}`}
