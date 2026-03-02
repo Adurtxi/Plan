@@ -131,7 +131,7 @@ export const CardActions = memo(({
         {/* Link del Archivo (Web) */}
         {hasWebLink && (
           <button onClick={handleOpenWebLink} className={linkBtnClass} title="Abrir enlace guardado">
-            <ArrowRightCircle size={16} /> {mode === 'inline-labeled' && 'Web'}
+            <ArrowRightCircle size={16} /> {mode === 'inline-labeled' && 'Google Maps'}
           </button>
         )}
 

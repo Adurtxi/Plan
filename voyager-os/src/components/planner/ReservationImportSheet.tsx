@@ -113,7 +113,7 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
             ...baseLoc,
             id: Date.now(),
             cat,
-            title: `[Ida/Inicio] ${res.title}`,
+            title: `[Ida] ${res.title}`,
             datetime: res.startDatetime,
             city: '',
           } as LocationItem;
@@ -123,7 +123,7 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
             id: Date.now() + 1,
             cat,
             day: getDayIdFromDate(res.endDatetime),
-            title: `[Vuelta/Fin] ${res.title}`,
+            title: `[Vuelta] ${res.title}`,
             datetime: res.endDatetime,
             city: '',
           } as LocationItem;
@@ -149,11 +149,11 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
         }
       }
 
-      addToast(`Reserva inyectada al plan (${targetDay === 'unassigned' ? 'Ideas' : targetDay})`, 'success');
+      addToast(`Reserva añadida al plan (${targetDay === 'unassigned' ? 'Ideas' : targetDay})`, 'success');
       onClose();
     } catch (err) {
       console.error(err);
-      addToast('Error al inyectar reserva', 'error');
+      addToast('Error al añadir la reserva', 'error');
     }
   };
 

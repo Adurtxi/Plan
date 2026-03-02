@@ -178,7 +178,8 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
                 if (setMobileView) {
                   hapticFeedback.light();
                   setSelectedLocationId(loc.id);
-                  setIsDetailModalOpen(true);
+                  if (loc.coords) useAppStore.getState().setReframeMapCoordinates(loc.coords);
+                  setIsDetailModalOpen(false);
                   setMobileView('map');
                 }
               }}
@@ -190,7 +191,7 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
               onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.coords?.lat},${loc.coords?.lng}`, '_blank')}
               className="flex-1 bg-blue-50 dark:bg-blue-900/30 active:bg-blue-100 dark:active:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2"
             >
-              <Navigation size={16} /> Ruta GPS
+              <Navigation size={16} /> Ir a (Maps)
             </button>
             <button
               onClick={() => window.open(`https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${loc.coords?.lat}&dropoff[longitude]=${loc.coords?.lng}`, '_blank')}

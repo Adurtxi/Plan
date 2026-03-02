@@ -277,7 +277,7 @@ export const DetailModal = () => {
       <div className="bg-white rounded-none md:rounded-bento shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] w-full md:max-w-4xl relative z-10 animate-[fadeIn_0.3s_ease-out]">
         {/* LEFT PANE - GALLERY (only for activities and accommodation with images) */}
         {catGroup === 'activity' && (
-          <div className="md:w-5/12 bg-gray-100 relative h-64 md:h-auto group overflow-hidden">
+          <div className={`w-full md:w-5/12 bg-gray-100 relative ${selectedLocation.images?.length > 0 ? 'h-64' : 'h-24'} md:h-auto group overflow-hidden`}>
             {selectedLocation.images?.length > 0 ? (
               <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory custom-scroll hide-scroll-mobile">
                 {selectedLocation.images.map((img, i) => (
@@ -303,7 +303,7 @@ export const DetailModal = () => {
 
         {/* Accommodation gallery */}
         {catGroup === 'accommodation' && selectedLocation.images?.length > 0 && (
-          <div className="md:w-5/12 bg-gray-100 relative h-64 md:h-auto group overflow-hidden">
+          <div className="w-full md:w-5/12 bg-gray-100 relative h-64 md:h-auto group overflow-hidden">
             <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory custom-scroll hide-scroll-mobile">
               {selectedLocation.images.map((img, i) => (
                 <div key={i} className="min-w-full h-full snap-center relative cursor-pointer" onClick={() => openLightbox(selectedLocation.images)}>
@@ -394,13 +394,6 @@ export const DetailModal = () => {
                   <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-purple-700">📸 {selectedLocation.bestTimeHint}</span>
                 )}
               </div>
-
-              {/* External Link */}
-              {selectedLocation.link && selectedLocation.link.startsWith('http') && (
-                <a href={selectedLocation.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-nature-primary hover:text-nature-accent transition-colors bg-nature-mint/30 p-3 rounded-xl border border-nature-primary/10 mb-6 w-fit">
-                  <ExternalLink size={16} /> Ver Enlace Guardado
-                </a>
-              )}
 
               <div className="prose prose-sm text-gray-600 mb-8 font-light leading-relaxed whitespace-pre-wrap">
                 {selectedLocation.notes || "Añade notas útiles para esta actividad."}
