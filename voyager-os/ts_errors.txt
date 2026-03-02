@@ -1,0 +1,2 @@
+src/components/planner/PlannerTab.tsx(19,35): error TS6196: 'ReservationStatus' is declared but never used.
+src/components/planner/PlannerTab.tsx(298,11): error TS6133: 'targetDate' is declared but its value is never read.

@@ -3,10 +3,17 @@ import { useAppStore } from '../../store';
 import { X, Calendar, Copy, Trash2 } from 'lucide-react';
 import type { TripVariant } from '../../types';
 import { useTripVariants, useAddTripVariant, useUpdateTripVariant, useDeleteTripVariant } from '../../hooks/useTripData';
+import { useForm } from 'react-hook-form';
 
 interface TripSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface TripSettingsFormInputs {
+  name: string;
+  startDate: string;
+  endDate: string;
 }
 
 export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) => {
@@ -17,7 +24,8 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
   const { mutate: deleteTripVariant } = useDeleteTripVariant();
 
   const activeVariant = tripVariants.find(v => v.id === activeGlobalVariantId);
-  const [editingVariant, setEditingVariant] = useState<TripVariant | null>(null);
+  const { register, handleSubmit, reset, getValues, watch } = useForm<TripSettingsFormInputs>();
+  const startDateValue = watch('startDate');
 
   // Custom states for cities
   const [currentCities, setCurrentCities] = useState<string[]>([]);
@@ -25,30 +33,38 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
 
   useEffect(() => {
     if (isOpen && activeVariant) {
-      setEditingVariant({ ...activeVariant });
+      reset({
+        name: activeVariant.name || '',
+        startDate: activeVariant.startDate || '',
+        endDate: activeVariant.endDate || ''
+      });
       setCurrentCities(activeVariant.cities ? [...activeVariant.cities] : []);
     } else {
       setCityInputValue('');
     }
-  }, [isOpen, activeVariant]);
+  }, [isOpen, activeVariant, reset]);
 
-  if (!isOpen || !editingVariant) return null;
+  if (!isOpen || !activeVariant) return null;
 
   const handleCreateVariant = () => {
+    const values = getValues();
     const newId = `variant-${Date.now()}`;
     const newVariant: TripVariant = {
       id: newId,
-      name: `Copia de ${editingVariant.name}`,
-      startDate: editingVariant.startDate,
-      endDate: editingVariant.endDate,
+      name: `Copia de ${values.name || 'Plan'}`,
+      startDate: values.startDate || null,
+      endDate: values.endDate || null,
     };
     addTripVariant(newVariant);
     setActiveGlobalVariantId(newId);
   };
 
-  const handleSave = () => {
+  const onSubmit = (data: TripSettingsFormInputs) => {
     updateTripVariant({
-      ...editingVariant,
+      ...activeVariant,
+      name: data.name,
+      startDate: data.startDate || null,
+      endDate: data.endDate || null,
       cities: currentCities.length > 0 ? currentCities : undefined
     });
     addToast('Ajustes de viaje guardados', 'success');
@@ -128,13 +144,12 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
             </div>
           </div>
 
-          <div className="bg-gray-50/50 border border-gray-100 p-4 rounded-[24px] space-y-4">
+          <form id="tripSettingsForm" onSubmit={handleSubmit(onSubmit)} className="bg-gray-50/50 border border-gray-100 p-4 rounded-[24px] space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">Nombre de la Variante</label>
               <input
                 type="text"
-                value={editingVariant.name}
-                onChange={(e) => setEditingVariant({ ...editingVariant, name: e.target.value })}
+                {...register('name')}
                 className="w-full bg-white border-0 shadow-sm rounded-xl p-3 text-sm focus:ring-2 focus:ring-nature-primary/20 text-nature-text"
               />
             </div>
@@ -144,8 +159,7 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
                 <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">Día de Inicio</label>
                 <input
                   type="date"
-                  value={editingVariant.startDate || ''}
-                  onChange={(e) => setEditingVariant({ ...editingVariant, startDate: e.target.value })}
+                  {...register('startDate')}
                   className="w-full bg-white border-0 shadow-sm rounded-xl p-3 text-sm focus:ring-2 focus:ring-nature-primary/20 text-nature-text"
                 />
               </div>
@@ -153,10 +167,9 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
                 <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">Día de Fin</label>
                 <input
                   type="date"
-                  value={editingVariant.endDate || ''}
-                  onChange={(e) => setEditingVariant({ ...editingVariant, endDate: e.target.value })}
+                  {...register('endDate')}
                   className="w-full bg-white border-0 shadow-sm rounded-xl p-3 text-sm focus:ring-2 focus:ring-nature-primary/20 text-nature-text"
-                  min={editingVariant.startDate || undefined}
+                  min={startDateValue || undefined}
                 />
               </div>
             </div>
@@ -164,7 +177,7 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
             <p className="text-xs text-gray-400 mt-2 ml-1">
               Si defines inicio y fin, el tablero generará automáticamente las columnas exactas de tu viaje.
             </p>
-          </div>
+          </form>
 
           <div className="bg-gray-50/50 border border-gray-100 p-4 rounded-[24px] space-y-3">
             <div>
@@ -208,7 +221,8 @@ export const TripSettingsModal = ({ isOpen, onClose }: TripSettingsModalProps) =
             <div />
           )}
           <button
-            onClick={handleSave}
+            type="submit"
+            form="tripSettingsForm"
             className="bg-nature-primary text-white px-8 py-3 rounded-xl font-bold tracking-wide hover:bg-nature-accent transition-colors shadow-solid hover:translate-y-[2px] hover:shadow-none active:translate-y-[4px]"
           >
             Guardar y Aplicar

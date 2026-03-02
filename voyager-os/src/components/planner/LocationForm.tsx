@@ -1,11 +1,51 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { X, MapPin, Calendar, CreditCard, Image as ImageIcon } from 'lucide-react';
 import type { Category, Priority, LocationItem, ReservationStatus } from '../../types';
 import { getCatGroup, getCatConfig, CAT_LABELS } from '../../constants';
 import { CustomSelect } from '../ui/CustomSelect';
 import { ActivityTypePicker } from './ActivityTypePicker';
-import { useAppStore } from '../../store';
+import { useAppStore, computeDateForDay } from '../../store';
 import { useTripVariants } from '../../hooks/useTripData';
+import { combineDayWithTime, calculateCheckoutDatetime, extractTimeFromISO } from '../../utils/dateUtils';
+
+export interface LocationFormInputs {
+  title: string;
+  link: string;
+  mapCoords: string;
+  coordsReadonly: string;
+  mealType: string;
+  bestTimeHint: string;
+  city: string;
+  tags: string;
+  company: string;
+  flightNumber: string;
+  terminal: string;
+  gate: string;
+  platform: string;
+  seat: string;
+  station: string;
+  pickupPoint: string;
+  dropoffPoint: string;
+  transportApp: string;
+  address: string;
+  roomNumber: string;
+  lateCheckout: boolean;
+  datetime: string;
+  checkOutDatetime: string;
+  nights: string | number;
+  durHours: string | number;
+  durMins: string | number;
+  notes: string;
+  cost: string;
+  priceAmount: string | number;
+  bookingRef: string;
+  logisticsConfirmation: string;
+  logisticsDetail: string;
+  isPinnedTime: boolean;
+  reservationStatus: string;
+  durationMinutes: string;
+}
 
 interface LocationFormProps {
   isFormPanelOpen: boolean;
@@ -24,7 +64,7 @@ interface LocationFormProps {
   setTempImages: React.Dispatch<React.SetStateAction<{ data: string, name: string }[]>>;
   tempAttachments: { data: string, name: string }[];
   setTempAttachments: React.Dispatch<React.SetStateAction<{ data: string, name: string }[]>>;
-  handleAddLocation: (e: React.FormEvent<HTMLFormElement>) => void;
+  handleAddLocation: (data: any) => void;
   handleFiles: (files: FileList | null) => void;
   resetForm: () => void;
   locations: LocationItem[];
@@ -33,7 +73,7 @@ interface LocationFormProps {
 
 export const LocationForm = ({
   isFormPanelOpen, setIsFormPanelOpen, formId, formPriority, setFormPriority, formCat, setFormCat,
-  formSlot, setFormSlot, formCurrency, setFormCurrency,
+  formSlot, setFormSlot, formCurrency, setFormCurrency, preselectedDay,
   tempImages, setTempImages, tempAttachments, setTempAttachments, handleAddLocation, handleFiles, resetForm, locations,
 }: LocationFormProps) => {
   const [activeTab, setActiveTab] = useState<'general' | 'time' | 'finance' | 'assets'>('general');
@@ -48,6 +88,8 @@ export const LocationForm = ({
   const activeVariant = tripVariants.find(v => v.id === activeGlobalVariantId);
   const predefinedCities = activeVariant?.cities || [];
 
+  const { register, handleSubmit, watch, reset, setValue } = useForm<LocationFormInputs>();
+
   const catGroup = getCatGroup(formCat);
   const catConfig = getCatConfig(formCat);
 
@@ -55,20 +97,58 @@ export const LocationForm = ({
   useEffect(() => {
     if (formId) {
       const existing = locations.find(l => l.id === formId);
-      if (existing && existing.reservationStatus) setResStatus(existing.reservationStatus);
-      if (existing && existing.durationMinutes !== undefined) {
-        setDurHours(Math.floor(existing.durationMinutes / 60) || '');
-        setDurMins(existing.durationMinutes % 60 || '');
-      } else {
-        setDurHours('');
-        setDurMins('');
-      }
+      if (existing) {
+        if (existing.reservationStatus) setResStatus(existing.reservationStatus);
+        if (existing.durationMinutes !== undefined) {
+          setDurHours(Math.floor(existing.durationMinutes / 60) || '');
+          setDurMins(existing.durationMinutes % 60 || '');
+        } else {
+          setDurHours('');
+          setDurMins('');
+        }
 
-      // Initialize tags
-      if (existing && existing.tags) {
-        setCurrentTags([...existing.tags]);
-      } else {
-        setCurrentTags([]);
+        // Initialize tags
+        if (existing.tags) {
+          setCurrentTags([...existing.tags]);
+        } else {
+          setCurrentTags([]);
+        }
+
+        // Reset form values
+        reset({
+          title: existing.title || '',
+          link: existing.link || '',
+          cost: existing.cost || '0',
+          priceAmount: existing.newPrice?.amount || '',
+          notes: existing.notes || '',
+          datetime: extractTimeFromISO(existing.datetime),
+          checkOutDatetime: extractTimeFromISO(existing.checkOutDatetime),
+          nights: existing.nights || 1,
+          bookingRef: existing.bookingRef || '',
+          logisticsConfirmation: existing.logisticsConfirmation || '',
+          logisticsDetail: existing.logisticsDetail || '',
+          isPinnedTime: !!existing.isPinnedTime,
+          company: existing.company || '',
+          flightNumber: existing.flightNumber || '',
+          terminal: existing.terminal || '',
+          gate: existing.gate || '',
+          platform: existing.platform || '',
+          seat: existing.seat || '',
+          station: existing.station || '',
+          pickupPoint: existing.pickupPoint || '',
+          dropoffPoint: existing.dropoffPoint || '',
+          transportApp: existing.transportApp || '',
+          address: existing.address || '',
+          roomNumber: existing.roomNumber || '',
+          bestTimeHint: existing.bestTimeHint || '',
+          city: existing.city || '',
+          lateCheckout: !!existing.lateCheckout,
+          mealType: existing.mealType || '',
+          mapCoords: existing.coords ? `${existing.coords.lat},${existing.coords.lng}` : '',
+          coordsReadonly: existing.coords ? `${existing.coords.lat.toFixed(6)}, ${existing.coords.lng.toFixed(6)}` : ''
+        });
+
+        // Ensure default datetime based on day if not editing datetime explicitly but day changed? Handled below.
       }
     } else {
       setResStatus('idea');
@@ -76,8 +156,27 @@ export const LocationForm = ({
       setDurHours('');
       setDurMins('');
       setCurrentTags([]);
+
+      reset({
+        title: '', link: '', cost: '0', priceAmount: '', notes: '',
+        datetime: '', checkOutDatetime: '', nights: 1, bookingRef: '', logisticsConfirmation: '', logisticsDetail: '',
+        isPinnedTime: false, company: '', flightNumber: '', terminal: '', gate: '', platform: '', seat: '',
+        station: '', pickupPoint: '', dropoffPoint: '', transportApp: '', address: '', roomNumber: '',
+        bestTimeHint: '', city: '', lateCheckout: false, mealType: '', mapCoords: '', coordsReadonly: ''
+      });
     }
-  }, [formId, locations]);
+  }, [formId, locations, reset, preselectedDay, tripVariants, activeGlobalVariantId]);
+
+  // Handle Map Coordinate Updates
+  useEffect(() => {
+    const handleUpdateCoords = (e: any) => {
+      const { lat, lng } = e.detail;
+      setValue('mapCoords', `${lat},${lng}`);
+      setValue('coordsReadonly', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+    };
+    window.addEventListener('update-map-coords', handleUpdateCoords);
+    return () => window.removeEventListener('update-map-coords', handleUpdateCoords);
+  }, [setValue]);
 
   // Extract unique cities for datalist
   const availableCities = Array.from(new Set(locations.map(l => l.city).filter(Boolean))) as string[];
@@ -119,28 +218,30 @@ export const LocationForm = ({
     return () => window.removeEventListener('paste', handlePaste);
   }, [isFormPanelOpen, handleFiles]);
 
-  const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    const inputStatus = document.createElement('input');
-    inputStatus.type = 'hidden';
-    inputStatus.name = 'reservationStatus';
-    inputStatus.value = resStatus;
-    e.currentTarget.appendChild(inputStatus);
-
+  const onSubmit = (data: LocationFormInputs) => {
+    data.reservationStatus = resStatus;
     const totalMins = (Number(durHours || 0) * 60) + Number(durMins || 0);
-    const inputDur = document.createElement('input');
-    inputDur.type = 'hidden';
-    inputDur.name = 'durationMinutes';
-    inputDur.value = totalMins > 0 ? totalMins.toString() : '';
-    e.currentTarget.appendChild(inputDur);
+    data.durationMinutes = totalMins > 0 ? totalMins.toString() : '';
+    data.tags = currentTags.join(',');
 
-    // Inject tags
-    const inputTags = document.createElement('input');
-    inputTags.type = 'hidden';
-    inputTags.name = 'tags';
-    inputTags.value = currentTags.join(',');
-    e.currentTarget.appendChild(inputTags);
+    const targetDay = formId ? locations.find(l => l.id === formId)?.day : preselectedDay;
+    const targetDate = targetDay && targetDay !== 'unassigned' ? computeDateForDay(targetDay, tripVariants, activeGlobalVariantId) : null;
 
-    handleAddLocation(e);
+    if (targetDate && data.datetime) {
+      data.datetime = combineDayWithTime(targetDate, data.datetime);
+      data.isPinnedTime = true;
+    } else {
+      data.datetime = '';
+      data.isPinnedTime = false;
+    }
+
+    if (targetDate && data.checkOutDatetime) {
+      data.checkOutDatetime = calculateCheckoutDatetime(targetDate, Number(data.nights || 1), data.checkOutDatetime);
+    } else {
+      data.checkOutDatetime = '';
+    }
+
+    handleAddLocation(data);
   };
 
   const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -206,7 +307,7 @@ export const LocationForm = ({
       </div>
 
       <div className="flex-1 overflow-y-auto p-8 custom-scroll">
-        <form id="mainForm" onSubmit={onFormSubmit} className="space-y-8">
+        <form id="mainForm" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
 
           {/* ═══ TAB: GENERAL ═══ */}
           <div className={`${activeTab === 'general' ? 'block' : 'hidden'} space-y-6 animate-fade-in`}>
@@ -219,7 +320,7 @@ export const LocationForm = ({
               <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">
                 {catGroup === 'accommodation' ? 'Nombre del Hotel' : catGroup === 'transport' ? 'Título / Descripción' : 'Título (Opcional)'}
               </label>
-              <input name="title" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all font-bold"
+              <input {...register('title')} type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all font-bold"
                 placeholder={catGroup === 'accommodation' ? 'Ej. Hotel Hilton Barcelona' : catGroup === 'transport' ? 'Ej. Vuelo a Madrid' : 'Ej. Visita al Coliseo'} />
             </div>
 
@@ -228,13 +329,13 @@ export const LocationForm = ({
               <>
                 <div>
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Google Maps Link (Opcional)</label>
-                  <input name="link" type="url" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="https://maps.app.goo.gl/..." />
-                  <input name="mapCoords" type="hidden" />
+                  <input {...register('link')} type="url" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="https://maps.app.goo.gl/..." />
+                  <input {...register('mapCoords')} type="hidden" />
                 </div>
 
-                <div id="coordsDisplay" className="hidden">
+                <div id="coordsDisplay" className={watch('mapCoords') ? 'block' : 'hidden'}>
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">📍 Coordenadas</label>
-                  <input name="coordsReadonly" type="text" readOnly className="w-full bg-nature-mint/20 border border-nature-primary/20 rounded-xl p-4 text-nature-primary outline-none text-xs font-mono cursor-default" />
+                  <input {...register('coordsReadonly')} type="text" readOnly className="w-full bg-nature-mint/20 border border-nature-primary/20 rounded-xl p-4 text-nature-primary outline-none text-xs font-mono cursor-default" />
                 </div>
 
                 {formCat === 'food' && (
@@ -243,7 +344,7 @@ export const LocationForm = ({
                     <div className="flex gap-2 flex-wrap">
                       {(['breakfast', 'lunch', 'dinner', 'snack', 'tapas'] as const).map(meal => (
                         <label key={meal} className="cursor-pointer">
-                          <input type="radio" name="mealType" value={meal} className="peer hidden" />
+                          <input type="radio" {...register('mealType')} value={meal} className="peer hidden" />
                           <div className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-bold text-gray-400 peer-checked:bg-nature-accent peer-checked:text-white peer-checked:border-nature-accent transition-all">
                             {meal === 'breakfast' ? '🌅 Desayuno' : meal === 'lunch' ? '☀️ Almuerzo' : meal === 'dinner' ? '🌙 Cena' : meal === 'snack' ? '🍿 Snack' : '🍺 Tapas'}
                           </div>
@@ -256,7 +357,7 @@ export const LocationForm = ({
                 {formCat === 'photos' && (
                   <div>
                     <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Mejor Momento para Fotos</label>
-                    <input name="bestTimeHint" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="Ej. Golden hour 18:30, amanecer..." />
+                    <input {...register('bestTimeHint')} type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="Ej. Golden hour 18:30, amanecer..." />
                   </div>
                 )}
 
@@ -275,13 +376,13 @@ export const LocationForm = ({
                       )}
                     </div>
                     {predefinedCities.length > 0 ? (
-                      <select name="city" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text outline-none text-xs transition-all font-bold cursor-pointer">
+                      <select {...register('city')} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text outline-none text-xs transition-all font-bold cursor-pointer">
                         <option value="">Seleccionar ciudad...</option>
                         {predefinedCities.map(city => <option key={city} value={city}>{city}</option>)}
                       </select>
                     ) : (
                       <>
-                        <input name="city" list="cities-list" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="Ej. Dubai Marina, Tokio..." />
+                        <input {...register('city')} list="cities-list" type="text" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 outline-none text-xs transition-all" placeholder="Ej. Dubai Marina, Tokio..." />
                         <datalist id="cities-list">
                           {availableCities.map(city => <option key={city} value={city} />)}
                         </datalist>
@@ -336,13 +437,13 @@ export const LocationForm = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Compañía</label>
-                    <input name="company" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Ej. Ryanair, Alsa..." />
+                    <input {...register('company')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Ej. Ryanair, Alsa..." />
                   </div>
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">
                       {formCat.startsWith('flight') ? 'Nº Vuelo' : formCat.startsWith('train') ? 'Nº Tren/Línea' : 'Nº Línea'}
                     </label>
-                    <input name="flightNumber" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="FR1234" />
+                    <input {...register('flightNumber')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="FR1234" />
                   </div>
                 </div>
 
@@ -350,11 +451,11 @@ export const LocationForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Terminal</label>
-                      <input name="terminal" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="T1, T4S..." />
+                      <input {...register('terminal')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="T1, T4S..." />
                     </div>
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Puerta</label>
-                      <input name="gate" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="B24" />
+                      <input {...register('gate')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="B24" />
                     </div>
                   </div>
                 )}
@@ -363,11 +464,11 @@ export const LocationForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Estación</label>
-                      <input name="station" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Estación Sur..." />
+                      <input {...register('station')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Estación Sur..." />
                     </div>
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Andén</label>
-                      <input name="platform" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Andén 3" />
+                      <input {...register('platform')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Andén 3" />
                     </div>
                   </div>
                 )}
@@ -375,11 +476,11 @@ export const LocationForm = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Asiento</label>
-                    <input name="seat" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="12A" />
+                    <input {...register('seat')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="12A" />
                   </div>
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Confirmación / PNR</label>
-                    <input name="logisticsConfirmation" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="ABC123" />
+                    <input {...register('logisticsConfirmation')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="ABC123" />
                   </div>
                 </div>
 
@@ -387,11 +488,11 @@ export const LocationForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto de Recogida</label>
-                      <input name="pickupPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Hotel lobby..." />
+                      <input {...register('pickupPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Hotel lobby..." />
                     </div>
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">App / Servicio</label>
-                      <input name="transportApp" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Uber, Bolt..." />
+                      <input {...register('transportApp')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Uber, Bolt..." />
                     </div>
                   </div>
                 )}
@@ -400,11 +501,11 @@ export const LocationForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto Recogida</label>
-                      <input name="pickupPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Aeropuerto T1..." />
+                      <input {...register('pickupPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Aeropuerto T1..." />
                     </div>
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto Devolución</label>
-                      <input name="dropoffPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Ciudad centro..." />
+                      <input {...register('dropoffPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Ciudad centro..." />
                     </div>
                   </div>
                 )}
@@ -412,7 +513,7 @@ export const LocationForm = ({
                 {formCat === 'transfer' && (
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Punto de Recogida</label>
-                    <input name="pickupPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Terminal 2 Llegadas..." />
+                    <input {...register('pickupPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Terminal 2 Llegadas..." />
                   </div>
                 )}
 
@@ -420,18 +521,18 @@ export const LocationForm = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Puerto Salida</label>
-                      <input name="pickupPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Puerto de Barcelona..." />
+                      <input {...register('pickupPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Puerto de Barcelona..." />
                     </div>
                     <div>
                       <label className="text-[9px] tracking-wider font-bold text-blue-700/60 uppercase mb-2 block">Puerto Llegada</label>
-                      <input name="dropoffPoint" type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Puerto de Palma..." />
+                      <input {...register('dropoffPoint')} type="text" className="w-full bg-white border border-blue-100 focus:border-blue-400 rounded-xl p-3 text-xs outline-none" placeholder="Puerto de Palma..." />
                     </div>
                   </div>
                 )}
 
                 {/* Hidden fields for coords and link (transport can optionally have them) */}
-                <input name="link" type="hidden" />
-                <input name="mapCoords" type="hidden" />
+                <input {...register('link')} type="hidden" />
+                <input {...register('mapCoords')} type="hidden" />
               </div>
             )}
 
@@ -445,34 +546,34 @@ export const LocationForm = ({
 
                 <div>
                   <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Dirección</label>
-                  <input name="address" type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="C/ Gran Via 123, Barcelona..." />
+                  <input {...register('address')} type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="C/ Gran Via 123, Barcelona..." />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Nº Habitación</label>
-                    <input name="roomNumber" type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="Suite 401" />
+                    <input {...register('roomNumber')} type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="Suite 401" />
                   </div>
                   <div>
                     <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Confirmación</label>
-                    <input name="logisticsConfirmation" type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="CONF123" />
+                    <input {...register('logisticsConfirmation')} type="text" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs font-mono tracking-widest uppercase outline-none" placeholder="CONF123" />
                   </div>
                 </div>
 
                 <div>
                   <label className="text-[9px] tracking-wider font-bold text-amber-700/60 uppercase mb-2 block">Google Maps Link (Opcional)</label>
-                  <input name="link" type="url" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="https://maps.app.goo.gl/..." />
-                  <input name="mapCoords" type="hidden" />
+                  <input {...register('link')} type="url" className="w-full bg-white border border-amber-100 focus:border-amber-400 rounded-xl p-3 text-xs outline-none" placeholder="https://maps.app.goo.gl/..." />
+                  <input {...register('mapCoords')} type="hidden" />
                 </div>
 
-                <div id="coordsDisplay" className="hidden">
+                <div id="coordsDisplay" className={watch('mapCoords') ? 'block' : 'hidden'}>
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">📍 Coordenadas</label>
-                  <input name="coordsReadonly" type="text" readOnly className="w-full bg-nature-mint/20 border border-nature-primary/20 rounded-xl p-4 text-nature-primary outline-none text-xs font-mono cursor-default" />
+                  <input {...register('coordsReadonly')} type="text" readOnly className="w-full bg-nature-mint/20 border border-nature-primary/20 rounded-xl p-4 text-nature-primary outline-none text-xs font-mono cursor-default" />
                 </div>
 
                 {formCat === 'hotel-checkout' && (
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="lateCheckout" className="accent-amber-600 w-4 h-4" />
+                    <input type="checkbox" {...register('lateCheckout')} className="accent-amber-600 w-4 h-4" />
                     <span className="text-xs font-bold text-amber-700">Late Checkout</span>
                   </label>
                 )}
@@ -486,52 +587,54 @@ export const LocationForm = ({
                   <span className="text-nature-primary text-lg">🕒</span>
                   <span className="text-[10px] font-black uppercase tracking-widest text-nature-primary/50">Horarios</span>
                 </div>
-                {(() => {
-                  const showSlot = false;
-                  return (
-                    <div className="space-y-6">
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 flex items-center justify-between">
-                            <span>
-                              {catGroup === 'transport' ? (formCat.includes('arrival') ? 'Hora Llegada' : 'Hora Salida') :
-                                catGroup === 'accommodation' ? (formCat === 'hotel-checkout' ? 'Hora Check-out' : 'Hora Check-in') :
-                                  'Inicio (Opcional)'}
-                            </span>
-                            <label className="flex items-center gap-1 cursor-pointer" title="Fijar esta hora exacta (No recálcular)">
-                              <input type="checkbox" name="isPinnedTime" className="accent-nature-primary w-3 h-3" />
-                              <span className="normal-case text-[9px] text-nature-primary opacity-80">Fijar Hora</span>
-                            </label>
-                          </label>
-                          <input name="datetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all" />
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <div className="w-1/2">
-                          <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">
-                            {catGroup === 'accommodation' ? (formCat === 'hotel-checkin' ? 'Check-out' : 'Check-in') : 'Fin / Hora Llegada'}
-                          </label>
-                          <input name="checkOutDatetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all" />
-                        </div>
-                        <div className="w-1/2">
-                          <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración</label>
-                          <div className="flex bg-gray-50 border border-gray-100 focus-within:border-nature-mint focus-within:bg-white rounded-xl overflow-hidden transition-all">
-                            <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
-                            <div className="w-px bg-gray-200 my-2"></div>
-                            <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas</label>
-                        <textarea name="notes" rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
-                          placeholder={catGroup === 'transport' ? 'Info del trayecto, escalas...' : catGroup === 'accommodation' ? 'Wifi, desayuno incluido...' : 'Recordar entradas, dress code...'}></textarea>
-                      </div>
+                <div className="space-y-6">
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 flex items-center justify-between">
+                        <span>
+                          {catGroup === 'transport' ? (formCat.includes('arrival') ? 'Hora Llegada' : 'Hora Salida') :
+                            catGroup === 'accommodation' ? (formCat === 'hotel-checkout' ? 'Hora Check-out' : 'Hora Check-in') :
+                              'Inicio (Opcional)'}
+                        </span>
+                      </label>
+                      <input {...register('datetime')} type="time" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all font-mono" />
                     </div>
-                  );
-                })()}
+                  </div>
+
+                  <div className="flex gap-4">
+                    {catGroup === 'accommodation' && formCat === 'hotel-checkin' ? (
+                      <div className="w-1/2">
+                        <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Noches</label>
+                        <select {...register('nights')} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all cursor-pointer font-bold text-nature-primary">
+                          {[...Array(14)].map((_, i) => (
+                            <option key={i + 1} value={i + 1}>{i + 1} Noche{i > 0 ? 's' : ''}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="w-1/2">
+                        <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración</label>
+                        <div className="flex bg-gray-50 border border-gray-100 focus-within:border-nature-mint focus-within:bg-white rounded-xl overflow-hidden transition-all">
+                          <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
+                          <div className="w-px bg-gray-200 my-2"></div>
+                          <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent p-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="w-1/2">
+                      <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">
+                        {catGroup === 'accommodation' ? (formCat === 'hotel-checkin' ? 'Hora Check-out' : 'Check-in') : 'Fin / Hora Llegada'}
+                      </label>
+                      <input {...register('checkOutDatetime')} type="time" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all font-mono text-gray-500" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas</label>
+                    <textarea {...register('notes')} rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
+                      placeholder={catGroup === 'transport' ? 'Info del trayecto, escalas...' : catGroup === 'accommodation' ? 'Wifi, desayuno incluido...' : 'Recordar entradas, dress code...'}></textarea>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -559,18 +662,18 @@ export const LocationForm = ({
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 flex items-center justify-between">
                     <span>Inicio (Opcional)</span>
                     <label className="flex items-center gap-1 cursor-pointer" title="Fijar esta hora exacta (No recálcular)">
-                      <input type="checkbox" name="isPinnedTime" className="accent-nature-primary w-3 h-3" />
+                      <input type="checkbox" {...register('isPinnedTime')} className="accent-nature-primary w-3 h-3" />
                       <span className="normal-case text-[9px] text-nature-primary opacity-80">Fijar Hora</span>
                     </label>
                   </label>
-                  <input name="datetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all" />
+                  <input {...register('datetime')} type="time" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none text-nature-primary transition-all font-mono" />
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <div className="w-1/2">
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Fin / Hora Llegada</label>
-                  <input name="checkOutDatetime" type="datetime-local" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all" />
+                  <input {...register('checkOutDatetime')} type="time" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-xs outline-none transition-all font-mono" />
                 </div>
                 <div className="w-1/2">
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Duración</label>
@@ -584,7 +687,7 @@ export const LocationForm = ({
 
               <div>
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Notas</label>
-                <textarea name="notes" rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
+                <textarea {...register('notes')} rows={4} className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-nature-text placeholder-gray-300 resize-none text-sm outline-none leading-relaxed transition-all"
                   placeholder="Recordar entradas, dress code..."></textarea>
               </div>
             </div>
@@ -606,8 +709,8 @@ export const LocationForm = ({
             <div className="flex gap-4">
               <div className="flex-1">
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Coste/Precio</label>
-                <input name="priceAmount" type="number" step="0.01" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-lg font-mono outline-none transition-all" placeholder="0.00" />
-                <input name="cost" type="hidden" value="0" />
+                <input {...register('priceAmount')} type="number" step="0.01" className="w-full bg-gray-50 border border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-4 text-lg font-mono outline-none transition-all" placeholder="0.00" />
+                <input {...register('cost')} type="hidden" value="0" />
               </div>
               <div className="flex-[0.5]">
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Divisa</label>
@@ -631,7 +734,7 @@ export const LocationForm = ({
 
             <div>
               <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Referencia (Booking/Vuelo)</label>
-              <input name="bookingRef" type="text" className="w-full bg-gray-50 border text-center font-mono tracking-widest uppercase border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-sm outline-none placeholder-gray-200 transition-all" placeholder="XYZ123" />
+              <input {...register('bookingRef')} type="text" className="w-full bg-gray-50 border text-center font-mono tracking-widest uppercase border-gray-100 focus:border-nature-mint focus:bg-white rounded-xl p-3 text-sm outline-none placeholder-gray-200 transition-all" placeholder="XYZ123" />
             </div>
           </div>
 
@@ -688,7 +791,7 @@ export const LocationForm = ({
             {formId && <button type="button" onClick={resetForm} className="w-full text-xs text-gray-400 hover:text-red-500 py-3 font-bold uppercase tracking-widest mt-2 transition-colors">Cancelar</button>}
           </div>
         </form>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };

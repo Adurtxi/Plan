@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { X, Clock, Coffee } from 'lucide-react';
-
-import { useLocations, useAddLocation, useUpdateLocation } from '../../hooks/useTripData';
+import { useForm } from 'react-hook-form';
+import { extractTimeFromISO, combineDayWithTime } from '../../utils/dateUtils';
+import { useAppStore, computeDateForDay } from '../../store';
+import { useLocations, useAddLocation, useUpdateLocation, useTripVariants } from '../../hooks/useTripData';
 
 interface FreeTimeSheetProps {
   isOpen: boolean;
@@ -12,49 +14,68 @@ interface FreeTimeSheetProps {
   onSave: () => void;
 }
 
+interface FreeTimeFormInputs {
+  title: string;
+  datetime: string;
+  durHours: string | number;
+  durMins: string | number;
+}
+
 export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave }: FreeTimeSheetProps) => {
   const { data: locations = [] } = useLocations();
+  const { data: tripVariants = [] } = useTripVariants();
+  const { activeGlobalVariantId } = useAppStore();
   const { mutateAsync: addLocation } = useAddLocation();
   const { mutateAsync: updateLocation } = useUpdateLocation();
 
-  const [title, setTitle] = useState('Tiempo Libre');
-  const [datetime, setDatetime] = useState('');
-  const [durHours, setDurHours] = useState<number | string>('');
-  const [durMins, setDurMins] = useState<number | string>('');
+  const { register, handleSubmit, reset } = useForm<FreeTimeFormInputs>({
+    defaultValues: {
+      title: 'Tiempo Libre',
+      datetime: '',
+      durHours: '',
+      durMins: ''
+    }
+  });
 
   useEffect(() => {
     if (isOpen) {
       if (formId) {
         const item = locations.find(l => l.id === formId);
         if (item) {
-          setTitle(item.title || 'Tiempo Libre');
-          setDatetime(item.datetime || '');
-          if (item.durationMinutes !== undefined) {
-            setDurHours(Math.floor(item.durationMinutes / 60) || '');
-            setDurMins(item.durationMinutes % 60 || '');
-          } else {
-            setDurHours('');
-            setDurMins('');
-          }
+          reset({
+            title: item.title || 'Tiempo Libre',
+            datetime: extractTimeFromISO(item.datetime),
+            durHours: item.durationMinutes ? Math.floor(item.durationMinutes / 60) : '',
+            durMins: item.durationMinutes ? item.durationMinutes % 60 : ''
+          });
         }
       } else {
-        setTitle('Tiempo Libre');
-        setDatetime('');
-        setDurHours('');
-        setDurMins('');
+        reset({
+          title: 'Tiempo Libre',
+          datetime: '',
+          durHours: '',
+          durMins: ''
+        });
       }
     }
-  }, [isOpen, formId, locations]);
+  }, [isOpen, formId, locations, reset]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const totalMins = (Number(durHours || 0) * 60) + Number(durMins || 0);
+  const onSubmit = async (data: FreeTimeFormInputs) => {
+    const totalMins = (Number(data.durHours || 0) * 60) + Number(data.durMins || 0);
     const finalDuration = totalMins > 0 ? totalMins : undefined;
-    const finalDatetime = datetime || undefined;
+
+    let finalDatetime = undefined;
+    let isPinnedTime = false;
+    if (data.datetime) {
+      const targetDate = computeDateForDay(day, tripVariants, activeGlobalVariantId);
+      if (targetDate) {
+        finalDatetime = combineDayWithTime(targetDate, data.datetime);
+        isPinnedTime = true;
+      }
+    }
 
     const baseData = {
-      title,
+      title: data.title,
       cat: 'free' as const,
       priority: 'optional' as const,
       cost: '0',
@@ -63,6 +84,7 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
       images: [],
       reservationStatus: 'idea' as const,
       datetime: finalDatetime,
+      isPinnedTime,
       durationMinutes: finalDuration,
       attachments: [],
     };
@@ -114,17 +136,15 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">Nombre del Hueco</label>
               <input
                 type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                {...register('title', { required: true })}
                 placeholder="Ej. Siesta, Descanso, Comida libre..."
                 className="w-full bg-gray-50 border-0 rounded-xl p-3 text-sm focus:ring-2 focus:ring-nature-primary/20 placeholder-gray-400"
-                required
               />
             </div>
 
@@ -132,10 +152,9 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">Hora (Opcional)</label>
                 <input
-                  type="datetime-local"
-                  value={datetime}
-                  onChange={(e) => setDatetime(e.target.value)}
-                  className="w-full bg-gray-50 border-0 rounded-xl p-3 text-sm focus:ring-2 focus:ring-nature-primary/20 text-nature-text"
+                  type="time"
+                  {...register('datetime')}
+                  className="w-full bg-gray-50 border-0 rounded-xl p-3 text-sm focus:ring-2 focus:ring-nature-primary/20 text-nature-text font-mono"
                 />
               </div>
 
@@ -144,9 +163,9 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
                   <Clock size={12} /> Duración
                 </label>
                 <div className="flex bg-gray-50 border-0 focus-within:ring-2 focus-within:ring-nature-primary/20 rounded-xl overflow-hidden transition-all h-[44px]">
-                  <input type="number" min="0" value={durHours} onChange={e => setDurHours(e.target.value)} className="w-1/2 bg-transparent px-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
+                  <input type="number" min="0" {...register('durHours')} className="w-1/2 bg-transparent px-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="H" />
                   <div className="w-px bg-gray-200 my-2"></div>
-                  <input type="number" min="0" max="59" step="5" value={durMins} onChange={e => setDurMins(e.target.value)} className="w-1/2 bg-transparent px-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
+                  <input type="number" min="0" max="59" step="5" {...register('durMins')} className="w-1/2 bg-transparent px-3 text-sm outline-none text-center font-bold text-nature-text" placeholder="Min" />
                 </div>
               </div>
             </div>
@@ -160,7 +179,7 @@ export const FreeTimeSheet = ({ isOpen, onClose, formId, day, variantId, onSave 
 
         <div className="p-6 border-t border-gray-100 bg-white">
           <button
-            onClick={handleSubmit}
+            onClick={handleSubmit(onSubmit)}
             className="w-full bg-nature-primary text-white py-3.5 rounded-xl font-bold tracking-wide hover:bg-nature-accent transition-colors shadow-solid hover:translate-y-[2px] hover:shadow-none active:translate-y-[4px]"
           >
             {formId ? 'Guardar Cambios' : 'Añadir al Plan'}

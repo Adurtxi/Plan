@@ -104,6 +104,7 @@ export interface LocationItem {
   roomNumber?: string;
   address?: string;
   lateCheckout?: boolean;
+  nights?: number;
 
   // Food-specific
   mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'tapas';

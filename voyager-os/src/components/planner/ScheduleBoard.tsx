@@ -35,9 +35,10 @@ interface BoardColumnProps {
   movingItemId?: number | null;
   executeMoveHere?: (itemId: number, targetDay: string, targetVariant: string, targetGroupId?: string, insertBeforeId?: number | null) => void;
   viewMode?: 'split-horizontal' | 'split-vertical' | 'map-only' | 'board-only';
+  onTimeConflict?: (item: LocationItem, suggestedDatetime: string, baseDate: Date) => void;
 }
 
-const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequestMove, mergeTargetId }: { groupId: string, items: LocationItem[], handleEdit: any, handleCardClick: any, onRequestMove: any, mergeTargetId?: number | null }) => {
+const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequestMove, mergeTargetId, isMovingMode, onTimeConflict }: { groupId: string, items: LocationItem[], handleEdit: any, handleCardClick: any, onRequestMove: any, mergeTargetId?: number | null, isMovingMode?: boolean, onTimeConflict?: (item: LocationItem, suggestedDatetime: string, baseDate: Date) => void }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `group-${groupId}`,
   });
@@ -74,8 +75,10 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
                   item={item}
                   onClick={() => handleEdit(item.id)}
                   onCardClick={() => handleCardClick(item.id)}
-                  onRequestMove={() => onRequestMove(item.id)}
-                  isMergeTarget={item.id === mergeTargetId}
+                  onRequestMove={() => onRequestMove?.(item.id)}
+                  isMovingMode={isMovingMode}
+                  isMergeTarget={mergeTargetId === item.id}
+                  onTimeConflict={onTimeConflict && (item as any).suggestedDatetime && (item as any).baseDate ? () => onTimeConflict(item, (item as any).suggestedDatetime, (item as any).baseDate) : undefined}
                 />
                 {nextItem && item.cat !== 'free' && !isTransportCat(item.cat) && nextItem.cat !== 'free' && !isTransportCat(nextItem.cat) && (
                   <div className="mt-1 mb-0.5 w-full scale-[0.98] opacity-90">
@@ -91,7 +94,7 @@ const GroupContainer = ({ groupId, items, handleEdit, handleCardClick, onRequest
   );
 };
 
-const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, viewMode }: BoardColumnProps) => {
+const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, viewMode, onTimeConflict }: BoardColumnProps) => {
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
   const optimisticLocations = useAppStore(s => s.optimisticLocations);
   const { showDialog, addToast, toggleFilterDay, filterDays, activeDayVariants, setActiveDayVariant, activeGlobalVariantId } = useAppStore();
@@ -128,8 +131,14 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
 
     return rawFiltered.map((loc, index) => {
       let finalTime = new Date(currentTime);
+      let suggestedDatetime: string | undefined = undefined;
+
       if (loc.isPinnedTime && loc.datetime) {
         const pinnedTime = new Date(loc.datetime);
+        // Check if the pinned time is different from the current calculated time
+        if (pinnedTime.getHours() !== finalTime.getHours() || pinnedTime.getMinutes() !== finalTime.getMinutes()) {
+          suggestedDatetime = finalTime.toISOString(); // Suggest the calculated time
+        }
         finalTime.setHours(pinnedTime.getHours(), pinnedTime.getMinutes(), 0, 0);
       }
 
@@ -146,8 +155,12 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
       }
 
       currentTime = new Date(finalTime.getTime() + (duration + transportTime) * 60000);
-      return { ...loc, derivedDatetime: finalTime.toISOString() };
-    });
+      return {
+        ...loc,
+        derivedDatetime: finalTime.toISOString(),
+        suggestedDatetime
+      } as LocationItem & { suggestedDatetime?: string; baseDate?: Date };
+    }).map(loc => ({ ...loc, baseDate }));
   }, [dayId, activeVariant, transports, tripVariants, activeGlobalVariantId, propLocations, optimisticLocations]);
 
   const isMovingMode = !!movingItemId;
@@ -213,6 +226,8 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
               handleCardClick={handleCardClick}
               onRequestMove={onRequestMove}
               mergeTargetId={mergeTargetId}
+              isMovingMode={isMovingMode}
+              onTimeConflict={onTimeConflict}
             />
             {showTransport && (
               <div className="relative z-10 mx-1 mb-1 w-full">
@@ -241,6 +256,8 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
                 onCardClick={() => handleCardClick(itemBlock.item.id)}
                 onRequestMove={() => onRequestMove && onRequestMove(itemBlock.item.id)}
                 isMergeTarget={itemBlock.item.id === mergeTargetId}
+                isMovingMode={isMovingMode}
+                onTimeConflict={onTimeConflict && (itemBlock.item as any).suggestedDatetime && (itemBlock.item as any).baseDate ? () => onTimeConflict(itemBlock.item, (itemBlock.item as any).suggestedDatetime, (itemBlock.item as any).baseDate) : undefined}
               />
             </div>
             {showTransport && (
@@ -254,7 +271,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
     });
 
     return { locationList: list, groupElements, blockMeta };
-  }, [filteredLocations, handleEdit, handleCardClick, onRequestMove, movingItemId]);
+  }, [filteredLocations, handleEdit, handleCardClick, onRequestMove, movingItemId, mergeTargetId, isMovingMode, onTimeConflict]);
 
   const sortableItemsIds = useMemo(() => {
     const ids: string[] = [];
@@ -411,9 +428,10 @@ interface ScheduleBoardProps {
   mergeTargetId?: number | null;
   movingItemId?: number | null;
   executeMoveHere?: (itemId: number, targetDay: string, targetVariant: string, targetGroupId?: string, insertBeforeId?: number | null) => void;
+  onTimeConflict?: (item: LocationItem, suggestedDatetime: string, baseDate: Date) => void;
 }
 
-export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove, mergeTargetId, movingItemId, executeMoveHere }: ScheduleBoardProps) => {
+export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, onTimeConflict }: ScheduleBoardProps) => {
   const { filterDays, activeGlobalVariantId } = useAppStore();
   const { data: locations = [] } = useLocations();
   const { data: tripVariants = [] } = useTripVariants();
@@ -471,6 +489,7 @@ export const ScheduleBoard = ({ handleEdit, handleCardClick, handleAddNewToDay, 
                 movingItemId={movingItemId}
                 executeMoveHere={executeMoveHere}
                 viewMode={viewMode}
+                onTimeConflict={onTimeConflict}
               />
             ))}
           </div>

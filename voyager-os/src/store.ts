@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { ChecklistItem, LocationItem, ImageFile, TransportSegment, TripVariant } from './types';
+import { addDays, setDateFromOther } from './utils/dateUtils';
 
 interface VoyagerDB extends DBSchema {
   locations: { key: number; value: LocationItem };
@@ -36,27 +37,23 @@ export const computeDateForDay = (dayId: string, tripVariants: TripVariant[], gl
   const variant = tripVariants.find(v => v.id === globalVariantId) || tripVariants.find(v => v.id === 'default');
   if (!variant?.startDate) return null;
 
-  const start = new Date(variant.startDate);
   const dayIndexMatch = dayId.match(/^day-(\d+)$/);
   if (!dayIndexMatch) return null;
 
   const dayIndex = parseInt(dayIndexMatch[1], 10) - 1;
   if (isNaN(dayIndex) || dayIndex < 0) return null;
 
-  const targetDate = new Date(start);
-  targetDate.setDate(targetDate.getDate() + dayIndex);
-  return targetDate;
+  return addDays(variant.startDate, dayIndex);
 };
 
 const syncItemDateToDay = (item: LocationItem, targetDayId: string, tripVariants: TripVariant[], globalVariantId: string) => {
   if (!item.datetime || targetDayId === 'unassigned') return;
   const targetDate = computeDateForDay(targetDayId, tripVariants, globalVariantId);
   if (targetDate) {
-    const d = new Date(item.datetime);
-    d.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-    item.datetime = d.toISOString();
+    item.datetime = setDateFromOther(item.datetime, targetDate);
   }
 };
+
 
 const initDB = () => {
   if (!dbPromise) {
@@ -90,6 +87,31 @@ const initDB = () => {
     });
   }
   return dbPromise;
+};
+
+const autoReorderByDatetime = async (db: IDBPDatabase<VoyagerDB>, day: string, variantId: string, globalVariantId: string) => {
+  const allLocs = await db.getAll('locations');
+  const dayLocs = allLocs.filter(l =>
+    l.day === day &&
+    (l.variantId || 'default') === (variantId || 'default') &&
+    (l.globalVariantId || 'default') === (globalVariantId || 'default')
+  );
+
+  if (dayLocs.length <= 1) return;
+
+  dayLocs.sort((a, b) => {
+    const timeA = a.datetime ? new Date(a.datetime).getTime() : Infinity;
+    const timeB = b.datetime ? new Date(b.datetime).getTime() : Infinity;
+    if (timeA === timeB) return (a.order || 0) - (b.order || 0);
+    return timeA - timeB;
+  });
+
+  const baseOrder = Date.now() - 1000000;
+  for (let i = 0; i < dayLocs.length; i++) {
+    const loc = dayLocs[i];
+    loc.order = baseOrder + (i * 1000);
+    await db.put('locations', loc);
+  }
 };
 
 interface AppState {
@@ -386,6 +408,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().saveLocationHistory();
     const db = await initDB();
     await db.put('locations', loc);
+    if (loc.isPinnedTime) {
+      await autoReorderByDatetime(db, loc.day, loc.variantId || 'default', loc.globalVariantId || 'default');
+    }
     await get().loadData();
   },
 
@@ -393,6 +418,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().saveLocationHistory();
     const db = await initDB();
     await db.put('locations', loc);
+    if (loc.isPinnedTime) {
+      await autoReorderByDatetime(db, loc.day, loc.variantId || 'default', loc.globalVariantId || 'default');
+    }
     await get().loadData();
   },
 

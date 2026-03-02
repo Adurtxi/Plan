@@ -12,11 +12,12 @@ import { IdeaInbox } from './IdeaInbox';
 import { MobileTimelineView } from './MobileTimelineView';
 import { MobileMapView } from './MobileMapView';
 import { MobileDaySelector } from './MobileDaySelector';
-import { useAppStore, computeDateForDay } from '../../store';
+import { TimeChangeSheet } from './TimeChangeSheet';
+import { useAppStore } from '../../store';
 import { useResponsive } from '../../hooks/useResponsive';
 import { CardVisual } from '../ui/SortableCard';
 import { DAYS, getCatConfig, isTransportCat, isAccommodationCat } from '../../constants';
-import type { Category, Priority, ReservationStatus, LocationItem } from '../../types';
+import type { Category, Priority, LocationItem } from '../../types';
 import { useLocations, useTransports, useTripVariants, useAddLocation, useUpdateLocation } from '../../hooks/useTripData';
 import { useReorderLocation, useMergeLocations, useMoveToDay, useExecuteMoveHere } from '../../hooks/useTripMutations';
 
@@ -53,6 +54,11 @@ export const PlannerTab = () => {
   const [formCurrency, setFormCurrency] = useState<string>('EUR');
   const [isFormPanelOpen, setIsFormPanelOpen] = useState(false);
   const [isFreeTimeSheetOpen, setIsFreeTimeSheetOpen] = useState(false);
+
+  // Time Change Sheet State
+  const [isTimeChangeSheetOpen, setIsTimeChangeSheetOpen] = useState(false);
+  const [timeChangeItem, setTimeChangeItem] = useState<(LocationItem & { suggestedDatetime?: string }) | null>(null);
+  const [timeChangeBaseDate, setTimeChangeBaseDate] = useState<Date | null>(null);
 
   const [moveToDayModal, setMoveToDayModal] = useState<{ isOpen: boolean, itemId: number | null }>({ isOpen: false, itemId: null });
 
@@ -254,6 +260,12 @@ export const PlannerTab = () => {
     setConflictModalData(null);
   };
 
+  const handleTimeConflict = (item: LocationItem, suggestedDatetime: string, baseDate: Date) => {
+    setTimeChangeItem({ ...item, suggestedDatetime });
+    setTimeChangeBaseDate(baseDate);
+    setIsTimeChangeSheetOpen(true);
+  };
+
   useEffect(() => {
     const listener = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -278,74 +290,6 @@ export const PlannerTab = () => {
     setTempImages(loc.images); setFormPriority(loc.priority); setFormCat(loc.cat);
     setFormSlot(loc.slot || 'Mañana'); setFormCurrency(loc.newPrice?.currency || 'EUR');
     setTimeout(() => {
-      const form = document.getElementById('mainForm') as HTMLFormElement;
-      if (form) {
-        (form.elements.namedItem('link') as HTMLInputElement).value = loc.link || '';
-        (form.elements.namedItem('title') as HTMLInputElement).value = loc.title || '';
-        (form.elements.namedItem('cost') as HTMLInputElement).value = loc.cost;
-        (form.elements.namedItem('notes') as HTMLTextAreaElement).value = loc.notes;
-        if (loc.datetime) (form.elements.namedItem('datetime') as HTMLInputElement).value = loc.datetime;
-        else {
-          const targetDate = computeDateForDay(loc.day, tripVariants, activeGlobalVariantId);
-          if (targetDate) {
-            const dStr = targetDate.toISOString().split('T')[0] + 'T09:00';
-            (form.elements.namedItem('datetime') as HTMLInputElement).value = dStr;
-          }
-        }
-        if (loc.checkOutDatetime) (form.elements.namedItem('checkOutDatetime') as HTMLInputElement).value = loc.checkOutDatetime;
-        if (loc.bookingRef) (form.elements.namedItem('bookingRef') as HTMLInputElement).value = loc.bookingRef;
-        if (loc.logisticsConfirmation) (form.elements.namedItem('logisticsConfirmation') as HTMLInputElement).value = loc.logisticsConfirmation;
-        if (loc.logisticsDetail) (form.elements.namedItem('logisticsDetail') as HTMLInputElement).value = loc.logisticsDetail;
-        setTempAttachments(loc.attachments || []);
-        if (loc.newPrice?.amount) (form.elements.namedItem('priceAmount') as HTMLInputElement).value = loc.newPrice.amount.toString();
-
-        const pinnedInput = form.elements.namedItem('isPinnedTime') as HTMLInputElement;
-        if (pinnedInput) pinnedInput.checked = !!loc.isPinnedTime;
-
-        const durInput = form.elements.namedItem('durationMinutes') as HTMLInputElement;
-        if (durInput) durInput.value = loc.durationMinutes ? loc.durationMinutes.toString() : '';
-
-        // Populate specialized fields
-        const setField = (name: string, val?: string) => {
-          const el = form.elements.namedItem(name) as HTMLInputElement;
-          if (el && val) el.value = val;
-        };
-        setField('company', loc.company);
-        setField('flightNumber', loc.flightNumber);
-        setField('terminal', loc.terminal);
-        setField('gate', loc.gate);
-        setField('platform', loc.platform);
-        setField('seat', loc.seat);
-        setField('station', loc.station);
-        setField('pickupPoint', loc.pickupPoint);
-        setField('dropoffPoint', loc.dropoffPoint);
-        setField('transportApp', loc.transportApp);
-        setField('address', loc.address);
-        setField('roomNumber', loc.roomNumber);
-        setField('bestTimeHint', loc.bestTimeHint);
-        setField('city', loc.city);
-        setField('tags', loc.tags?.join(', '));
-
-        // Checkbox: lateCheckout
-        const lateCheckoutInput = form.elements.namedItem('lateCheckout') as HTMLInputElement;
-        if (lateCheckoutInput) lateCheckoutInput.checked = !!loc.lateCheckout;
-
-        // Radio: mealType
-        if (loc.mealType) {
-          const mealRadio = form.querySelector(`input[name="mealType"][value="${loc.mealType}"]`) as HTMLInputElement;
-          if (mealRadio) mealRadio.checked = true;
-        }
-
-        // Show coords if available
-        if (loc.coords) {
-          const mapCoordsInput = form.elements.namedItem('mapCoords') as HTMLInputElement;
-          if (mapCoordsInput) mapCoordsInput.value = `${loc.coords.lat},${loc.coords.lng}`;
-          const coordsDisplay = document.getElementById('coordsDisplay');
-          if (coordsDisplay) coordsDisplay.classList.remove('hidden');
-          const coordsReadonly = form.elements.namedItem('coordsReadonly') as HTMLInputElement;
-          if (coordsReadonly) coordsReadonly.value = `${loc.coords.lat.toFixed(6)}, ${loc.coords.lng.toFixed(6)}`;
-        }
-      }
       setIsFormPanelOpen(true); setSelectedLocationId(null); setIsAddMode(false);
     }, 0);
   };
@@ -353,10 +297,6 @@ export const PlannerTab = () => {
   const resetForm = () => {
     setFormId(null); setTempImages([]); setTempAttachments([]); setFormPriority('optional'); setFormCat('sight');
     setFormSlot('Mañana'); setFormCurrency('EUR'); setPreselectedDay('unassigned'); setPreselectedVariant('default');
-    (document.getElementById('mainForm') as HTMLFormElement)?.reset();
-    // Hide coords display
-    const coordsDisplay = document.getElementById('coordsDisplay');
-    if (coordsDisplay) coordsDisplay.classList.add('hidden');
   };
 
   const handleAddNewToDay = (day: string, variantId: string) => {
@@ -367,16 +307,7 @@ export const PlannerTab = () => {
     setSelectedLocationId(null);
     setIsAddMode(false);
 
-    const targetDate = computeDateForDay(day, tripVariants, activeGlobalVariantId);
-    if (targetDate) {
-      setTimeout(() => {
-        const form = document.getElementById('mainForm') as HTMLFormElement;
-        if (form) {
-          const dtInput = form.elements.namedItem('datetime') as HTMLInputElement;
-          if (dtInput) dtInput.value = targetDate.toISOString().split('T')[0] + 'T09:00';
-        }
-      }, 0);
-    }
+    // LocationForm will handle default datetime now based on targetDate computed internally or handled by its effect.
   };
 
   const handleAddFreeTimeToDay = (day: string, variantId: string) => {
@@ -388,10 +319,8 @@ export const PlannerTab = () => {
     setIsAddMode(false);
   };
 
-  const handleAddLocation = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const link = (formData.get('link') as string) || '';
+  const handleAddLocation = (data: any) => {
+    const link = data.link || '';
     let coords = null;
     // Try extracting coords from link
     const m1 = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
@@ -400,7 +329,7 @@ export const PlannerTab = () => {
     else if (m1) coords = { lat: parseFloat(m1[1]), lng: parseFloat(m1[2]) };
     // Fallback: read coords from hidden mapCoords field (set by map click)
     if (!coords) {
-      const mapCoordsVal = formData.get('mapCoords') as string;
+      const mapCoordsVal = data.mapCoords as string;
       if (mapCoordsVal) {
         const parts = mapCoordsVal.split(',');
         if (parts.length === 2) {
@@ -423,37 +352,40 @@ export const PlannerTab = () => {
       }
     }
 
-    const rawAmount = formData.get('priceAmount') as string;
+    const rawAmount = data.priceAmount;
     const priceAmount = rawAmount ? parseFloat(rawAmount) : 0;
-    const priceCurrency = (formData.get('priceCurrency') as string) || 'EUR';
+    const priceCurrency = formCurrency || 'EUR';
 
-    const userDateTime = formData.get('datetime') as string;
+    const userDateTime = data.datetime as string;
     const isTransportation = isTransportCat(formCat);
     const isAccommodation = isAccommodationCat(formCat);
-    const isPinnedTime = formData.get('isPinnedTime') === 'on' || ((isTransportation || isAccommodation) && !!userDateTime);
+    const isPinnedTime = data.isPinnedTime === true || data.isPinnedTime === 'on' || ((isTransportation || isAccommodation) && !!userDateTime);
 
     // Parse tags safely
-    const rawTags = formData.get('tags') as string || '';
+    const rawTags = data.tags as string || '';
     const parsedTags = rawTags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
+    const durationValue = data.durationMinutes ? parseInt(data.durationMinutes, 10) : undefined;
+    const finalDuration = durationValue && !isNaN(durationValue) && durationValue > 0 ? durationValue : undefined;
 
     // Collect specialized fields from form
     const specializedFields = {
-      company: formData.get('company') as string || undefined,
-      flightNumber: formData.get('flightNumber') as string || undefined,
-      terminal: formData.get('terminal') as string || undefined,
-      gate: formData.get('gate') as string || undefined,
-      platform: formData.get('platform') as string || undefined,
-      seat: formData.get('seat') as string || undefined,
-      station: formData.get('station') as string || undefined,
-      pickupPoint: formData.get('pickupPoint') as string || undefined,
-      dropoffPoint: formData.get('dropoffPoint') as string || undefined,
-      transportApp: formData.get('transportApp') as string || undefined,
-      address: formData.get('address') as string || undefined,
-      roomNumber: formData.get('roomNumber') as string || undefined,
-      lateCheckout: formData.get('lateCheckout') === 'on',
-      mealType: formData.get('mealType') as any || undefined,
-      bestTimeHint: formData.get('bestTimeHint') as string || undefined,
-      city: formData.get('city') as string || undefined,
+      company: data.company || undefined,
+      flightNumber: data.flightNumber || undefined,
+      terminal: data.terminal || undefined,
+      gate: data.gate || undefined,
+      platform: data.platform || undefined,
+      seat: data.seat || undefined,
+      station: data.station || undefined,
+      pickupPoint: data.pickupPoint || undefined,
+      dropoffPoint: data.dropoffPoint || undefined,
+      transportApp: data.transportApp || undefined,
+      address: data.address || undefined,
+      roomNumber: data.roomNumber || undefined,
+      lateCheckout: data.lateCheckout === true || data.lateCheckout === 'on',
+      mealType: data.mealType || undefined,
+      bestTimeHint: data.bestTimeHint || undefined,
+      city: data.city || undefined,
       tags: parsedTags.length > 0 ? parsedTags : undefined,
     };
 
@@ -462,26 +394,27 @@ export const PlannerTab = () => {
       if (existing) {
         updateLocation({
           ...existing,
-          title: formData.get('title') as string || undefined,
+          title: data.title || undefined,
           link,
           coords: finalCoords,
           priority: formPriority,
           cat: formCat,
-          cost: formData.get('cost') as string || '0',
+          cost: data.cost || '0',
           newPrice: { amount: priceAmount, currency: priceCurrency },
-          slot: formData.get('slot') as string,
-          datetime: formData.get('datetime') as string || undefined,
+          slot: formSlot,
+          datetime: data.datetime ? new Date(data.datetime).toISOString() : undefined, // Convert to generic logic later, but leave generic for now
           isPinnedTime,
-          checkOutDatetime: formData.get('checkOutDatetime') as string || undefined,
-          notes: formData.get('notes') as string,
+          checkOutDatetime: data.checkOutDatetime ? new Date(data.checkOutDatetime).toISOString() : undefined,
+          notes: data.notes || '',
           images: tempImages.length > 0 ? tempImages : existing.images,
           day: finalDay,
           variantId: finalVariant,
           globalVariantId: existing.globalVariantId || activeGlobalVariantId || 'default',
-          reservationStatus: (formData.get('reservationStatus') as ReservationStatus) || 'idea',
-          bookingRef: formData.get('bookingRef') as string || undefined,
-          logisticsConfirmation: formData.get('logisticsConfirmation') as string || undefined,
-          logisticsDetail: formData.get('logisticsDetail') as string || undefined,
+          reservationStatus: data.reservationStatus || 'idea',
+          bookingRef: data.bookingRef || undefined,
+          logisticsConfirmation: data.logisticsConfirmation || undefined,
+          logisticsDetail: data.logisticsDetail || undefined,
+          durationMinutes: finalDuration !== undefined ? finalDuration : existing.durationMinutes,
           attachments: tempAttachments.length > 0 ? tempAttachments : existing.attachments || [],
           ...specializedFields,
         });
@@ -489,26 +422,27 @@ export const PlannerTab = () => {
     } else {
       addLocation({
         id: Date.now(),
-        title: formData.get('title') as string || undefined,
+        title: data.title || undefined,
         link,
         coords: finalCoords,
         priority: formPriority,
         cat: formCat,
-        cost: formData.get('cost') as string || '0',
+        cost: data.cost || '0',
         newPrice: { amount: priceAmount, currency: priceCurrency },
-        slot: formData.get('slot') as string,
-        datetime: formData.get('datetime') as string || undefined,
+        slot: formSlot,
+        datetime: data.datetime ? new Date(data.datetime).toISOString() : undefined,
         isPinnedTime,
-        checkOutDatetime: formData.get('checkOutDatetime') as string || undefined,
-        notes: formData.get('notes') as string,
+        checkOutDatetime: data.checkOutDatetime ? new Date(data.checkOutDatetime).toISOString() : undefined,
+        notes: data.notes || '',
         images: tempImages,
         day: finalDay,
         variantId: finalVariant,
         globalVariantId: activeGlobalVariantId || 'default',
-        reservationStatus: (formData.get('reservationStatus') as ReservationStatus) || 'idea',
-        bookingRef: formData.get('bookingRef') as string || undefined,
-        logisticsConfirmation: formData.get('logisticsConfirmation') as string || undefined,
-        logisticsDetail: formData.get('logisticsDetail') as string || undefined,
+        reservationStatus: data.reservationStatus || 'idea',
+        bookingRef: data.bookingRef || undefined,
+        logisticsConfirmation: data.logisticsConfirmation || undefined,
+        logisticsDetail: data.logisticsDetail || undefined,
+        durationMinutes: finalDuration,
         attachments: tempAttachments,
         ...specializedFields,
       });
@@ -599,15 +533,9 @@ export const PlannerTab = () => {
   }, [locations, filterDays, transports, activeDayVariants, displayLocations]);
 
   const showCoordsInForm = (lat: number, lng: number) => {
-    const form = document.getElementById('mainForm') as HTMLFormElement;
-    if (form) {
-      const mapCoordsInput = form.elements.namedItem('mapCoords') as HTMLInputElement;
-      if (mapCoordsInput) mapCoordsInput.value = `${lat},${lng}`;
-      const coordsDisplay = document.getElementById('coordsDisplay');
-      if (coordsDisplay) coordsDisplay.classList.remove('hidden');
-      const coordsReadonly = form.elements.namedItem('coordsReadonly') as HTMLInputElement;
-      if (coordsReadonly) coordsReadonly.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-    }
+    // LocationForm observes state/events or handles map interactions natively now.
+    // Setting global reframeMapCoordinates or using a custom event:
+    window.dispatchEvent(new CustomEvent('update-map-coords', { detail: { lat, lng } }));
   };
 
   const handleMapClick = (lat: number, lng: number) => {
@@ -805,6 +733,7 @@ export const PlannerTab = () => {
                     mergeTargetId={mergeTargetId}
                     movingItemId={movingItemId}
                     executeMoveHere={handleExecuteMoveHere}
+                    onTimeConflict={handleTimeConflict}
                   />
                 </div>
                 {viewMode === 'board-only' && (
@@ -859,6 +788,12 @@ export const PlannerTab = () => {
           day={preselectedDay}
           variantId={preselectedVariant}
           onSave={() => { setIsFreeTimeSheetOpen(false); resetForm(); }}
+        />
+        <TimeChangeSheet
+          isOpen={isTimeChangeSheetOpen}
+          onClose={() => setIsTimeChangeSheetOpen(false)}
+          item={timeChangeItem}
+          baseDate={timeChangeBaseDate}
         />
       </div>
       <DragOverlay dropAnimation={{ duration: 250, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>

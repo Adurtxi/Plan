@@ -2,7 +2,7 @@ import { memo, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
-import { Edit2, CheckCircle2, AlertCircle, Clock, Lightbulb, Lock, GripVertical, MoreVertical, LogOut, ArrowRightCircle, Plus } from 'lucide-react';
+import { Edit2, CheckCircle2, AlertCircle, Clock, Lightbulb, Lock, GripVertical, MoreVertical, LogOut, ArrowRightCircle, Plus, AlertTriangle } from 'lucide-react';
 import type { LocationItem } from '../../types';
 import { CAT_ICONS, CAT_LABELS, isTransportCat } from '../../constants';
 import { useAppStore } from '../../store';
@@ -40,7 +40,8 @@ export const CardVisual = memo(({
   isMovingMode,
   isMergeTarget,
   isSelected,
-  onToggleSelect
+  onToggleSelect,
+  onTimeConflict
 }: {
   item: LocationItem,
   onClick?: () => void,
@@ -53,7 +54,8 @@ export const CardVisual = memo(({
   isMovingMode?: boolean,
   isMergeTarget?: boolean,
   isSelected?: boolean,
-  onToggleSelect?: (e: React.MouseEvent) => void
+  onToggleSelect?: (e: React.MouseEvent) => void,
+  onTimeConflict?: () => void
 }) => {
   const { showDialog, updateLocation, extractFromGroup } = useAppStore();
   const [showMenu, setShowMenu] = useState(false);
@@ -140,15 +142,28 @@ export const CardVisual = memo(({
                             <span className="whitespace-nowrap">{endObj.time} <span className="text-[9px] opacity-70">({endObj.date})</span></span>
                           </>
                         )}
-                        {(item.isPinnedTime || item.datetime) && <Lock size={10} className="text-nature-primary opacity-50 ml-0.5 shrink-0" />}
+                        {(item.isPinnedTime) && <Lock size={10} className="text-nature-primary opacity-50 ml-0.5 shrink-0" />}
                       </span>
+                      {onTimeConflict && (
+                        <button onClick={(e) => { e.stopPropagation(); onTimeConflict(); }} className="ml-1 p-0.5 bg-amber-100 hover:bg-amber-200 text-amber-600 rounded-md transition-colors" title="Desajuste de Horario">
+                          <AlertTriangle size={12} />
+                        </button>
+                      )}
                     </div>
                   );
                 })() : (
                   <div className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
                     <Clock size={12} className="text-nature-primary/70" />
                     {formattedTime ? (
-                      <span className="flex items-center gap-0.5">{formattedTime} {item.isPinnedTime && <Lock size={10} className="text-nature-primary opacity-50" />}</span>
+                      <span className="flex items-center gap-0.5">
+                        {formattedTime}
+                        {item.isPinnedTime && <Lock size={10} className="text-nature-primary opacity-50" />}
+                        {onTimeConflict && (
+                          <button onClick={(e) => { e.stopPropagation(); onTimeConflict(); }} className="ml-0.5 p-0.5 bg-amber-100 hover:bg-amber-200 text-amber-600 rounded-md transition-colors" title="Desajuste de Horario">
+                            <AlertTriangle size={12} />
+                          </button>
+                        )}
+                      </span>
                     ) : (item.slot || 'S/H')}
                   </div>
                 )}
@@ -401,7 +416,8 @@ export const SortableCard = memo(({
   isMovingMode,
   isMergeTarget,
   isSelected,
-  onToggleSelect
+  onToggleSelect,
+  onTimeConflict
 }: {
   item: LocationItem,
   onClick: () => void,
@@ -410,7 +426,8 @@ export const SortableCard = memo(({
   isMovingMode?: boolean,
   isMergeTarget?: boolean,
   isSelected?: boolean,
-  onToggleSelect?: (e: React.MouseEvent) => void
+  onToggleSelect?: (e: React.MouseEvent) => void,
+  onTimeConflict?: () => void
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({
     id: item.id.toString(),
@@ -463,6 +480,7 @@ export const SortableCard = memo(({
             isOver={isOver}
             isSelected={isSelected}
             onToggleSelect={onToggleSelect}
+            onTimeConflict={onTimeConflict}
           />
         </div>
       )}
