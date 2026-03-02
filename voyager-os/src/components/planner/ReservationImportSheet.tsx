@@ -164,15 +164,15 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
         onClick={onClose}
       />
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-[4500] max-h-[85vh] flex flex-col will-change-transform animate-[slideUp_0.3s_ease-out]">
-        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-3 shrink-0" />
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-nature-surface rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-5px_30px_rgba(0,0,0,0.3)] z-[4500] max-h-[85vh] flex flex-col will-change-transform animate-[slideUp_0.3s_ease-out] border-t border-gray-200 dark:border-nature-border">
+        <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto my-3 shrink-0" />
 
-        <div className="px-6 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div className="px-6 pb-4 border-b border-gray-100 dark:border-nature-border flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-xl font-bold font-sans text-nature-text">Inyectar Reserva</h2>
-            <p className="text-sm text-gray-500">Convierte una reserva maestra en tarjetas del plan.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Convierte una reserva maestra en tarjetas del plan.</p>
           </div>
-          <button onClick={onClose} className="p-2 bg-gray-50 text-gray-400 hover:text-nature-primary hover:bg-nature-mint rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-300 hover:text-nature-primary dark:hover:text-nature-primary hover:bg-nature-mint dark:hover:bg-nature-mint/10 rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -180,9 +180,9 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
         <div className="flex-1 overflow-y-auto p-6 custom-scroll">
           {reservations.length === 0 ? (
             <div className="text-center py-10">
-              <Ticket size={48} className="mx-auto text-gray-200 mb-3" />
-              <p className="text-gray-500 font-medium">No hay reservas configuradas.</p>
-              <p className="text-xs text-gray-400 mt-1">Ve a la pestaña de "Logística" para añadir reservas.</p>
+              <Ticket size={48} className="mx-auto text-gray-200 dark:text-gray-700 mb-3" />
+              <p className="text-gray-500 dark:text-gray-400 font-medium">No hay reservas configuradas.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Ve a la pestaña de "Logística" para añadir reservas.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -191,18 +191,18 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
                 const color = CAT_COLORS[res.type === 'flight' ? 'flight-departure' : res.type === 'hotel' ? 'hotel-checkin' : res.type] || '#9ca3af';
 
                 return (
-                  <div key={res.id} className="group relative overflow-hidden bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-4 hover:border-nature-primary/30 hover:shadow-md transition-all">
+                  <div key={res.id} className="group relative overflow-hidden bg-white dark:bg-black/20 border border-gray-100 dark:border-nature-border rounded-2xl p-4 flex items-center gap-4 hover:border-nature-primary/30 dark:hover:border-nature-primary/30 hover:shadow-md transition-all">
                     <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: color }}></div>
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}15`, color }}>
                       <Icon size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-gray-800 text-sm truncate">{res.title}</h4>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                      <h4 className="font-bold text-gray-800 dark:text-white text-sm truncate">{res.title}</h4>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         {res.company && <span className="truncate">{res.company}</span>}
                         {res.startDatetime && (
                           <>
-                            <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
                             <Calendar size={12} className="shrink-0" />
                             <span>{new Date(res.startDatetime).toLocaleDateString()}</span>
                           </>
@@ -211,7 +211,7 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
                     </div>
                     <button
                       onClick={() => handleImport(res)}
-                      className="bg-nature-mint text-nature-primary p-2 flex items-center justify-center rounded-xl hover:bg-nature-primary hover:text-white transition-colors active:scale-95 shrink-0"
+                      className="bg-nature-mint dark:bg-nature-mint/10 text-nature-primary dark:text-nature-primary p-2 flex items-center justify-center rounded-xl hover:bg-nature-primary dark:hover:bg-nature-primary hover:text-white transition-colors active:scale-95 shrink-0"
                       title="Añadir al plan"
                     >
                       <PlusCircle size={20} />

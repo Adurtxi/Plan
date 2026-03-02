@@ -410,7 +410,7 @@ export const DetailModal = () => {
               onCloseParent={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }}
             />
             <div className="flex gap-2 shrink-0 w-full sm:w-auto">
-              <button onClick={handleDuplicate} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-gray-200 text-gray-400 hover:bg-gray-50 hover:text-nature-primary transition-all" title="Duplicar">
+              <button onClick={handleDuplicate} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-nature-primary dark:hover:text-nature-primary transition-all" title="Duplicar">
                 <Copy size={20} />
               </button>
               <button onClick={() => {
@@ -427,7 +427,7 @@ export const DetailModal = () => {
                     addToast('Actividad eliminada', 'success');
                   }
                 });
-              }} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-gray-200 text-red-500 hover:bg-red-50 transition-all"><Trash2 size={20} /></button>
+              }} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-gray-200 dark:border-gray-600 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"><Trash2 size={20} /></button>
             </div>
           </div>
         </div>

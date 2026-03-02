@@ -3,10 +3,22 @@ import { Plus } from 'lucide-react';
 import { useReservations } from '../../hooks/useTripData';
 import { ReservationCard } from './ReservationCard';
 import { ReservationForm } from './ReservationForm';
+import type { ReservationItem } from '../../types';
 
 export const LogisticsTab = () => {
   const { data: reservations = [] } = useReservations();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingRes, setEditingRes] = useState<ReservationItem | null>(null);
+
+  const handleEdit = (res: ReservationItem) => {
+    setEditingRes(res);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setTimeout(() => setEditingRes(null), 300); // clear after animation
+  };
 
   const sortedReservations = [...reservations].sort((a, b) => {
     const timeA = a.startDatetime ? new Date(a.startDatetime).getTime() : Infinity;
@@ -25,7 +37,7 @@ export const LogisticsTab = () => {
           </p>
         </div>
         <button
-          onClick={() => setIsFormOpen(true)}
+          onClick={() => { setEditingRes(null); setIsFormOpen(true); }}
           className="flex items-center gap-2 bg-nature-primary text-white px-5 py-3 rounded-xl font-bold hover:bg-opacity-90 transition-all shadow-md active:scale-95 whitespace-nowrap"
         >
           <Plus size={20} /> Añadir Reserva
@@ -44,7 +56,7 @@ export const LogisticsTab = () => {
               Añade tus vuelos, trenes, hoteles o tickets de actividades. Luego podrás inyectarlos automáticamente en tu planificación diaria.
             </p>
             <button
-              onClick={() => setIsFormOpen(true)}
+              onClick={() => { setEditingRes(null); setIsFormOpen(true); }}
               className="flex items-center gap-2 bg-white border-2 border-nature-primary text-nature-primary px-6 py-3 rounded-xl font-bold hover:bg-nature-mint/10 transition-all shadow-sm"
             >
               <Plus size={20} /> Crear mi primera reserva
@@ -53,14 +65,14 @@ export const LogisticsTab = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 auto-rows-max">
             {sortedReservations.map(res => (
-              <ReservationCard key={res.id} reservation={res} onEdit={() => { }} />
+              <ReservationCard key={res.id} reservation={res} onEdit={() => handleEdit(res)} />
             ))}
           </div>
         )}
       </div>
 
       {/* Slide-over Form */}
-      <ReservationForm isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} />
+      <ReservationForm isOpen={isFormOpen} onClose={handleCloseForm} editTarget={editingRes} />
     </div>
   );
 };

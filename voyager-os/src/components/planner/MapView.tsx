@@ -9,7 +9,7 @@ import type { LocationItem } from '../../types';
 import { CAT_ICONS, CAT_COLORS } from '../../constants';
 
 
-const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
+const createCustomMarker = (item: LocationItem, isHovered?: boolean, isSelected?: boolean) => {
   const isNecessary = item.priority === 'necessary';
   const color = CAT_COLORS[item.cat] || (isNecessary ? '#2D5A27' : '#C4A484');
   const hasImage = item.images && item.images.length > 0;
@@ -18,15 +18,15 @@ const createCustomMarker = (item: LocationItem, isHovered?: boolean) => {
     ? `<img src="${item.images[0].data}" class="w-full h-full object-cover rounded-full absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />`
     : '';
 
-  const titleHtml = item.title ? `<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-white px-2 py-1 rounded shadow-md text-[10px] font-bold text-gray-800 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">${item.title}</div>` : '';
+  const titleVisible = item.title ? `<div class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded shadow-md text-[10px] font-bold whitespace-nowrap pointer-events-none ${isSelected ? 'bg-nature-primary text-white opacity-100 -translate-y-2' : 'bg-white text-gray-800 opacity-0 group-hover:opacity-100'} transition-all">${item.title}</div>` : '';
 
   const html = `
-    <div class="pin-marker group relative ${isHovered ? 'scale-125 z-50' : 'hover:scale-125 hover:z-50'} transition-transform duration-300 ${isNecessary && !isHovered ? 'marker-pulse' : ''}" style="background-color: ${color};">
+    <div class="pin-marker group relative ${isHovered || isSelected ? 'scale-125 z-[600]' : 'hover:scale-125 hover:z-[600]'} transition-transform duration-300 ${isNecessary && !isHovered && !isSelected ? 'marker-pulse' : ''}" style="background-color: ${color}; ${isSelected ? 'box-shadow: 0 0 0 3px white, 0 0 0 5px ' + color + ';' : ''}">
       <div class="pin-inner text-white relative overflow-hidden flex items-center justify-center">
         <span class="z-10 group-hover:opacity-0 transition-opacity duration-300">${CAT_ICONS[item.cat]}</span>
         ${imgHtml}
       </div>
-      ${titleHtml}
+      ${titleVisible}
     </div>
   `;
   return L.divIcon({ html, className: 'custom-marker-container', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -45] });
@@ -44,7 +44,7 @@ const MapUpdater = ({ locations, reframeTrigger }: { locations: LocationItem[], 
   // Handle zooming to manual coordinates (from Lightbox)
   useEffect(() => {
     if (reframeMapCoordinates) {
-      map.flyTo([reframeMapCoordinates.lat, reframeMapCoordinates.lng], 16, { duration: 0.8 });
+      map.flyTo([reframeMapCoordinates.lat, reframeMapCoordinates.lng], 18, { duration: 0.8 });
       // Limpiar después de iniciar el vuelo, usando un pequeño timeout para que react procese
       setTimeout(() => setReframeMapCoordinates(null), 100);
     }
@@ -64,17 +64,20 @@ const MapUpdater = ({ locations, reframeTrigger }: { locations: LocationItem[], 
 
 
   // Handle initial load - fit bounds once if there are locations
-  const [hasDoneInitialFit, setHasDoneInitialFit] = useState(false);
+  const initialFitRef = useRef(false);
   useEffect(() => {
-    if (!hasDoneInitialFit && locations.length > 0) {
-      const visibleLocations = locations.filter(loc => loc.coords);
-      if (visibleLocations.length > 0) {
-        const bounds = L.latLngBounds(visibleLocations.map(loc => [loc.coords!.lat, loc.coords!.lng] as [number, number]));
-        map.fitBounds(bounds, { padding: [50, 50] });
-        setHasDoneInitialFit(true);
+    if (!initialFitRef.current && locations.length > 0) {
+      initialFitRef.current = true;
+      // If we are about to reframe, don't auto-fit bounds, let the flyTo take over
+      if (!reframeMapCoordinates) {
+        const visibleLocations = locations.filter(loc => loc.coords);
+        if (visibleLocations.length > 0) {
+          const bounds = L.latLngBounds(visibleLocations.map(loc => [loc.coords!.lat, loc.coords!.lng] as [number, number]));
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
       }
     }
-  }, [locations, map, hasDoneInitialFit]);
+  }, [locations, map, reframeMapCoordinates]);
 
   return null;
 };
@@ -145,7 +148,7 @@ const MapCursorHandler = ({ isAddMode, isDrawingMode }: { isAddMode: boolean, is
 };
 
 export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddMode, setIsAddMode }: MapViewProps) => {
-  const { setSelectedLocationId, isDrawingRouteFor, setDrawingRouteFor, addRoutePoint } = useAppStore();
+  const { selectedLocationId, setSelectedLocationId, isDrawingRouteFor, setDrawingRouteFor, addRoutePoint } = useAppStore();
   const filteredLocations = useFilteredLocations();
   const [mapType, setMapType] = useState<'m' | 's'>('m'); // 'm' for Map, 's' for Satellite
   const [tempMarker, setTempMarker] = useState<{ lat: number, lng: number } | null>(null);
@@ -174,7 +177,7 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
         }} />}
         {routePolylines}
         {filteredLocations.filter(l => l.coords).map(loc => (
-          <Marker key={loc.id} position={[loc.coords!.lat, loc.coords!.lng]} icon={createCustomMarker(loc)} eventHandlers={{ click: () => setSelectedLocationId(loc.id) }}>
+          <Marker key={loc.id} position={[loc.coords!.lat, loc.coords!.lng]} icon={createCustomMarker(loc, false, loc.id === selectedLocationId)} eventHandlers={{ click: () => setSelectedLocationId(loc.id) }}>
             <Popup className="font-sans font-bold text-[#333]">{loc.title || loc.notes?.split("\n")[0] || "Ubicación"}</Popup>
           </Marker>
         ))}

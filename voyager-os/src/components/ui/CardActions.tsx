@@ -90,7 +90,7 @@ export const CardActions = memo(({
 
     // Estilos responsivos adaptados 100% al Dark Mode usando Tailwind variants
     const detailBtnClass = isDetailModal
-      ? 'flex-1 py-3 rounded-xl border border-gray-200 dark:border-nature-border text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-nature-surface/50 transition-all text-sm font-medium flex justify-center items-center gap-2'
+      ? 'flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm font-medium flex justify-center items-center gap-2'
       : 'py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md flex items-center justify-center gap-2 transition-colors text-sm font-bold border border-white/10 shadow-lg cursor-pointer flex-1';
 
     const highlightBtnClass = isDetailModal
@@ -98,11 +98,11 @@ export const CardActions = memo(({
       : 'flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md flex items-center justify-center gap-2 transition-colors text-sm font-bold border border-white/10 shadow-lg cursor-pointer';
 
     const linkBtnClass = isDetailModal
-      ? 'flex-1 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all text-sm flex justify-center items-center gap-2'
+      ? 'flex-1 py-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all text-sm flex justify-center items-center gap-2'
       : 'flex-1 p-2.5 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full backdrop-blur-md flex items-center justify-center transition-colors border border-gray-600 shadow-lg cursor-pointer';
 
     const routeBtnClass = isDetailModal
-      ? 'flex-1 py-3 rounded-xl bg-nature-mint/50 dark:bg-nature-primary/20 text-nature-primary font-bold hover:bg-nature-mint/80 dark:hover:bg-nature-primary/40 transition-all text-sm flex justify-center items-center gap-2'
+      ? 'flex-1 py-3 rounded-xl bg-nature-mint/50 dark:bg-nature-mint/10 text-nature-primary dark:text-nature-primary font-bold hover:bg-nature-mint/80 dark:hover:bg-nature-mint/20 transition-all text-sm flex justify-center items-center gap-2'
       : 'flex-1 p-2.5 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full backdrop-blur-md flex items-center justify-center transition-colors border border-gray-600 shadow-lg cursor-pointer';
 
     const hasWebLink = item.link && item.link.startsWith('http');
