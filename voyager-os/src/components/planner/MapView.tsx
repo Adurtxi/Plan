@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { MapPin, Layers, PenTool, CheckCircle2, Maximize, LocateFixed } from 'lucide-react';
 import L from 'leaflet';
 import { useAppStore } from '../../store';
+import { useAddRoutePoint } from '../../hooks/useTripData';
 import { useFilteredLocations } from '../../hooks/useFilteredLocations';
 import { hapticFeedback } from '../../utils/haptics';
 import type { LocationItem } from '../../types';
@@ -148,7 +149,8 @@ const MapCursorHandler = ({ isAddMode, isDrawingMode }: { isAddMode: boolean, is
 };
 
 export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddMode, setIsAddMode }: MapViewProps) => {
-  const { selectedLocationId, setSelectedLocationId, isDrawingRouteFor, setDrawingRouteFor, addRoutePoint } = useAppStore();
+  const { selectedLocationId, setSelectedLocationId, isDrawingRouteFor, setDrawingRouteFor } = useAppStore();
+  const { mutate: addRoutePoint } = useAddRoutePoint();
   const filteredLocations = useFilteredLocations();
   const [mapType, setMapType] = useState<'m' | 's'>('m'); // 'm' for Map, 's' for Satellite
   const [tempMarker, setTempMarker] = useState<{ lat: number, lng: number } | null>(null);
@@ -169,7 +171,7 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
         <MapUpdater locations={filteredLocations} reframeTrigger={reframeTrigger} />
         <MapCenterOnMeUpdater trigger={centerMeTrigger} />
         {<MapClickHandler isAddMode={isAddMode} isDrawingMode={!!isDrawingRouteFor} onDrawClick={(lat, lng) => {
-          if (isDrawingRouteFor) addRoutePoint(isDrawingRouteFor, lat, lng);
+          if (isDrawingRouteFor) addRoutePoint({ transportId: isDrawingRouteFor, lat, lng });
         }} onMapClick={(lat, lng) => {
           if (!onMapClick) return;
           setTempMarker({ lat, lng });

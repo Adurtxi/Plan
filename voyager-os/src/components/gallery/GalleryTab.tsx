@@ -55,14 +55,15 @@ export const GalleryTab = () => {
     }, 0);
   };
 
+  const editingLocationId = useAppStore(s => s.editingLocationId);
+  const setEditingLocationId = useAppStore(s => s.setEditingLocationId);
+
   useEffect(() => {
-    const listener = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail) setTimeout(() => handleEdit(customEvent.detail), 10);
-    };
-    window.addEventListener('open-edit', listener);
-    return () => window.removeEventListener('open-edit', listener);
-  }, [locations]);
+    if (editingLocationId !== null) {
+      handleEdit(editingLocationId);
+      setEditingLocationId(null);
+    }
+  }, [editingLocationId]);
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;

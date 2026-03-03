@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
+import { setQueryClient } from './store';
 import './App.css';
 
 // Register Manual Service Worker for Offline Capabilities
@@ -20,6 +21,7 @@ if ('serviceWorker' in navigator) {
 }
 
 const queryClient = new QueryClient();
+setQueryClient(queryClient);
 
 const rootEl = document.getElementById('root');
 if (rootEl) {

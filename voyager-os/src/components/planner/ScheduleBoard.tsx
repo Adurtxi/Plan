@@ -6,6 +6,7 @@ import { ArrowDown } from 'lucide-react';
 import { SortableCard } from '../ui/SortableCard';
 import { TransportBlock } from './TransportBlock';
 import { useAppStore } from '../../store';
+import { useUngroupLocationGroup } from '../../hooks/useTripMutations';
 import { DAYS, isTransportCat } from '../../constants';
 import type { LocationItem } from '../../types';
 import { useLocations, useTransports, useTripVariants } from '../../hooks/useTripData';
@@ -49,7 +50,7 @@ const GroupContainer = ({ groupId, items, handleCardClick, onRequestMove, mergeT
     zIndex: isDragging ? 999 : 1,
   };
 
-  const { ungroupLocationGroup } = useAppStore();
+  const { mutate: ungroupLocationGroup } = useUngroupLocationGroup();
 
   return (
     <div ref={setNodeRef} style={style} className="relative group/container mt-2 mb-3">

@@ -6,6 +6,7 @@ import { CheckCircle2, AlertCircle, Clock, Lightbulb, Lock, GripVertical, Plus, 
 import type { LocationItem } from '../../types';
 import { CAT_ICONS, CAT_LABELS, isTransportCat } from '../../constants';
 import { useAppStore } from '../../store';
+import { useUpdateLocation } from '../../hooks/useTripData';
 import { CardActions } from './CardActions';
 
 const formatDuration = (mins: number) => {
@@ -56,7 +57,8 @@ export const CardVisual = memo(({
   onToggleSelect?: (e: React.MouseEvent) => void,
   onTimeConflict?: () => void
 }) => {
-  const { showDialog, updateLocation } = useAppStore();
+  const { showDialog } = useAppStore();
+  const { mutateAsync: updateLocation } = useUpdateLocation();
 
   const timeToFilter = item.derivedDatetime || item.datetime;
   const formattedTime = timeToFilter ? new Date(timeToFilter).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';

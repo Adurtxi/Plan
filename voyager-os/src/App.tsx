@@ -17,16 +17,11 @@ import { useResponsive } from './hooks/useResponsive';
 import { setupLeaflet } from './lib/leafletSetup';
 import 'leaflet/dist/leaflet.css';
 
-// Initialize Leaflet configuration (done globally once)
 setupLeaflet();
 
 export default function App() {
-  const { loadData, mobileView, setMobileView } = useAppStore();
+  const { mobileView, setMobileView } = useAppStore();
   const { isMobile } = useResponsive();
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   useEffect(() => {
     const theme = useAppStore.getState().theme;

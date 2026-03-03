@@ -266,14 +266,15 @@ export const PlannerTab = () => {
     setIsTimeChangeSheetOpen(true);
   };
 
+  const editingLocationId = useAppStore(s => s.editingLocationId);
+  const setEditingLocationId = useAppStore(s => s.setEditingLocationId);
+
   useEffect(() => {
-    const listener = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail) setTimeout(() => handleEdit(customEvent.detail), 10);
-    };
-    window.addEventListener('open-edit', listener);
-    return () => window.removeEventListener('open-edit', listener);
-  }, [displayLocations]);
+    if (editingLocationId !== null) {
+      handleEdit(editingLocationId);
+      setEditingLocationId(null);
+    }
+  }, [editingLocationId]);
 
   const handleEdit = (id: number) => {
     const loc = displayLocations.find(l => l.id === id);

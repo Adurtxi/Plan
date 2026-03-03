@@ -2,6 +2,7 @@ import { memo } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Edit2, Info, Map as MapIcon, Navigation, ArrowRightCircle, LogOut, MoreVertical } from 'lucide-react';
 import { useAppStore } from '../../store';
+import { useExtractFromGroup } from '../../hooks/useTripMutations';
 import { hapticFeedback } from '../../utils/haptics';
 import type { LocationItem } from '../../types';
 import { useNavigate } from 'react-router';
@@ -21,7 +22,8 @@ export const CardActions = memo(({
   onCloseParent,
   className = ''
 }: CardActionsProps) => {
-  const { setFilterDays, setSelectedLocationId, setIsDetailModalOpen, setMobileView, extractFromGroup } = useAppStore();
+  const { setFilterDays, setSelectedLocationId, setIsDetailModalOpen, setMobileView, setEditingLocationId } = useAppStore();
+  const { mutate: extractFromGroup } = useExtractFromGroup();
   const navigate = useNavigate();
 
   // Actions
@@ -67,9 +69,8 @@ export const CardActions = memo(({
     hapticFeedback.medium();
     setSelectedLocationId(null);
     setIsDetailModalOpen(false);
-    // Disparamos el evento para que la app principal lance el edit (sea en PlannerTab o GalleryTab)
     setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('open-edit', { detail: item.id }));
+      setEditingLocationId(item.id);
     }, 100);
     if (onCloseParent) onCloseParent();
   };
