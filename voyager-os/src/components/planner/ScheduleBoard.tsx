@@ -10,6 +10,7 @@ import { useUngroupLocationGroup } from '../../hooks/useTripMutations';
 import { DAYS, isTransportCat } from '../../constants';
 import type { LocationItem } from '../../types';
 import { useLocations, useTransports, useTripVariants } from '../../hooks/useTripData';
+import { useTimelineCalculator } from '../../hooks/useTimelineCalculator';
 import { RAButton } from '../ui/RAButton';
 
 /* ── MoveSlot: clickable drop-zone shown between cards when moving ── */
@@ -79,7 +80,7 @@ const GroupContainer = ({ groupId, items, handleCardClick, onRequestMove, mergeT
                   onRequestMove={() => onRequestMove?.(item.id)}
                   isMovingMode={isMovingMode}
                   isMergeTarget={mergeTargetId === item.id}
-                  onTimeConflict={onTimeConflict && (item as any).suggestedDatetime && (item as any).baseDate ? () => onTimeConflict(item, (item as any).suggestedDatetime, (item as any).baseDate) : undefined}
+                  onTimeConflict={onTimeConflict && (item as any).timeConflict ? () => onTimeConflict(item, (item as any).derivedDatetime, (item as any).baseDate) : undefined}
                 />
                 {nextItem && item.cat !== 'free' && !isTransportCat(item.cat) && nextItem.cat !== 'free' && !isTransportCat(nextItem.cat) && (
                   <div className="mt-1 mb-0.5 w-full scale-[0.98] opacity-90">
@@ -97,16 +98,12 @@ const GroupContainer = ({ groupId, items, handleCardClick, onRequestMove, mergeT
 
 const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, viewMode, onTimeConflict }: BoardColumnProps) => {
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
-  const optimisticLocations = useAppStore(s => s.optimisticLocations);
   const showDialog = useAppStore(s => s.showDialog);
   const addToast = useAppStore(s => s.addToast);
   const toggleFilterDay = useAppStore(s => s.toggleFilterDay);
   const filterDays = useAppStore(s => s.filterDays);
   const activeDayVariants = useAppStore(s => s.activeDayVariants);
   const setActiveDayVariant = useAppStore(s => s.setActiveDayVariant);
-  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
-  const { data: transports = [] } = useTransports();
-  const { data: tripVariants = [] } = useTripVariants();
   const activeVariant = activeDayVariants[dayId] || 'default';
   const { isOver, setNodeRef } = useDroppable({ id: `col-${dayId}::${activeVariant}` });
 
@@ -116,65 +113,10 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
   }, [propLocations, additionalVariants]);
 
   const filteredLocations = useMemo(() => {
-    const allLocations = optimisticLocations || propLocations;
-    const rawFiltered = allLocations
-      .filter(l => l.day === dayId && (l.variantId || 'default') === activeVariant)
+    return propLocations
+      .filter(l => (l.variantId || 'default') === activeVariant)
       .sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
-
-    let baseDate = new Date();
-    baseDate.setHours(9, 0, 0, 0);
-
-    const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
-    if (activeVar && activeVar.startDate) {
-      const dayIndex = parseInt(dayId.split('-')[1]) || 1;
-      baseDate = new Date(activeVar.startDate);
-      if (!isNaN(baseDate.getTime())) {
-        baseDate.setDate(baseDate.getDate() + (dayIndex - 1));
-        baseDate.setHours(9, 0, 0, 0);
-      }
-    }
-
-    let currentTime = new Date(baseDate);
-
-    return rawFiltered.map((loc, index) => {
-      let finalTime = new Date(currentTime);
-      let suggestedDatetime: string | undefined = undefined;
-
-      // Honor explicitly set datetimes on tickets (flights/hotels) even if not "pinned" manually by user,
-      // or if they are explicitly pinned. 
-      if (loc.datetime) {
-        const explicitlySetTime = new Date(loc.datetime);
-        finalTime.setHours(explicitlySetTime.getHours(), explicitlySetTime.getMinutes(), 0, 0);
-
-        if (loc.isPinnedTime) {
-          // Check if the pinned time is different from the current naturally flowing calculated time
-          const flowingTime = new Date(currentTime);
-          if (explicitlySetTime.getHours() !== flowingTime.getHours() || explicitlySetTime.getMinutes() !== flowingTime.getMinutes()) {
-            suggestedDatetime = flowingTime.toISOString(); // Suggest the calculated time
-          }
-        }
-      }
-
-      const duration = loc.durationMinutes || 60;
-      let transportTime = 0;
-
-      const nextLoc = index < rawFiltered.length - 1 ? rawFiltered[index + 1] : null;
-      if (nextLoc) {
-        const transportId = `${loc.id}-${nextLoc.id}`;
-        const segment = transports.find(t => t.id === transportId);
-        if (segment && segment.durationCalculated) {
-          transportTime = segment.durationCalculated;
-        }
-      }
-
-      currentTime = new Date(finalTime.getTime() + (duration + transportTime) * 60000);
-      return {
-        ...loc,
-        derivedDatetime: loc.datetime || finalTime.toISOString(),
-        suggestedDatetime
-      } as LocationItem & { suggestedDatetime?: string; baseDate?: Date };
-    }).map(loc => ({ ...loc, baseDate }));
-  }, [dayId, activeVariant, transports, tripVariants, activeGlobalVariantId, propLocations, optimisticLocations]);
+  }, [activeVariant, propLocations]);
 
   const isMovingMode = !!movingItemId;
   const movingItemIsHere = filteredLocations.some(l => l.id === movingItemId);
@@ -268,7 +210,7 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
                 onRequestMove={() => onRequestMove && onRequestMove(itemBlock.item.id)}
                 isMergeTarget={itemBlock.item.id === mergeTargetId}
                 isMovingMode={isMovingMode}
-                onTimeConflict={onTimeConflict && (itemBlock.item as any).suggestedDatetime && (itemBlock.item as any).baseDate ? () => onTimeConflict(itemBlock.item, (itemBlock.item as any).suggestedDatetime, (itemBlock.item as any).baseDate) : undefined}
+                onTimeConflict={onTimeConflict && (itemBlock.item as any).timeConflict ? () => onTimeConflict(itemBlock.item, (itemBlock.item as any).derivedDatetime, (itemBlock.item as any).baseDate) : undefined}
               />
             </div>
             {showTransport && (
@@ -447,7 +389,17 @@ export const ScheduleBoard = ({ handleCardClick, handleAddNewToDay, handleAddFre
   const filterDays = useAppStore(s => s.filterDays);
   const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
   const { data: locations = [] } = useLocations();
+  const { data: transports = [] } = useTransports();
   const { data: tripVariants = [] } = useTripVariants();
+  const optimisticLocations = useAppStore(s => s.optimisticLocations);
+
+  const locationsToUse = optimisticLocations || locations;
+  const calculatedLocations = useTimelineCalculator(
+    locationsToUse,
+    transports,
+    tripVariants,
+    activeGlobalVariantId || 'default'
+  );
 
   const displayDays = useMemo(() => {
     let dynamicDays: { id: string, label: string }[] = [];
@@ -492,7 +444,7 @@ export const ScheduleBoard = ({ handleCardClick, handleAddNewToDay, handleAddFre
                 dayId={dayObj.id}
                 dayLabel={dayObj.label}
                 isDimmed={filterDays.length > 0 && !filterDays.includes(dayObj.id)}
-                locations={locations.filter(l => l.day === dayObj.id && (l.globalVariantId || 'default') === (activeGlobalVariantId || 'default'))}
+                locations={calculatedLocations.filter(l => l.day === dayObj.id && (l.globalVariantId || 'default') === (activeGlobalVariantId || 'default'))}
                 handleCardClick={handleCardClick}
                 handleAddNewToDay={handleAddNewToDay}
                 handleAddFreeTimeToDay={handleAddFreeTimeToDay}

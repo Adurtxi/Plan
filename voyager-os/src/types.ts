@@ -63,6 +63,7 @@ export interface TripVariant {
   startDate: string | null;
   endDate: string | null;
   cities?: string[];
+  timezone?: string;
 }
 
 export interface TransportSegment {

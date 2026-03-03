@@ -7,7 +7,6 @@ import { MapView } from './MapView';
 import { ScheduleBoard } from './ScheduleBoard';
 import { DetailModal } from '../modals/DetailModal';
 import { TripSettingsModal } from './TripSettingsModal';
-import { TimeConflictModal, type TimeConflictAction } from '../modals/TimeConflictModal';
 import { IdeaInbox } from './IdeaInbox';
 import { MobileTimelineView } from './MobileTimelineView';
 import { MobileMapView } from './MobileMapView';
@@ -76,16 +75,6 @@ export const PlannerTab = () => {
   const [timeChangeBaseDate, setTimeChangeBaseDate] = useState<Date | null>(null);
 
   const [moveToDayModal, setMoveToDayModal] = useState<{ isOpen: boolean, itemId: number | null }>({ isOpen: false, itemId: null });
-
-  const [conflictModalData, setConflictModalData] = useState<{
-    isOpen: boolean;
-    activeTitle: string;
-    overTitle: string;
-    overDatetime: string;
-    overDuration: number;
-    pendingReorder: () => void;
-    activeItemLoc: LocationItem;
-  } | null>(null);
 
   const [preselectedDay, setPreselectedDay] = useState<string>('unassigned');
   const [preselectedVariant, setPreselectedVariant] = useState<string>('default');
@@ -191,7 +180,6 @@ export const PlannerTab = () => {
       if (overLoc) overLocId = overLoc.id;
     }
 
-    const activeItemLoc = isGroupDrag ? null : locations.find(l => l.id.toString() === activeIdStr);
     const overItemLoc = overLocId ? locations.find(l => l.id === overLocId) : null;
 
     // MERGE: Only merge if dwell timer fired (mergeTargetId is set)
@@ -236,25 +224,6 @@ export const PlannerTab = () => {
 
     if (!targetDay) return;
 
-    if (!isGroupDrag && activeItemLoc && overItemLoc && overItemLoc.datetime && !activeItemLoc.datetime) {
-      setConflictModalData({
-        isOpen: true,
-        activeTitle: activeItemLoc.title || activeItemLoc.cat,
-        overTitle: overItemLoc.title || overItemLoc.cat,
-        overDatetime: overItemLoc.datetime,
-        overDuration: overItemLoc.durationMinutes || 60,
-        activeItemLoc,
-        pendingReorder: () => {
-          reorderLocation({
-            activeId: Number(activeIdStr),
-            overId: passOverId,
-            day: targetDay,
-            variantId: targetVariant
-          });
-        }
-      });
-      return;
-    }
 
     reorderLocation({
       activeId: isGroupDrag ? activeIdStr : Number(activeIdStr),
@@ -262,17 +231,6 @@ export const PlannerTab = () => {
       day: targetDay,
       variantId: targetVariant
     });
-  };
-
-  const handleResolveConflict = (action: TimeConflictAction, calculatedDatetime?: string) => {
-    if (!conflictModalData) return;
-    if (action === 'inherit' && calculatedDatetime) {
-      updateLocation({ ...conflictModalData.activeItemLoc, datetime: calculatedDatetime });
-      conflictModalData.pendingReorder();
-    } else if (action === 'keep-unscheduled') {
-      conflictModalData.pendingReorder();
-    }
-    setConflictModalData(null);
   };
 
   const handleTimeConflict = (item: LocationItem, suggestedDatetime: string, baseDate: Date) => {
@@ -670,17 +628,6 @@ export const PlannerTab = () => {
             isOpen={isTripSettingsOpen}
             onClose={() => setIsTripSettingsOpen(false)}
           />
-
-          {conflictModalData && (
-            <TimeConflictModal
-              isOpen={conflictModalData.isOpen}
-              activeTitle={conflictModalData.activeTitle}
-              overTitle={conflictModalData.overTitle}
-              overDatetime={conflictModalData.overDatetime}
-              overDuration={conflictModalData.overDuration}
-              onResolve={handleResolveConflict}
-            />
-          )}
 
           {moveToDayModal.isOpen && (
             <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4">

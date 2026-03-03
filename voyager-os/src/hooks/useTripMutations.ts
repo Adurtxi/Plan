@@ -2,6 +2,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { initDB } from '../lib/db';
 import type { LocationItem, TripVariant } from '../types';
 import { useAppStore } from '../store';
+import { isTransportCat } from '../constants';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Helper for date sync (copied from store/utils)
 const computeDateForDay = (dayId: string, tripVariants: TripVariant[], globalVariantId: string): Date | null => {
@@ -23,11 +30,25 @@ const computeDateForDay = (dayId: string, tripVariants: TripVariant[], globalVar
 
 const syncItemDateToDay = (item: LocationItem, targetDayId: string, tripVariants: TripVariant[], globalVariantId: string) => {
   if (!item.datetime || targetDayId === 'unassigned') return;
+
+  if (item.cat === 'hotel-checkin' || item.cat === 'hotel-checkout' || isTransportCat(item.cat)) {
+    return;
+  }
+
   const targetDate = computeDateForDay(targetDayId, tripVariants, globalVariantId);
+  const variant = tripVariants.find(v => v.id === globalVariantId) || tripVariants.find(v => v.id === 'default');
+  const tz = variant?.timezone;
+
   if (targetDate) {
-    const d = new Date(item.datetime);
-    d.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-    item.datetime = d.toISOString();
+    if (tz) {
+      const originalTime = dayjs.tz(item.datetime, tz).format('HH:mm:ss');
+      const newDateStr = dayjs(targetDate).format('YYYY-MM-DD');
+      item.datetime = dayjs.tz(`${newDateStr}T${originalTime}`, tz).toISOString();
+    } else {
+      const d = new Date(item.datetime);
+      d.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+      item.datetime = d.toISOString();
+    }
   }
 };
 
