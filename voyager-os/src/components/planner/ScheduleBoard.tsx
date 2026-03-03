@@ -10,16 +10,18 @@ import { useUngroupLocationGroup } from '../../hooks/useTripMutations';
 import { DAYS, isTransportCat } from '../../constants';
 import type { LocationItem } from '../../types';
 import { useLocations, useTransports, useTripVariants } from '../../hooks/useTripData';
+import { RAButton } from '../ui/RAButton';
 
 /* ── MoveSlot: clickable drop-zone shown between cards when moving ── */
 const MoveSlot = ({ onClick, label }: { onClick: () => void; label?: string }) => (
-  <button
-    onClick={onClick}
-    className="w-full my-1 py-3 border-2 border-dashed border-nature-primary/40 rounded-2xl bg-nature-mint/20 hover:bg-nature-mint/50 hover:border-nature-primary hover:scale-[1.02] transition-all flex items-center justify-center gap-2 text-nature-primary text-xs font-bold uppercase tracking-widest cursor-pointer group/slot animate-pulse hover:animate-none"
+  <RAButton
+    variant="ghost"
+    onPress={onClick}
+    className="w-full my-1 py-3 border-2 border-dashed border-nature-primary/40 rounded-2xl bg-nature-mint/20 hover:bg-nature-mint/50 hover:border-nature-primary hover:scale-[1.02] flex items-center justify-center gap-2 text-nature-primary text-xs font-bold uppercase tracking-widest cursor-pointer animate-pulse hover:animate-none"
   >
-    <ArrowDown size={14} className="opacity-60 group-hover/slot:opacity-100 transition-opacity" />
+    <ArrowDown size={14} className="opacity-60" />
     {label || 'Colocar aquí'}
-  </button>
+  </RAButton>
 );
 
 interface BoardColumnProps {
@@ -60,9 +62,9 @@ const GroupContainer = ({ groupId, items, handleCardClick, onRequestMove, mergeT
         className="bg-bg-surface-elevated text-text-primary rounded-t-xl px-4 py-2 w-max cursor-grab active:cursor-grabbing flex items-center gap-2 relative z-10 font-bold uppercase tracking-wider text-[10px] shadow-sm ml-4 border border-border-subtle border-b-0"
       >
         <span className="opacity-50">⣿</span> Grupo de Actividades
-        <button onClick={(e) => { e.stopPropagation(); ungroupLocationGroup(groupId); }} className="ml-2 bg-white/10 hover:bg-red-500 hover:text-white rounded px-1.5 py-0.5 text-[9px] transition-colors border border-white/10 opacity-0 group-hover/container:opacity-100">
+        <RAButton variant="ghost" onPress={() => { ungroupLocationGroup(groupId); }} size="sm" className="ml-2 bg-white/10 hover:bg-red-500 hover:text-white rounded px-1.5 py-0.5 text-[9px] border border-white/10 opacity-0 group-hover/container:opacity-100">
           DESAGRUPAR
-        </button>
+        </RAButton>
       </div>
 
       <div className="bg-bg-surface-elevated/80 border border-border-subtle rounded-[28px] rounded-tl-sm p-3 relative z-0 shadow-inner flex flex-col gap-2 ring-1 ring-border-subtle inset-0">
@@ -96,7 +98,13 @@ const GroupContainer = ({ groupId, items, handleCardClick, onRequestMove, mergeT
 const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, viewMode, onTimeConflict }: BoardColumnProps) => {
   const [additionalVariants, setAdditionalVariants] = useState<string[]>([]);
   const optimisticLocations = useAppStore(s => s.optimisticLocations);
-  const { showDialog, addToast, toggleFilterDay, filterDays, activeDayVariants, setActiveDayVariant, activeGlobalVariantId } = useAppStore();
+  const showDialog = useAppStore(s => s.showDialog);
+  const addToast = useAppStore(s => s.addToast);
+  const toggleFilterDay = useAppStore(s => s.toggleFilterDay);
+  const filterDays = useAppStore(s => s.filterDays);
+  const activeDayVariants = useAppStore(s => s.activeDayVariants);
+  const setActiveDayVariant = useAppStore(s => s.setActiveDayVariant);
+  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
   const { data: transports = [] } = useTransports();
   const { data: tripVariants = [] } = useTripVariants();
   const activeVariant = activeDayVariants[dayId] || 'default';
@@ -326,15 +334,17 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
 
         <div className="flex bg-bg-surface-elevated p-1 rounded-xl">
           {dayVariants.map(v => (
-            <button
+            <RAButton
               key={v}
-              onClick={() => setActiveDayVariant(dayId, v)}
-              className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${activeVariant === v ? 'bg-bg-surface-elevated text-nature-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+              variant="ghost"
+              onPress={() => setActiveDayVariant(dayId, v)}
+              className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg ${activeVariant === v ? 'bg-bg-surface-elevated text-nature-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+              size="sm"
             >
               {v === 'default' ? 'Ruta 1' : v.replace('option-', 'Ruta ')}
-            </button>
+            </RAButton>
           ))}
-          <button onClick={() => {
+          <RAButton variant="ghost" onPress={() => {
             showDialog({
               type: 'prompt',
               title: 'Nueva Variante',
@@ -349,24 +359,24 @@ const BoardColumn = ({ dayId, dayLabel, isDimmed, locations: propLocations, hand
                 }
               }
             });
-          }} className="px-3 text-text-muted hover:text-nature-primary transition-colors">+</button>
+          }} className="px-3 text-text-muted hover:text-nature-primary" size="sm">+</RAButton>
         </div>
 
         {handleAddNewToDay && (
           <div className="flex flex-col gap-2 w-full mt-3">
             <div className="flex gap-2">
-              <button onClick={() => handleAddNewToDay(dayId, activeVariant)} className="flex-1 bg-nature-mint/30 hover:bg-nature-mint/50 border border-nature-primary/20 text-nature-primary py-2 rounded-xl border border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1 shrink-0">
+              <RAButton variant="ghost" onPress={() => handleAddNewToDay(dayId, activeVariant)} className="flex-1 bg-nature-mint/30 hover:bg-nature-mint/50 border border-nature-primary/20 border-dashed text-nature-primary py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shrink-0" size="sm">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Añadir
-              </button>
-              <button onClick={() => {
+              </RAButton>
+              <RAButton variant="ghost" onPress={() => {
                 if (handleAddFreeTimeToDay) {
                   handleAddFreeTimeToDay(dayId, activeVariant);
                 }
-              }} className="flex-1 bg-bg-surface-elevated hover:bg-border-subtle/30 border border-border-subtle text-text-secondary py-2 rounded-xl border-dashed text-xs font-bold transition-colors flex items-center justify-center gap-1 shrink-0" title="Añadir Hueco Libre">
+              }} className="flex-1 bg-bg-surface-elevated hover:bg-border-subtle/30 border border-border-subtle border-dashed text-text-secondary py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shrink-0" size="sm">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 Libre
-              </button>
+              </RAButton>
             </div>
           </div>
         )}
@@ -434,7 +444,8 @@ interface ScheduleBoardProps {
 }
 
 export const ScheduleBoard = ({ handleCardClick, handleAddNewToDay, handleAddFreeTimeToDay, viewMode, onRequestMove, mergeTargetId, movingItemId, executeMoveHere, onTimeConflict }: ScheduleBoardProps) => {
-  const { filterDays, activeGlobalVariantId } = useAppStore();
+  const filterDays = useAppStore(s => s.filterDays);
+  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
   const { data: locations = [] } = useLocations();
   const { data: tripVariants = [] } = useTripVariants();
 

@@ -5,6 +5,7 @@ import { useAppStore } from '../../store';
 import type { LocationItem, ReservationItem } from '../../types';
 import { CAT_ICONS, CAT_COLORS } from '../../constants';
 import { useTripVariants } from '../../hooks/useTripData';
+import { RAButton } from '../ui/RAButton';
 
 interface Props {
   isOpen: boolean;
@@ -16,7 +17,7 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
   const { data: reservations = [] } = useReservations();
   const { mutateAsync: addLocation } = useAddLocation();
   const { data: tripVariants = [] } = useTripVariants();
-  const { addToast } = useAppStore();
+  const addToast = useAppStore(s => s.addToast);
   const activeGlobal = useAppStore(s => s.activeGlobalVariantId) || 'default';
 
   if (!isOpen) return null;
@@ -172,9 +173,9 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
             <h2 className="text-xl font-bold font-sans text-text-primary">Inyectar Reserva</h2>
             <p className="text-sm text-text-secondary">Convierte una reserva maestra en tarjetas del plan.</p>
           </div>
-          <button onClick={onClose} className="p-2 bg-bg-surface-elevated text-text-muted hover:text-nature-primary hover:bg-nature-mint/30 rounded-full transition-colors">
+          <RAButton variant="icon" aria-label="Cerrar" onPress={onClose} className="p-2 bg-bg-surface-elevated text-text-muted hover:text-nature-primary hover:bg-nature-mint/30">
             <X size={20} />
-          </button>
+          </RAButton>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 custom-scroll">
@@ -209,13 +210,14 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleImport(res)}
-                      className="bg-nature-mint/30 text-nature-primary p-2 flex items-center justify-center rounded-xl hover:bg-nature-primary hover:text-white transition-colors active:scale-95 shrink-0"
-                      title="Añadir al plan"
+                    <RAButton
+                      variant="icon"
+                      aria-label="Importar reserva"
+                      onPress={() => handleImport(res)}
+                      className="bg-nature-mint/30 text-nature-primary p-2 flex items-center justify-center rounded-xl hover:bg-nature-primary hover:text-white shrink-0"
                     >
                       <PlusCircle size={20} />
-                    </button>
+                    </RAButton>
                   </div>
                 )
               })}

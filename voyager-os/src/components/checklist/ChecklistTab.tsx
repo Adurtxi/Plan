@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Briefcase, Check } from 'lucide-react';
 import { useChecklist, useAddChecklistItem, useToggleChecklistItem, useDeleteChecklistItem } from '../../hooks/useTripData';
+import { RAButton } from '../ui/RAButton';
 
 export const ChecklistTab = () => {
   const { data: checklist = [] } = useChecklist();
@@ -22,8 +23,8 @@ export const ChecklistTab = () => {
         <h1 className="text-5xl font-sans text-nature-primary mb-4">Equipaje</h1>
         <p className="text-nature-textLight font-light text-lg mb-10">Lo esencial para un viaje sin preocupaciones.</p>
         <div className="flex gap-4 mb-10 items-center bg-bg-surface p-2 rounded-2xl shadow-sm border border-border-strong">
-          <input value={newTodo} onChange={(e) => setNewTodo(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()} className="flex-1 bg-transparent border-none p-4 text-nature-text placeholder-gray-400 outline-none text-lg" placeholder="Añadir elemento..." />
-          <button onClick={handleAdd} className="bg-nature-primary text-white px-8 py-3 rounded-xl font-medium hover:bg-nature-primary/90 transition-all">Añadir</button>
+          <input value={newTodo} onChange={(e) => setNewTodo(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()} className="flex-1 bg-transparent border-none p-4 text-text-primary placeholder-text-muted outline-none text-lg" placeholder="Añadir elemento..." />
+          <RAButton variant="primary" onPress={handleAdd} size="md">Añadir</RAButton>
         </div>
         <div className="bg-bg-surface rounded-bento shadow-soft overflow-hidden p-2 min-h-[200px] flex flex-col">
           {checklist.length === 0 ? (
@@ -41,7 +42,7 @@ export const ChecklistTab = () => {
                     </div>
                     <span className={`text-lg font-sans transition-colors duration-500 ${item.done ? 'line-through text-text-muted' : 'text-text-primary font-medium'}`}>{item.text}</span>
                   </div>
-                  <button onClick={() => deleteChecklistItem(item.id)} className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all font-bold text-sm tracking-wider uppercase px-4 py-2">Eliminar</button>
+                  <RAButton variant="ghost" onPress={() => deleteChecklistItem(item.id)} className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-red-400 text-sm tracking-wider uppercase" size="sm">Eliminar</RAButton>
                 </div>
               ))}
             </div>

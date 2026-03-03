@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CATEGORY_CONFIG, type CategoryConfig } from '../../constants';
 import type { Category, CategoryGroup } from '../../types';
+import { RAButton } from '../ui/RAButton';
 
 interface ActivityTypePickerProps {
   value: Category;
@@ -33,11 +34,11 @@ export const ActivityTypePicker = ({ value, onChange }: ActivityTypePickerProps)
             const meta = GROUP_META[group];
             const isSelected = selectedGroup === group;
             return (
-              <button
+              <RAButton
                 key={group}
-                type="button"
-                onClick={() => setSelectedGroup(group)}
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${isSelected
+                variant="ghost"
+                onPress={() => setSelectedGroup(group)}
+                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-center ${isSelected
                   ? 'shadow-sm scale-[1.02]'
                   : 'border-border-strong hover:border-nature-primary bg-bg-surface-elevated'
                   }`}
@@ -45,7 +46,7 @@ export const ActivityTypePicker = ({ value, onChange }: ActivityTypePickerProps)
               >
                 <span className="text-2xl">{meta.icon}</span>
                 <span className="text-[10px] font-black uppercase tracking-widest">{meta.label}</span>
-              </button>
+              </RAButton>
             );
           })}
         </div>
@@ -61,11 +62,11 @@ export const ActivityTypePicker = ({ value, onChange }: ActivityTypePickerProps)
             {groupItems(selectedGroup).map(config => {
               const isActive = value === config.value;
               return (
-                <button
+                <RAButton
                   key={config.value}
-                  type="button"
-                  onClick={() => onChange(config.value)}
-                  className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all ${isActive
+                  variant="ghost"
+                  onPress={() => onChange(config.value)}
+                  className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 ${isActive
                     ? 'shadow-sm scale-[1.03]'
                     : 'border-border-strong hover:border-nature-primary bg-bg-surface-elevated text-text-secondary hover:text-text-primary'
                     }`}
@@ -73,7 +74,7 @@ export const ActivityTypePicker = ({ value, onChange }: ActivityTypePickerProps)
                 >
                   <span className="text-xl">{config.icon}</span>
                   <span className="text-[8px] font-bold uppercase tracking-wider leading-tight text-center">{config.label}</span>
-                </button>
+                </RAButton>
               );
             })}
           </div>

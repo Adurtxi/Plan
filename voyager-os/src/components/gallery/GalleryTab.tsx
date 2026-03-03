@@ -8,9 +8,11 @@ import { CardActions } from '../ui/CardActions';
 import { LocationForm } from '../planner/LocationForm';
 import { useUpdateLocation } from '../../hooks/useTripData';
 import type { Category, Priority, LocationItem } from '../../types';
+import { RAButton } from '../ui/RAButton';
 
 export const GalleryTab = () => {
-  const { activeGlobalVariantId, openLightbox } = useAppStore();
+  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
+  const openLightbox = useAppStore(s => s.openLightbox);
   const { data: locations = [] } = useLocations();
   const { data: tripVariants = [] } = useTripVariants();
   const [activeCityFilter, setActiveCityFilter] = useState<string>('all');
@@ -277,16 +279,18 @@ export const GalleryTab = () => {
               { id: 'cities', label: 'Zonas' },
               { id: 'tags', label: 'Etiquetas' },
             ].map((option) => (
-              <button
+              <RAButton
                 key={option.id}
-                onClick={() => setGroupBy(option.id as any)}
-                className={`py-2 px-6 rounded-xl text-sm font-bold tracking-widest uppercase transition-all duration-300 ${groupBy === option.id
-                  ? 'bg-nature-primary text-white shadow-md scale-100'
-                  : 'text-text-secondary hover:text-nature-primary hover:bg-bg-surface/50 scale-95'
+                variant="ghost"
+                onPress={() => setGroupBy(option.id as any)}
+                className={`py-2 px-6 rounded-xl text-sm font-bold tracking-widest uppercase ${groupBy === option.id
+                  ? 'bg-nature-primary text-white shadow-md'
+                  : 'text-text-secondary hover:text-nature-primary hover:bg-bg-surface/50'
                   }`}
+                size="sm"
               >
                 {option.label}
-              </button>
+              </RAButton>
             ))}
           </div>
         </header>
@@ -296,20 +300,24 @@ export const GalleryTab = () => {
             {availableCities.length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-2">
                 <span className="text-[11px] uppercase font-bold text-text-muted shrink-0 mr-2">Zonas</span>
-                <button
-                  onClick={() => setActiveCityFilter('all')}
-                  className={`shrink-0 px-4 py-2 mx-0.5 rounded-full text-xs font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === 'all' ? 'bg-nature-primary text-white shadow-md' : 'bg-bg-surface border-2 border-transparent hover:border-border-strong text-text-secondary shadow-sm'}`}
+                <RAButton
+                  variant="ghost"
+                  onPress={() => setActiveCityFilter('all')}
+                  className={`shrink-0 px-4 py-2 mx-0.5 rounded-full text-xs font-bold tracking-widest uppercase flex items-center gap-1.5 ${activeCityFilter === 'all' ? 'bg-nature-primary text-white shadow-md' : 'bg-bg-surface border-2 border-transparent hover:border-border-strong text-text-secondary shadow-sm'}`}
+                  size="sm"
                 >
                   <MapPin size={12} /> Todas las Zonas
-                </button>
+                </RAButton>
                 {availableCities.map(c => (
-                  <button
+                  <RAButton
                     key={c}
-                    onClick={() => setActiveCityFilter(c)}
-                    className={`shrink-0 px-4 py-2 mx-0.5 rounded-full text-xs font-bold tracking-widest uppercase transition-colors ${activeCityFilter === c ? 'bg-nature-primary text-white shadow-md' : 'bg-bg-surface border-2 border-transparent hover:border-border-strong text-text-secondary shadow-sm'}`}
+                    variant="ghost"
+                    onPress={() => setActiveCityFilter(c)}
+                    className={`shrink-0 px-4 py-2 mx-0.5 rounded-full text-xs font-bold tracking-widest uppercase ${activeCityFilter === c ? 'bg-nature-primary text-white shadow-md' : 'bg-bg-surface border-2 border-transparent hover:border-border-strong text-text-secondary shadow-sm'}`}
+                    size="sm"
                   >
                     {c}
-                  </button>
+                  </RAButton>
                 ))}
               </div>
             )}
@@ -317,20 +325,24 @@ export const GalleryTab = () => {
             {availableTags.length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-2 mt-1">
                 <span className="text-[11px] uppercase font-bold text-text-muted shrink-0 mr-2">Estilos</span>
-                <button
-                  onClick={() => setActiveTagFilter('all')}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition-colors ${activeTagFilter === 'all' ? 'bg-nature-accent text-white shadow-md' : 'bg-nature-mint/30 border border-nature-primary/10 text-nature-primary shadow-sm'}`}
+                <RAButton
+                  variant="ghost"
+                  onPress={() => setActiveTagFilter('all')}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${activeTagFilter === 'all' ? 'bg-nature-accent text-white shadow-md' : 'bg-nature-mint/30 border border-nature-primary/10 text-nature-primary shadow-sm'}`}
+                  size="sm"
                 >
                   Todos
-                </button>
+                </RAButton>
                 {availableTags.map(t => (
-                  <button
+                  <RAButton
                     key={t}
-                    onClick={() => setActiveTagFilter(t)}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition-colors ${activeTagFilter === t ? 'bg-nature-accent text-white shadow-md' : 'bg-nature-mint/30 border border-nature-primary/10 text-nature-primary shadow-sm'}`}
+                    variant="ghost"
+                    onPress={() => setActiveTagFilter(t)}
+                    className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${activeTagFilter === t ? 'bg-nature-accent text-white shadow-md' : 'bg-nature-mint/30 border border-nature-primary/10 text-nature-primary shadow-sm'}`}
+                    size="sm"
                   >
                     #{t}
-                  </button>
+                  </RAButton>
                 ))}
               </div>
             )}

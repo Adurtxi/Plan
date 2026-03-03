@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { useAppStore } from '../../store';
 import { DAYS } from '../../constants';
 import { useLocations, useTripVariants } from '../../hooks/useTripData';
+import { RAButton } from '../ui/RAButton';
 
 interface MobileDaySelectorProps {
   selectedDay: string;
@@ -9,7 +10,7 @@ interface MobileDaySelectorProps {
 }
 
 export const MobileDaySelector = ({ selectedDay, onSelectDay }: MobileDaySelectorProps) => {
-  const { activeGlobalVariantId } = useAppStore();
+  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
   const { data: locations = [] } = useLocations();
   const { data: tripVariants = [] } = useTripVariants();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -61,14 +62,16 @@ export const MobileDaySelector = ({ selectedDay, onSelectDay }: MobileDaySelecto
         const active = dayId === selectedDay;
         const count = countByDay(dayId);
         return (
-          <button
+          <RAButton
             key={dayId}
             data-day={dayId}
-            onClick={() => onSelectDay(dayId)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all shrink-0 ${active
+            variant="ghost"
+            onPress={() => onSelectDay(dayId)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap shrink-0 ${active
               ? 'bg-nature-primary text-white shadow-md shadow-nature-primary/30'
-              : 'bg-gray-100 text-gray-500 active:bg-gray-200'
+              : 'bg-gray-100 text-gray-500'
               }`}
+            size="sm"
           >
             {dayLabels[dayId] || dayId}
             {count > 0 && (
@@ -77,7 +80,7 @@ export const MobileDaySelector = ({ selectedDay, onSelectDay }: MobileDaySelecto
                 {count}
               </span>
             )}
-          </button>
+          </RAButton>
         );
       })}
     </div>

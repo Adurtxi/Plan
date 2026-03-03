@@ -2,9 +2,13 @@ import { Map, Briefcase, Download, Trash2, LineChart, Moon, Sun, Image as ImageI
 import { NavLink } from 'react-router';
 import { useAppStore } from '../../store';
 import { useLocations, useChecklist, useDeleteLocation, useDeleteChecklistItem } from '../../hooks/useTripData';
+import { RAButton } from '../ui/RAButton';
 
 export const Sidebar = () => {
-  const { showDialog, addToast, theme, toggleTheme } = useAppStore();
+  const showDialog = useAppStore(s => s.showDialog);
+  const addToast = useAppStore(s => s.addToast);
+  const theme = useAppStore(s => s.theme);
+  const toggleTheme = useAppStore(s => s.toggleTheme);
   const { data: locations = [] } = useLocations();
   const { data: checklist = [] } = useChecklist();
   const { mutate: deleteLocation } = useDeleteLocation();
@@ -47,16 +51,12 @@ export const Sidebar = () => {
       <div className="mt-auto flex flex-col gap-6 w-full px-2 md:px-4 items-center">
         <div className="text-[10px] font-bold tracking-widest text-text-muted uppercase text-center hidden md:block">Total<div className="text-nature-primary text-sm font-sans mt-1">{currencySymbol}{totalCost.toFixed(0)}</div></div>
 
-        <button
-          onClick={toggleTheme}
-          className="cursor-pointer p-3 text-text-muted hover:text-nature-primary hover:bg-bg-body rounded-xl transition-all active:scale-90"
-          title="Cambiar Tema"
-        >
+        <RAButton variant="icon" aria-label="Cambiar tema" onPress={toggleTheme} className="p-3 rounded-xl active:scale-90">
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
+        </RAButton>
 
-        <button className="cursor-pointer p-3 text-text-muted hover:text-nature-primary hover:bg-bg-body rounded-xl transition-all active:scale-90" title="Guardar Viaje"><Download size={20} /></button>
-        <button onClick={handleReset} className="cursor-pointer p-3 text-text-muted hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-all active:scale-90" title="Reiniciar"><Trash2 size={20} /></button>
+        <RAButton variant="icon" aria-label="Exportar datos" className="p-3 rounded-xl active:scale-90"><Download size={20} /></RAButton>
+        <RAButton variant="icon" aria-label="Restablecer datos" onPress={handleReset} className="p-3 rounded-xl active:scale-90 hover:text-red-600 hover:bg-red-500/10"><Trash2 size={20} /></RAButton>
       </div>
     </aside>
   );

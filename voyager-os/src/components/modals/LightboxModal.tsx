@@ -3,9 +3,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { useLocations } from '../../hooks/useTripData';
 import { CardActions } from '../ui/CardActions';
+import { RAButton } from '../ui/RAButton';
 
 export const LightboxModal = () => {
-  const { lightboxImages, lightboxIndex, lightboxLocationId, setLightboxIndex, closeLightbox } = useAppStore();
+  const lightboxImages = useAppStore(s => s.lightboxImages);
+  const lightboxIndex = useAppStore(s => s.lightboxIndex);
+  const lightboxLocationId = useAppStore(s => s.lightboxLocationId);
+  const setLightboxIndex = useAppStore(s => s.setLightboxIndex);
+  const closeLightbox = useAppStore(s => s.closeLightbox);
   const { data: locations = [] } = useLocations();
 
   const loc = useMemo(() => {
@@ -31,7 +36,7 @@ export const LightboxModal = () => {
       className="fixed inset-0 z-[3000] bg-black/95 backdrop-blur-xl flex flex-col justify-center items-center"
       onClick={closeLightbox}
     >
-      <button onClick={closeLightbox} className="absolute top-8 right-8 text-white/50 text-4xl hover:text-white transition-colors z-50 font-sans">✕</button>
+      <RAButton variant="icon" aria-label="Cerrar visor" onPress={closeLightbox} className="absolute top-8 right-8 text-white/50 text-4xl hover:text-white z-50">✕</RAButton>
 
       {loc && (
         <div className="absolute top-8 w-full max-w-2xl px-6 z-50 text-center pointer-events-none">
@@ -44,8 +49,8 @@ export const LightboxModal = () => {
         </div>
       )}
 
-      <button onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length) }} className="absolute left-4 md:left-8 top-1/2 transform -translate-y-1/2 p-4 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all z-50"><ChevronLeft size={32} /></button>
-      <button onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % lightboxImages.length) }} className="absolute right-4 md:right-8 top-1/2 transform -translate-y-1/2 p-4 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all z-50"><ChevronRight size={32} /></button>
+      <RAButton variant="icon" aria-label="Imagen anterior" onPress={() => setLightboxIndex((lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length)} className="absolute left-4 md:left-8 top-1/2 transform -translate-y-1/2 p-4 text-white/50 hover:text-white hover:bg-white/10 z-50"><ChevronLeft size={32} /></RAButton>
+      <RAButton variant="icon" aria-label="Imagen siguiente" onPress={() => setLightboxIndex((lightboxIndex + 1) % lightboxImages.length)} className="absolute right-4 md:right-8 top-1/2 transform -translate-y-1/2 p-4 text-white/50 hover:text-white hover:bg-white/10 z-50"><ChevronRight size={32} /></RAButton>
 
       <div className="w-full h-full p-8 pb-32 pt-28 flex items-center justify-center overflow-auto pointer-events-none">
         <img

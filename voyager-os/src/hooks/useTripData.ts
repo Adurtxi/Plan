@@ -12,72 +12,18 @@ export const useTripVariants = () => {
     queryKey: ['tripVariants'],
     queryFn: async () => {
       const db = await initDB();
-      let variants = await db.getAll('tripVariants');
-      if (variants.length === 0) {
-        const defaultVariant: TripVariant = { id: 'default', name: 'Plan Principal', startDate: null, endDate: null };
-        await db.put('tripVariants', defaultVariant);
-        variants = [defaultVariant];
-      }
-      return variants;
+      return db.getAll('tripVariants');
     }
   });
 };
 
 export const useLocations = () => {
-  const { data: tripVariants } = useTripVariants();
-
   return useQuery({
     queryKey: ['locations'],
     queryFn: async () => {
       const db = await initDB();
-      const locations = await db.getAll('locations');
-      const globalVariantIds = tripVariants?.map(v => v.id) || ['default'];
-
-      let needsRefetch = false;
-
-      // Migration logic exactly as it was in store.ts
-      for (const loc of locations) {
-        let changed = false;
-        if (!loc.variantId) { loc.variantId = 'default'; changed = true; }
-
-        if (!loc.globalVariantId) {
-          if (globalVariantIds.includes(loc.variantId)) {
-            loc.globalVariantId = loc.variantId;
-            loc.variantId = 'default';
-          } else {
-            loc.globalVariantId = 'default';
-          }
-          changed = true;
-        }
-
-        if (!loc.reservationStatus) { loc.reservationStatus = 'idea'; changed = true; }
-
-        const legacyCat = loc.cat as string;
-        if (legacyCat === 'logistics' && loc.logisticsType) {
-          (loc as any).cat = loc.logisticsType;
-          loc.logisticsType = undefined;
-          changed = true;
-        } else if (legacyCat === 'flight') {
-          (loc as any).cat = 'flight-departure'; changed = true;
-        } else if (legacyCat === 'transport') {
-          (loc as any).cat = 'taxi'; changed = true;
-        } else if (legacyCat === 'hotel') {
-          (loc as any).cat = 'hotel-checkin'; changed = true;
-        }
-
-        if (changed) {
-          await db.put('locations', loc);
-          needsRefetch = true;
-        }
-      }
-
-      if (needsRefetch) {
-        return await db.getAll('locations');
-      }
-
-      return locations;
+      return db.getAll('locations');
     },
-    enabled: !!tripVariants,
   });
 };
 

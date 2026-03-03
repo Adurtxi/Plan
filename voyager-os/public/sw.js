@@ -11,7 +11,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
   );
@@ -58,7 +57,6 @@ self.addEventListener('fetch', (event) => {
               });
             }
           }).catch((err) => {
-            console.log("Offline mode, serving from cache", err);
           });
           return response;
         }

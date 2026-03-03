@@ -3,6 +3,7 @@ import { Plane, Hotel, Train, Bus, Car, Ticket, FileText, Calendar, ExternalLink
 import type { ReservationItem } from '../../types';
 import { useDeleteReservation } from '../../hooks/useTripData';
 import { useAppStore } from '../../store';
+import { RAButton } from '../ui/RAButton';
 
 const ICONS: Record<string, React.ElementType> = {
   'flight': Plane,
@@ -31,7 +32,8 @@ interface Props {
 
 export const ReservationCard: React.FC<Props> = ({ reservation, onEdit }) => {
   const { mutateAsync: deleteRes } = useDeleteReservation();
-  const { showDialog, openDocumentViewer } = useAppStore();
+  const showDialog = useAppStore(s => s.showDialog);
+  const openDocumentViewer = useAppStore(s => s.openDocumentViewer);
 
   const Icon = ICONS[reservation.type] || FileText;
   const color = COLORS[reservation.type] || '#9ca3af';
@@ -69,8 +71,8 @@ export const ReservationCard: React.FC<Props> = ({ reservation, onEdit }) => {
         </div>
 
         <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => onEdit(reservation)} className="p-1.5 text-text-muted hover:text-blue-600 rounded-lg hover:bg-blue-500/10 transition-colors"><Edit2 size={16} /></button>
-          <button onClick={handleDelete} className="p-1.5 text-text-muted hover:text-red-600 rounded-lg hover:bg-red-500/10 transition-colors"><Trash2 size={16} /></button>
+          <RAButton variant="icon" aria-label="Editar reserva" onPress={() => onEdit(reservation)} className="p-1.5 text-text-muted hover:text-blue-600 hover:bg-blue-500/10"><Edit2 size={16} /></RAButton>
+          <RAButton variant="icon" aria-label="Eliminar reserva" onPress={handleDelete} className="p-1.5 text-text-muted hover:text-red-600 hover:bg-red-500/10"><Trash2 size={16} /></RAButton>
         </div>
       </div>
 
@@ -100,13 +102,15 @@ export const ReservationCard: React.FC<Props> = ({ reservation, onEdit }) => {
         <div className="flex gap-2">
           {reservation.attachments && reservation.attachments.length > 0 ? (
             reservation.attachments.map((att, i) => (
-              <button
+              <RAButton
                 key={i}
-                onClick={() => openDocumentViewer({ url: att.data, name: att.name, type: att.data.startsWith('data:application/pdf') ? 'application/pdf' : 'image/jpeg' })}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors active:scale-95"
+                variant="ghost"
+                onPress={() => openDocumentViewer({ url: att.data, name: att.name, type: att.data.startsWith('data:application/pdf') ? 'application/pdf' : 'image/jpeg' })}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100 hover:bg-blue-100 active:scale-95"
+                size="sm"
               >
                 <Ticket size={14} /> {att.name.length > 15 ? att.name.substring(0, 15) + '...' : att.name}
-              </button>
+              </RAButton>
             ))
           ) : (
             <span className="text-[10px] text-text-muted">Sin doc. adjuntos</span>

@@ -4,6 +4,7 @@ import { useAppStore } from '../../store';
 import { CAT_ICONS, CAT_LABELS, CAT_COLORS, getCatGroup, isTransportCat, isAccommodationCat } from '../../constants';
 import { useLocations, useAddLocation, useUpdateLocation, useDeleteLocation } from '../../hooks/useTripData';
 import { CardActions } from '../ui/CardActions';
+import { RAButton } from '../ui/RAButton';
 
 export const DetailModal = () => {
   const {
@@ -292,11 +293,11 @@ export const DetailModal = () => {
                 ))}
               </div>
             ) : (
-              <button onClick={handleQuickUpload} className="w-full h-full flex flex-col items-center justify-center text-nature-primary/40 bg-nature-mint/10 border-r border-border-subtle hover:bg-nature-mint/20 hover:text-nature-primary transition-all">
+              <RAButton variant="ghost" onPress={handleQuickUpload} className="w-full h-full flex flex-col items-center justify-center text-nature-primary/40 bg-nature-mint/10 border-r border-border-subtle hover:bg-nature-mint/20 hover:text-nature-primary">
                 <UploadCloud size={48} strokeWidth={1} className="mb-3 opacity-50" />
                 <span className="text-sm font-medium">Añadir Fotos</span>
                 <span className="text-[10px] mt-1 text-text-muted">Click para subir galería</span>
-              </button>
+              </RAButton>
             )}
           </div>
         )}
@@ -333,7 +334,7 @@ export const DetailModal = () => {
               ))}
             </div>
 
-            <button onClick={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }} className="text-text-muted hover:text-nature-primary transition-colors ml-auto"><X size={24} /></button>
+            <RAButton variant="icon" aria-label="Cerrar detalle" onPress={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }} className="ml-auto"><X size={24} /></RAButton>
           </div>
 
           {/* ── Render by type ── */}
@@ -410,10 +411,10 @@ export const DetailModal = () => {
               onCloseParent={() => { setIsDetailModalOpen(false); setSelectedLocationId(null); }}
             />
             <div className="flex gap-2 shrink-0 w-full sm:w-auto">
-              <button onClick={handleDuplicate} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-border-strong text-text-muted hover:bg-bg-surface-elevated hover:text-nature-primary transition-all" title="Duplicar">
+              <RAButton variant="secondary" onPress={handleDuplicate} className="flex-1 sm:flex-none px-4 py-3" size="md">
                 <Copy size={20} />
-              </button>
-              <button onClick={() => {
+              </RAButton>
+              <RAButton variant="ghost" onPress={() => {
                 showDialog({
                   type: 'confirm',
                   title: 'Eliminar destino',
@@ -427,7 +428,7 @@ export const DetailModal = () => {
                     addToast('Actividad eliminada', 'success');
                   }
                 });
-              }} className="flex-1 sm:flex-none px-4 py-3 flex justify-center items-center rounded-xl border border-border-strong text-red-500/80 hover:bg-red-500/10 transition-all"><Trash2 size={20} /></button>
+              }} className="flex-1 sm:flex-none px-4 py-3 text-red-500/80 hover:bg-red-500/10 rounded-xl border border-border-strong"><Trash2 size={20} /></RAButton>
             </div>
           </div>
         </div>

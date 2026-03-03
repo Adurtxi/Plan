@@ -20,9 +20,24 @@ import { DAYS, getCatConfig, isTransportCat, isAccommodationCat } from '../../co
 import type { Category, Priority, LocationItem } from '../../types';
 import { useLocations, useTransports, useTripVariants, useAddLocation, useUpdateLocation } from '../../hooks/useTripData';
 import { useReorderLocation, useMergeLocations, useMoveToDay, useExecuteMoveHere } from '../../hooks/useTripMutations';
+import { RAButton } from '../ui/RAButton';
 
 export const PlannerTab = () => {
-  const { optimisticLocations, clearOptimisticLocations, filterDays, setSelectedLocationId, setIsDetailModalOpen, undo, activeGlobalVariantId, movingItemId, setMovingItemId, activeDayVariants, setIsDragging, mobileView, setMobileView, isTripSettingsOpen, setIsTripSettingsOpen } = useAppStore();
+  const optimisticLocations = useAppStore(s => s.optimisticLocations);
+  const clearOptimisticLocations = useAppStore(s => s.clearOptimisticLocations);
+  const filterDays = useAppStore(s => s.filterDays);
+  const setSelectedLocationId = useAppStore(s => s.setSelectedLocationId);
+  const setIsDetailModalOpen = useAppStore(s => s.setIsDetailModalOpen);
+  const undo = useAppStore(s => s.undo);
+  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
+  const movingItemId = useAppStore(s => s.movingItemId);
+  const setMovingItemId = useAppStore(s => s.setMovingItemId);
+  const activeDayVariants = useAppStore(s => s.activeDayVariants);
+  const setIsDragging = useAppStore(s => s.setIsDragging);
+  const mobileView = useAppStore(s => s.mobileView);
+  const setMobileView = useAppStore(s => s.setMobileView);
+  const isTripSettingsOpen = useAppStore(s => s.isTripSettingsOpen);
+  const setIsTripSettingsOpen = useAppStore(s => s.setIsTripSettingsOpen);
   const { isMobile } = useResponsive();
 
   const { data: locations = [] } = useLocations();
@@ -81,7 +96,7 @@ export const PlannerTab = () => {
   const dwellOverIdRef = useRef<string | null>(null);
 
   // Auto-open settings if main plan has no start date
-  React.useEffect(() => {
+  useEffect(() => {
     const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
     if (activeVar && !activeVar.startDate) {
       setIsTripSettingsOpen(true);
@@ -561,7 +576,7 @@ export const PlannerTab = () => {
   type ViewMode = 'split-horizontal' | 'split-vertical' | 'map-only' | 'board-only';
   const [viewMode, setViewMode] = useState<ViewMode>('split-horizontal');
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
@@ -673,20 +688,22 @@ export const PlannerTab = () => {
                 <h3 className="text-lg font-bold text-nature-primary mb-4">Mover Actividad</h3>
                 <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto custom-scroll">
                   {availableDays.map(day => (
-                    <button
+                    <RAButton
                       key={day}
-                      onClick={() => {
+                      variant="ghost"
+                      onPress={() => {
                         const targetVariant = activeDayVariants[day] || 'default';
                         if (moveToDayModal.itemId) moveToDay({ id: moveToDayModal.itemId, targetDay: day, targetVariant });
                         setMoveToDayModal({ isOpen: false, itemId: null });
                       }}
-                      className="text-left px-4 py-3 bg-bg-surface-elevated hover:bg-nature-mint/30 rounded-xl text-sm font-bold text-text-secondary transition-colors"
+                      className="text-left px-4 py-3 bg-bg-surface-elevated hover:bg-nature-mint/30 rounded-xl text-sm font-bold text-text-secondary"
+                      size="md"
                     >
                       {day === 'unassigned' ? '📥 Buzón de Ideas' : day.replace('-', ' ')}
-                    </button>
+                    </RAButton>
                   ))}
                 </div>
-                <button onClick={() => setMoveToDayModal({ isOpen: false, itemId: null })} className="mt-4 w-full py-2 text-center text-sm text-text-muted hover:text-text-primary">Cancelar</button>
+                <RAButton variant="ghost" onPress={() => setMoveToDayModal({ isOpen: false, itemId: null })} className="mt-4 w-full py-2 text-center text-sm text-text-muted hover:text-text-primary" size="md">Cancelar</RAButton>
               </div>
             </div>
           )}
@@ -704,12 +721,12 @@ export const PlannerTab = () => {
                 {/* View mode selector — over the map */}
                 <div className="absolute bottom-4 right-4 z-[600]">
                   <div className="bg-bg-surface-elevated/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-border-strong">
-                    <button onClick={() => setIsTripSettingsOpen(true)} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+                    <RAButton variant="icon" aria-label="Ajustes del viaje" onPress={() => setIsTripSettingsOpen(true)} className="p-2 rounded-lg text-text-muted hover:text-nature-primary hover:bg-border-subtle mr-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></RAButton>
                     <div className="w-px h-6 bg-border-strong mr-2"></div>
-                    <button onClick={() => setViewMode('split-horizontal')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-horizontal' ? 'bg-nature-primary text-white shadow-sm' : 'text-text-muted hover:text-nature-primary hover:bg-border-subtle'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
-                    <button onClick={() => setViewMode('split-vertical')} className={`p-2 rounded-lg transition-colors ${viewMode === 'split-vertical' ? 'bg-nature-primary text-white shadow-sm' : 'text-text-muted hover:text-nature-primary hover:bg-border-subtle'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
-                    <button onClick={() => setViewMode('map-only')} className={`p-2 rounded-lg transition-colors ${viewMode === 'map-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-text-muted hover:text-nature-primary hover:bg-border-subtle'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>
-                    <button onClick={() => setViewMode('board-only')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                    <RAButton variant="icon" aria-label="Vista horizontal" onPress={() => setViewMode('split-horizontal')} className={`p-2 rounded-lg ${viewMode === 'split-horizontal' ? 'bg-nature-primary text-white shadow-sm' : 'text-text-muted hover:text-nature-primary hover:bg-border-subtle'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></RAButton>
+                    <RAButton variant="icon" aria-label="Vista vertical" onPress={() => setViewMode('split-vertical')} className={`p-2 rounded-lg ${viewMode === 'split-vertical' ? 'bg-nature-primary text-white shadow-sm' : 'text-text-muted hover:text-nature-primary hover:bg-border-subtle'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></RAButton>
+                    <RAButton variant="icon" aria-label="Solo mapa" onPress={() => setViewMode('map-only')} className={`p-2 rounded-lg ${viewMode === 'map-only' ? 'bg-nature-primary text-white shadow-sm' : 'text-text-muted hover:text-nature-primary hover:bg-border-subtle'}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></RAButton>
+                    <RAButton variant="icon" aria-label="Solo tablero" onPress={() => setViewMode('board-only')} className="p-2 rounded-lg text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></RAButton>
                   </div>
                 </div>
               </div>
@@ -744,12 +761,12 @@ export const PlannerTab = () => {
                 {viewMode === 'board-only' && (
                   <div className="absolute bottom-4 right-4 z-[600]">
                     <div className="bg-bg-surface-elevated/90 backdrop-blur-md rounded-xl p-1 shadow-lg flex items-center gap-1 border border-border-strong">
-                      <button onClick={() => setIsTripSettingsOpen(true)} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle mr-2" title="Ajustes del Viaje"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+                      <RAButton variant="icon" aria-label="Ajustes del viaje" onPress={() => setIsTripSettingsOpen(true)} className="p-2 rounded-lg text-text-muted hover:text-nature-primary hover:bg-border-subtle mr-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></RAButton>
                       <div className="w-px h-6 bg-border-strong mr-2"></div>
-                      <button onClick={() => setViewMode('split-horizontal')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></button>
-                      <button onClick={() => setViewMode('split-vertical')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
-                      <button onClick={() => setViewMode('map-only')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></button>
-                      <button onClick={() => setViewMode('board-only')} className="p-2 rounded-lg transition-colors bg-nature-primary text-white shadow-sm"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                      <RAButton variant="icon" aria-label="Vista horizontal" onPress={() => setViewMode('split-horizontal')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg></RAButton>
+                      <RAButton variant="icon" aria-label="Vista vertical" onPress={() => setViewMode('split-vertical')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></RAButton>
+                      <RAButton variant="icon" aria-label="Solo mapa" onPress={() => setViewMode('map-only')} className="p-2 rounded-lg transition-colors text-text-muted hover:text-nature-primary hover:bg-border-subtle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></RAButton>
+                      <RAButton variant="icon" aria-label="Solo tablero" onPress={() => setViewMode('board-only')} className="p-2 rounded-lg bg-nature-primary text-white shadow-sm"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></RAButton>
                     </div>
                   </div>
                 )}
@@ -767,7 +784,7 @@ export const PlannerTab = () => {
                   </div>
                 </div>
                 <div className="w-px h-8 bg-gray-700 mx-2"></div>
-                <button onClick={() => setMovingItemId(null)} className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-wider bg-gray-800 px-4 py-2 rounded-full transition-colors">Cancelar</button>
+                <RAButton variant="ghost" onPress={() => setMovingItemId(null)} className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-wider bg-gray-800 px-4 py-2 rounded-full" size="sm">Cancelar</RAButton>
               </div>
             )}
 

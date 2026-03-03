@@ -14,9 +14,10 @@ import { CSS } from '@dnd-kit/utilities';
 import type { LocationItem } from '../../types';
 import { useLocations, useTripVariants, useAddLocation } from '../../hooks/useTripData';
 import { useReorderLocation, useMoveToDay } from '../../hooks/useTripMutations';
+import { RAButton } from '../ui/RAButton';
 
 const MoveToDaySheet = ({ onClose, onMove }: { onClose: () => void, onMove: (day: string) => void }) => {
-  const { activeGlobalVariantId } = useAppStore();
+  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
   const { data: tripVariants = [] } = useTripVariants();
   let dayOptions: { value: string; label: string }[] = [];
   const activeVar = tripVariants.find(v => v.id === activeGlobalVariantId);
@@ -42,17 +43,19 @@ const MoveToDaySheet = ({ onClose, onMove }: { onClose: () => void, onMove: (day
       <div className="bg-white rounded-t-3xl p-6 relative z-10 animate-[slideUp_0.3s_ease-out] shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-sans text-xl text-nature-primary">Mover actividad a...</h3>
-          <button onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500"><X size={16} /></button>
+          <RAButton variant="icon" aria-label="Cerrar" onPress={onClose} className="p-2 bg-gray-100 text-gray-500"><X size={16} /></RAButton>
         </div>
         <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto custom-scroll pb-8">
           {dayOptions.map(opt => (
-            <button
+            <RAButton
               key={opt.value}
-              onClick={() => onMove(opt.value)}
-              className={`p - 4 rounded - 2xl font - bold text - sm flex items - center justify - center transition - colors shadow - sm ${opt.value === 'unassigned' ? 'col-span-2 bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-gray-50 border border-gray-100 text-gray-600 active:bg-nature-mint/30 active:text-nature-primary active:border-nature-primary/30'} `}
+              variant="ghost"
+              onPress={() => onMove(opt.value)}
+              className={`p-4 rounded-2xl font-bold text-sm flex items-center justify-center shadow-sm ${opt.value === 'unassigned' ? 'col-span-2 bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-gray-50 border border-gray-100 text-gray-600'}`}
+              size="md"
             >
               {opt.label}
-            </button>
+            </RAButton>
           ))}
         </div>
       </div>
@@ -98,15 +101,16 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
       >
         <GripVertical size={20} />
       </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
+      <RAButton
+        variant="icon"
+        aria-label="Desasignar actividad"
+        onPress={() => {
           reorderLocation(loc.id, null, 'unassigned', useAppStore.getState().activeGlobalVariantId);
         }}
-        className="p-1.5 mt-2 rounded-lg text-gray-400 active:bg-nature-surface active:text-nature-primary transition-colors"
+        className="p-1.5 mt-2 rounded-lg text-gray-400"
       >
         <FolderInput size={18} />
-      </button>
+      </RAButton>
     </div>
   );
 
@@ -172,9 +176,9 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
           </div>
 
           <div className="flex gap-2 mt-1 pr-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
+            <RAButton
+              variant="ghost"
+              onPress={() => {
                 if (setMobileView) {
                   hapticFeedback.light();
                   setSelectedLocationId(loc.id);
@@ -183,25 +187,31 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
                   setMobileView('map');
                 }
               }}
-              className="px-4 bg-nature-mint/30 active:bg-nature-mint/50 text-nature-primary rounded-xl flex items-center justify-center transition-colors"
+              className="px-4 bg-nature-mint/30 text-nature-primary rounded-xl flex items-center justify-center"
+              size="md"
             >
               <Map size={18} />
-            </button>
-            <button
-              onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.coords?.lat},${loc.coords?.lng}`, '_blank')}
+            </RAButton>
+            <RAButton
+              variant="ghost"
+              onPress={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.coords?.lat},${loc.coords?.lng}`, '_blank')}
               className="flex-1 bg-bg-surface-elevated border border-border-strong text-text-primary text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2"
+              size="md"
             >
               <Navigation size={16} /> Ir a (Maps)
-            </button>
-            <button
-              onClick={() => window.open(`https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${loc.coords?.lat}&dropoff[longitude]=${loc.coords?.lng}`, '_blank')}
+            </RAButton>
+            <RAButton
+              variant="ghost"
+              onPress={() => window.open(`https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${loc.coords?.lat}&dropoff[longitude]=${loc.coords?.lng}`, '_blank')}
               className="flex-1 bg-text-primary text-bg-surface text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm"
+              size="md"
             >
               <Car size={16} /> Uber
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
+            </RAButton>
+            <RAButton
+              variant="icon"
+              aria-label="Omitir actividad"
+              onPress={() => {
                 hapticFeedback.light();
                 setSkippedTasks(prev => {
                   const n = new Set(prev);
@@ -209,10 +219,10 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
                   return n;
                 });
               }}
-              className="px-4 bg-red-50 text-red-600 active:bg-red-100 rounded-xl flex items-center justify-center"
+              className="px-4 bg-red-50 text-red-600 rounded-xl flex items-center justify-center"
             >
               <SkipForward size={18} />
-            </button>
+            </RAButton>
           </div>
         </div>
       )}
@@ -221,7 +231,10 @@ const SortableMobileCard = ({ id, loc, isSkipped, setSkippedTasks, reorderLocati
 };
 
 export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileView?: (v: 'plan' | 'map') => void, handleEdit: (id: number) => void }) => {
-  const { activeDayVariants, addToast, setSelectedLocationId, setIsDetailModalOpen } = useAppStore();
+  const activeDayVariants = useAppStore(s => s.activeDayVariants);
+  const addToast = useAppStore(s => s.addToast);
+  const setSelectedLocationId = useAppStore(s => s.setSelectedLocationId);
+  const setIsDetailModalOpen = useAppStore(s => s.setIsDetailModalOpen);
   const { data: locations = [], refetch: refetchLocations } = useLocations();
   const { mutateAsync: addLocation } = useAddLocation();
   const { mutate: reorderLocation } = useReorderLocation();
@@ -257,7 +270,8 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
   }, [locations]);
 
   // Sync mobile day selector with global filterDays
-  const { filterDays, setFilterDays } = useAppStore();
+  const filterDays = useAppStore(s => s.filterDays);
+  const setFilterDays = useAppStore(s => s.setFilterDays);
   const selectedDay = filterDays.length > 0 ? filterDays[0] : firstDay;
 
   const handleSelectDay = (day: string) => {
@@ -366,8 +380,10 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
           <div className="flex-1 min-w-0">
             <MobileDaySelector selectedDay={selectedDay} onSelectDay={handleSelectDay} />
           </div>
-          <button
-            onClick={() => {
+          <RAButton
+            variant="icon"
+            aria-label="Bandeja de ideas"
+            onPress={() => {
               hapticFeedback.selection();
               setIsInboxOpen(true);
             }}
@@ -379,16 +395,18 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
                 {unassignedCount}
               </span>
             )}
-          </button>
-          <button
-            onClick={() => {
+          </RAButton>
+          <RAButton
+            variant="icon"
+            aria-label="Importar reservas"
+            onPress={() => {
               hapticFeedback.selection();
               setIsImportSheetOpen(true);
             }}
-            className="p-3 bg-nature-mint/30 hover:bg-nature-mint/50 active:scale-95 text-nature-primary rounded-xl shrink-0 border border-nature-primary/20 transition-all font-bold flex gap-1 items-center justify-center"
+            className="p-3 bg-nature-mint/30 hover:bg-nature-mint/50 text-nature-primary rounded-xl shrink-0 border border-nature-primary/20 font-bold flex gap-1 items-center justify-center"
           >
             <Ticket size={22} />
-          </button>
+          </RAButton>
         </div>
       </header>
 
@@ -450,15 +468,18 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
 
           <div className="pl-6 pt-4 space-y-2">
             <div className="absolute -left-[9px] w-4 h-4 rounded-full border-4 border-gray-50 bg-nature-primary/30" />
-            <button
-              onClick={handleAddFreeTime}
-              className="w-full bg-gray-100 active:bg-gray-200 text-gray-500 py-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+            <RAButton
+              variant="ghost"
+              onPress={handleAddFreeTime}
+              className="w-full bg-gray-100 text-gray-500 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
+              size="md"
             >
               ☕ Libre
-            </button>
+            </RAButton>
             <div className="relative">
-              <button
-                onClick={async () => {
+              <RAButton
+                variant="ghost"
+                onPress={async () => {
                   await addLocation({
                     id: Date.now(),
                     title: 'Nueva Actividad',
@@ -477,10 +498,11 @@ export const MobileTimelineView = ({ setMobileView, handleEdit }: { setMobileVie
                     order: Date.now()
                   });
                 }}
-                className="w-full bg-nature-mint/30 active:bg-nature-mint/50 text-nature-primary py-2.5 rounded-xl border border-dashed border-nature-primary/20 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full bg-nature-mint/30 text-nature-primary py-2.5 rounded-xl border border-dashed border-nature-primary/20 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5"
+                size="sm"
               >
                 <Plus size={12} /> Añadir
-              </button>
+              </RAButton>
             </div>
           </div>
         </div >

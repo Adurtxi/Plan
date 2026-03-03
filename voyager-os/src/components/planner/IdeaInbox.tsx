@@ -8,6 +8,7 @@ import { useAppStore } from '../../store';
 import { DAYS, isTransportCat, getCatGroup } from '../../constants';
 import { useLocations, useTripVariants } from '../../hooks/useTripData';
 import { useMoveToDay } from '../../hooks/useTripMutations';
+import { RAButton } from '../ui/RAButton';
 
 interface IdeaInboxProps {
   handleCardClick: (id: number) => void;
@@ -15,7 +16,9 @@ interface IdeaInboxProps {
 }
 
 export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => {
-  const { activeGlobalVariantId, isDragging, activeDayVariants } = useAppStore();
+  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
+  const isDragging = useAppStore(s => s.isDragging);
+  const activeDayVariants = useAppStore(s => s.activeDayVariants);
   const { data: locations = [] } = useLocations();
   const { data: tripVariants = [] } = useTripVariants();
   const { mutate: moveToDay } = useMoveToDay();
@@ -124,10 +127,11 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`absolute top-6 left-6 z-[400] bg-bg-surface-elevated/90 backdrop-blur-md text-nature-primary p-3 rounded-full shadow-lg border border-border-strong hover:bg-bg-surface transition-all ${isOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
-        title="Buzón de Ideas"
+      <RAButton
+        variant="icon"
+        aria-label="Abrir buzón de ideas"
+        onPress={() => setIsOpen(true)}
+        className={`absolute top-6 left-6 z-[400] bg-bg-surface-elevated/90 backdrop-blur-md text-nature-primary p-3 rounded-full shadow-lg border border-border-strong hover:bg-bg-surface ${isOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
       >
         <div className="relative">
           <Inbox size={20} />
@@ -137,12 +141,12 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
             </span>
           )}
         </div>
-      </button>
+      </RAButton>
 
       <div className={`w-full md:w-[460px] shrink-0 bg-bg-surface border-r border-border-strong flex flex-col z-[510] shadow-[10px_0_30px_rgba(0,0,0,0.1)] h-full absolute top-0 bottom-0 left-0 transform ${isOpen && !isDragging ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
-        <button type="button" onClick={() => setIsOpen(false)} className="absolute top-4 right-4 p-2 text-text-muted hover:text-nature-primary z-50 bg-bg-surface-elevated/50 rounded-full backdrop-blur transition-colors">
+        <RAButton variant="icon" aria-label="Cerrar buzón" onPress={() => setIsOpen(false)} className="absolute top-4 right-4 z-50 bg-bg-surface-elevated/50 backdrop-blur">
           <X size={24} />
-        </button>
+        </RAButton>
 
         <div className="p-8 pb-4 bg-bg-surface-elevated/50">
           <h2 className="text-xl font-sans text-nature-primary flex items-center gap-2">
@@ -153,12 +157,12 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
 
         <div className="px-6 pt-4 pb-0 shrink-0 flex flex-col gap-3">
           <div className="flex gap-2">
-            <button onClick={handleAddNew} className="flex-1 bg-nature-primary text-white py-3 rounded-xl shadow-[0_10px_20px_-10px_rgba(45,90,39,0.5)] font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-nature-primary/90 transition-all hover:-translate-y-0.5 active:scale-[0.98]">
+            <RAButton variant="primary" onPress={handleAddNew} className="flex-1" size="md">
               <Plus size={18} /> Nueva Idea
-            </button>
-            <button onClick={() => setIsImportSheetOpen(true)} className="flex-1 bg-nature-mint text-nature-primary py-3 rounded-xl border border-nature-primary/20 font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-nature-mint/80 transition-all hover:-translate-y-0.5 active:scale-[0.98]">
+            </RAButton>
+            <RAButton variant="secondary" onPress={() => setIsImportSheetOpen(true)} className="flex-1 bg-nature-mint text-nature-primary border-nature-primary/20" size="md">
               <Ticket size={18} /> Billetera
-            </button>
+            </RAButton>
           </div>
 
           <div className="flex flex-col gap-2 mt-2">
@@ -180,40 +184,44 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
                 {availableCities.length > 0 && (
                   <div className="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1">
                     <span className="text-[10px] uppercase font-bold text-gray-400 shrink-0 mr-1">Zonas</span>
-                    <button
-                      onClick={() => setActiveCityFilter('all')}
+                    <RAButton
+                      variant="ghost"
+                      onPress={() => setActiveCityFilter('all')}
                       className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === 'all' ? 'bg-nature-primary text-white shadow-sm' : 'bg-bg-surface border border-border-strong text-text-secondary hover:bg-bg-surface-elevated'}`}
                     >
                       Todas
-                    </button>
+                    </RAButton>
                     {availableCities.map(city => (
-                      <button
+                      <RAButton
                         key={city}
-                        onClick={() => setActiveCityFilter(city)}
+                        variant="ghost"
+                        onPress={() => setActiveCityFilter(city)}
                         className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeCityFilter === city ? 'bg-nature-primary text-white shadow-sm' : 'bg-bg-surface border border-border-strong text-text-secondary hover:bg-bg-surface-elevated'}`}
                       >
                         {city}
-                      </button>
+                      </RAButton>
                     ))}
                   </div>
                 )}
                 {availableTags.length > 0 && (
                   <div className="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1">
                     <span className="text-[10px] uppercase font-bold text-gray-400 shrink-0 mr-1">Tags</span>
-                    <button
-                      onClick={() => setActiveTagFilter('all')}
+                    <RAButton
+                      variant="ghost"
+                      onPress={() => setActiveTagFilter('all')}
                       className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeTagFilter === 'all' ? 'bg-nature-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
                     >
                       Todas
-                    </button>
+                    </RAButton>
                     {availableTags.map(tag => (
-                      <button
+                      <RAButton
                         key={tag}
-                        onClick={() => setActiveTagFilter(tag)}
+                        variant="ghost"
+                        onPress={() => setActiveTagFilter(tag)}
                         className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5 ${activeTagFilter === tag ? 'bg-nature-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
                       >
                         #{tag}
-                      </button>
+                      </RAButton>
                     ))}
                   </div>
                 )}
@@ -229,20 +237,22 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
                 : unassignedAll.filter(item => getCatGroup(item.cat) === opt.id).length;
 
               return (
-                <button
+                <RAButton
                   key={opt.id}
-                  onClick={() => setActiveFilter(opt.id)}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center gap-1.5
+                  variant="ghost"
+                  onPress={() => setActiveFilter(opt.id)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5
                     ${activeFilter === opt.id
                       ? 'bg-nature-primary text-white shadow-sm'
                       : 'bg-bg-surface border border-border-strong text-text-secondary hover:bg-bg-surface-elevated'
                     }`}
+                  size="sm"
                 >
                   {opt.label}
                   <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeFilter === opt.id ? 'bg-white/20' : 'bg-bg-surface-elevated'}`}>
                     {count}
                   </span>
-                </button>
+                </RAButton>
               );
             })}
           </div>
@@ -310,24 +320,26 @@ export const IdeaInbox = ({ handleCardClick, handleAddNew }: IdeaInboxProps) => 
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-bg-surface-elevated border-t border-border-strong shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] z-50 flex flex-col gap-3">
             <div className="flex justify-between items-center px-2">
               <span className="text-sm font-bold text-nature-primary">{selectedIds.length} seleccionadas</span>
-              <button onClick={() => setSelectedIds([])} className="text-[10px] uppercase font-bold text-text-muted hover:text-text-primary">Cancelar</button>
+              <RAButton variant="ghost" onPress={() => setSelectedIds([])} size="sm" className="text-[10px] uppercase font-bold text-text-muted hover:text-text-primary">Cancelar</RAButton>
             </div>
             {showMoveModal ? (
               <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto custom-scroll">
                 {[...dayOptions, { value: 'unassigned', label: '📥 Buzón de Ideas' }].map(opt => (
-                  <button
+                  <RAButton
                     key={opt.value}
-                    onClick={() => handleBulkMove(opt.value)}
-                    className={`text-left px-4 py-3 rounded-xl text-sm font-bold transition-colors ${opt.value === 'unassigned' ? 'bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20' : 'bg-bg-surface text-text-secondary hover:bg-nature-mint/30'}`}
+                    variant="ghost"
+                    onPress={() => handleBulkMove(opt.value)}
+                    className={`text-left px-4 py-3 rounded-xl text-sm font-bold ${opt.value === 'unassigned' ? 'bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20' : 'bg-bg-surface text-text-secondary hover:bg-nature-mint/30'}`}
+                    size="md"
                   >
                     {opt.label}
-                  </button>
+                  </RAButton>
                 ))}
               </div>
             ) : (
-              <button onClick={() => setShowMoveModal(true)} className="w-full bg-nature-primary text-white py-3 rounded-xl font-bold text-sm flex justify-center gap-2 items-center hover:bg-nature-primary/90">
+              <RAButton variant="primary" onPress={() => setShowMoveModal(true)} className="w-full" size="md">
                 <Calendar size={18} /> Mover al día...
-              </button>
+              </RAButton>
             )}
           </div>
         )}

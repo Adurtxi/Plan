@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { X, MapPin, Calendar, CreditCard, Image as ImageIcon } from 'lucide-react';
 import type { Category, Priority, LocationItem, ReservationStatus } from '../../types';
 import { getCatGroup, getCatConfig, CAT_LABELS } from '../../constants';
-import { CustomSelect } from '../ui/CustomSelect';
+import { RASelect } from '../ui/RASelect';
+import { RAButton } from '../ui/RAButton';
 import { ActivityTypePicker } from './ActivityTypePicker';
 import { useAppStore, computeDateForDay } from '../../store';
 import { useTripVariants } from '../../hooks/useTripData';
@@ -83,7 +84,8 @@ export const LocationForm = ({
   const [currentTags, setCurrentTags] = useState<string[]>([]);
   const [tagInputValue, setTagInputValue] = useState('');
 
-  const { activeGlobalVariantId, setIsTripSettingsOpen } = useAppStore();
+  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
+  const setIsTripSettingsOpen = useAppStore(s => s.setIsTripSettingsOpen);
   const { data: tripVariants = [] } = useTripVariants();
   const activeVariant = tripVariants.find(v => v.id === activeGlobalVariantId);
   const predefinedCities = activeVariant?.cities || [];
@@ -93,7 +95,6 @@ export const LocationForm = ({
   const catGroup = getCatGroup(formCat);
   const catConfig = getCatConfig(formCat);
 
-  // Load existing status when editing
   useEffect(() => {
     if (formId) {
       const existing = locations.find(l => l.id === formId);
@@ -147,8 +148,6 @@ export const LocationForm = ({
           mapCoords: existing.coords ? `${existing.coords.lat},${existing.coords.lng}` : '',
           coordsReadonly: existing.coords ? `${existing.coords.lat.toFixed(6)}, ${existing.coords.lng.toFixed(6)}` : ''
         });
-
-        // Ensure default datetime based on day if not editing datetime explicitly but day changed? Handled below.
       }
     } else {
       setResStatus('idea');
@@ -165,7 +164,7 @@ export const LocationForm = ({
         bestTimeHint: '', city: '', lateCheckout: false, mealType: '', mapCoords: '', coordsReadonly: ''
       });
     }
-  }, [formId, locations, reset, preselectedDay, tripVariants, activeGlobalVariantId]);
+  }, [formId, preselectedDay]);
 
   // Handle Map Coordinate Updates
   useEffect(() => {
@@ -285,7 +284,7 @@ export const LocationForm = ({
 
   return (
     <div className={`w-full md:w-[480px] shrink-0 bg-bg-surface border-r border-border-strong flex flex-col z-[520] shadow-[10px_0_30px_rgba(0,0,0,0.1)] h-full absolute top-0 bottom-0 left-0 transform ${isFormPanelOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
-      <button type="button" onClick={() => setIsFormPanelOpen(false)} className="absolute top-4 right-4 p-2 text-text-muted hover:text-nature-primary z-50 bg-bg-surface-elevated/50 rounded-full backdrop-blur transition-colors"><X size={24} /></button>
+      <RAButton variant="icon" aria-label="Cerrar formulario" onPress={() => setIsFormPanelOpen(false)} className="absolute top-4 right-4 z-50 bg-bg-surface-elevated/50 backdrop-blur"><X size={24} /></RAButton>
 
       <div className="p-8 pb-4 bg-bg-surface/50">
         <div className="flex items-center gap-3 mb-1">
@@ -646,15 +645,15 @@ export const LocationForm = ({
               <div className="flex gap-4">
                 <div className="w-1/2">
                   <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Momento del día</label>
-                  <CustomSelect
-                    name="slot"
+                  <RASelect
+                    aria-label="Momento del día"
+                    items={[
+                      { id: 'Mañana', label: 'Mañana' },
+                      { id: 'Tarde', label: 'Tarde' },
+                      { id: 'Noche', label: 'Noche' }
+                    ]}
                     value={formSlot}
                     onChange={setFormSlot}
-                    options={[
-                      { value: 'Mañana', label: 'Mañana' },
-                      { value: 'Tarde', label: 'Tarde' },
-                      { value: 'Noche', label: 'Noche' }
-                    ]}
                     buttonClassName="w-full bg-bg-surface-elevated border border-border-strong rounded-xl p-3 text-sm text-text-primary font-bold"
                   />
                 </div>
@@ -714,19 +713,19 @@ export const LocationForm = ({
               </div>
               <div className="flex-[0.5]">
                 <label className="text-[10px] tracking-widest font-bold text-gray-400 uppercase mb-2 block">Divisa</label>
-                <CustomSelect
-                  name="priceCurrency"
+                <RASelect
+                  aria-label="Divisa"
+                  items={[
+                    { id: 'EUR', label: '€ EUR' },
+                    { id: 'USD', label: '$ USD' },
+                    { id: 'GBP', label: '£ GBP' },
+                    { id: 'JPY', label: '¥ JPY' },
+                    { id: 'AED', label: 'د.إ AED' },
+                    { id: 'SGD', label: 'S$ SGD' },
+                    { id: 'MYR', label: 'RM MYR' },
+                  ]}
                   value={formCurrency}
                   onChange={setFormCurrency}
-                  options={[
-                    { value: 'EUR', label: '€ EUR' },
-                    { value: 'USD', label: '$ USD' },
-                    { value: 'GBP', label: '£ GBP' },
-                    { value: 'JPY', label: '¥ JPY' },
-                    { value: 'AED', label: 'د.إ AED' },
-                    { value: 'SGD', label: 'S$ SGD' },
-                    { value: 'MYR', label: 'RM MYR' },
-                  ]}
                   buttonClassName="w-full bg-bg-surface-elevated border border-border-strong rounded-xl p-4 text-sm font-bold text-text-primary"
                 />
               </div>
@@ -784,11 +783,16 @@ export const LocationForm = ({
 
           {/* Sticky footer for submit */}
           <div className="pt-6 sticky bottom-0 bg-bg-surface border-t border-border-strong">
-            <button type="submit" className={`w-full ${formId ? 'bg-gray-800' : 'bg-nature-primary'} text-white font-bold tracking-wide py-4 text-sm rounded-xl shadow-[0_10px_20px_-10px_rgba(45,90,39,0.5)] hover:shadow-2xl hover:-translate-y-0.5 transition-all transform active:scale-[0.98]`}
-              style={!formId && catConfig ? { backgroundColor: catConfig.color } : {}}>
+            <RAButton
+              variant="primary"
+              className={`w-full ${formId ? 'bg-gray-800' : ''}`}
+              size="lg"
+              type="submit"
+              style={!formId && catConfig ? { backgroundColor: catConfig.color } : {}}
+            >
               {formId ? 'Confirmar Edición' : `Añadir ${CAT_LABELS[formCat] || 'Actividad'}`}
-            </button>
-            {formId && <button type="button" onClick={resetForm} className="w-full text-xs text-text-muted hover:text-red-500 py-3 font-bold uppercase tracking-widest mt-2 transition-colors">Cancelar</button>}
+            </RAButton>
+            {formId && <RAButton variant="ghost" onPress={resetForm} className="w-full text-xs text-text-muted hover:text-red-500 uppercase tracking-widest mt-2" size="sm">Cancelar</RAButton>}
           </div>
         </form>
       </div >

@@ -1,17 +1,19 @@
 import { memo } from 'react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { Button as AriaButton } from 'react-aria-components';
 import { Edit2, Info, Map as MapIcon, Navigation, ArrowRightCircle, LogOut, MoreVertical } from 'lucide-react';
 import { useAppStore } from '../../store';
 import { useExtractFromGroup } from '../../hooks/useTripMutations';
 import { hapticFeedback } from '../../utils/haptics';
 import type { LocationItem } from '../../types';
 import { useNavigate } from 'react-router';
+import { RAMenu, RAMenuItem, RAMenuSeparator } from './RAMenu';
+import { RAButton } from './RAButton';
 
 interface CardActionsProps {
   item: LocationItem;
   mode?: 'dropdown' | 'inline' | 'inline-labeled';
   onRequestMove?: () => void;
-  onCloseParent?: () => void; // for closing Modals
+  onCloseParent?: () => void;
   className?: string;
 }
 
@@ -27,22 +29,19 @@ export const CardActions = memo(({
   const navigate = useNavigate();
 
   // Actions
-  const handleShowDetail = (e?: React.MouseEvent | Event) => {
-    if (e) e.stopPropagation();
+  const handleShowDetail = () => {
     hapticFeedback.light();
     setSelectedLocationId(item.id);
     setIsDetailModalOpen(true);
   };
 
-  const handleGoToMap = (e?: React.MouseEvent | Event) => {
-    if (e) e.stopPropagation();
+  const handleGoToMap = () => {
     hapticFeedback.light();
     navigate('/');
     setFilterDays([item.day]);
     if (item.coords) {
       useAppStore.getState().setReframeMapCoordinates(item.coords);
     }
-    // Si queremos detalle, lo quitamos, si no lo ponemos. El usuario pidio sobresaltarlo y centrarlo, pero no abrir detalle
     setSelectedLocationId(item.id);
     setIsDetailModalOpen(false);
 
@@ -50,22 +49,19 @@ export const CardActions = memo(({
     if (onCloseParent) onCloseParent();
   };
 
-  const handleOpenWebLink = (e?: React.MouseEvent | Event) => {
-    if (e) e.stopPropagation();
+  const handleOpenWebLink = () => {
     if (!item.link || !item.link.startsWith('http')) return;
     hapticFeedback.light();
     window.open(item.link, '_blank');
   };
 
-  const handleOpenGoogleMapsRoute = (e?: React.MouseEvent | Event) => {
-    if (e) e.stopPropagation();
+  const handleOpenGoogleMapsRoute = () => {
     if (!item.coords) return;
     hapticFeedback.light();
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${item.coords.lat},${item.coords.lng}`, '_blank');
   };
 
-  const handleEdit = (e?: React.MouseEvent | Event) => {
-    if (e) e.stopPropagation();
+  const handleEdit = () => {
     hapticFeedback.medium();
     setSelectedLocationId(null);
     setIsDetailModalOpen(false);
@@ -75,21 +71,18 @@ export const CardActions = memo(({
     if (onCloseParent) onCloseParent();
   };
 
-  const handleMoveTo = (e?: React.MouseEvent | Event) => {
-    if (e) e.stopPropagation();
+  const handleMoveTo = () => {
     if (onRequestMove) onRequestMove();
   };
 
-  const handleRemoveFromGroup = (e?: React.MouseEvent | Event) => {
-    if (e) e.stopPropagation();
+  const handleRemoveFromGroup = () => {
     if (item.groupId) extractFromGroup(item.id);
   };
 
-  // ----- INLINE BUTTONS (Iconos limpios con o sin label) ----- 
+  // ----- INLINE BUTTONS (Iconos limpios con o sin label) -----
   if (mode === 'inline' || mode === 'inline-labeled') {
     const isDetailModal = className.includes('detail-modal');
 
-    // Estilos responsivos adaptados al Dark Mode usando Tailwind variants semánticos
     const detailBtnClass = isDetailModal
       ? 'flex-1 py-3 rounded-xl border border-border-strong text-text-secondary hover:bg-bg-surface-elevated transition-all text-sm font-medium flex justify-center items-center gap-2'
       : 'py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md flex items-center justify-center gap-2 transition-colors text-sm font-bold border border-white/10 shadow-lg cursor-pointer flex-1';
@@ -110,37 +103,32 @@ export const CardActions = memo(({
 
     return (
       <div className={`flex gap-3 w-full justify-center ${className}`}>
-        {/* Detalle */}
         {!isDetailModal && (
-          <button onClick={handleShowDetail} className={detailBtnClass} title="Ver detalle">
+          <RAButton variant="ghost" onPress={handleShowDetail} className={detailBtnClass}>
             <Info size={16} /> {mode === 'inline-labeled' && 'Detalle'}
-          </button>
+          </RAButton>
         )}
 
-        {/* Editar */}
-        <button onClick={handleEdit} className={detailBtnClass} title="Editar elemento">
+        <RAButton variant="ghost" onPress={handleEdit} className={detailBtnClass}>
           <Edit2 size={16} /> {mode === 'inline-labeled' && 'Editar'}
-        </button>
+        </RAButton>
 
-        {/* Ver en Mapa (Centrar/Highlight) */}
         {!isDetailModal && (
-          <button onClick={handleGoToMap} className={highlightBtnClass} title="Ubicar en el planificador">
+          <RAButton variant="ghost" onPress={handleGoToMap} className={highlightBtnClass}>
             <MapIcon size={16} /> {mode === 'inline-labeled' && 'Ver Mapa'}
-          </button>
+          </RAButton>
         )}
 
-        {/* Link del Archivo (Web) */}
         {hasWebLink && (
-          <button onClick={handleOpenWebLink} className={linkBtnClass} title="Abrir enlace guardado">
+          <RAButton variant="ghost" onPress={handleOpenWebLink} className={linkBtnClass}>
             <ArrowRightCircle size={16} /> {mode === 'inline-labeled' && 'Enlace'}
-          </button>
+          </RAButton>
         )}
 
-        {/* Ruta GPS de Google Maps */}
         {item.coords && (
-          <button onClick={handleOpenGoogleMapsRoute} className={routeBtnClass} title="Crear ruta en Google Maps">
+          <RAButton variant="ghost" onPress={handleOpenGoogleMapsRoute} className={routeBtnClass}>
             <Navigation size={16} /> {mode === 'inline-labeled' && 'Ir A'}
-          </button>
+          </RAButton>
         )}
       </div>
     );
@@ -149,62 +137,59 @@ export const CardActions = memo(({
   // ----- DROPDOWN MENU (Para las cards) -----
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <button
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white/90 backdrop-blur shadow-sm border border-gray-100 text-gray-500 hover:text-nature-primary p-1.5 rounded-full transition-colors outline-none focus:ring-2 focus:ring-nature-primary/50"
+      <RAMenu
+        trigger={
+          <AriaButton
+            className="bg-bg-surface/90 backdrop-blur shadow-sm border border-border-strong text-text-muted hover:text-nature-primary p-1.5 rounded-full transition-colors outline-none focus:ring-2 focus:ring-nature-primary/50"
             aria-label="Abrir menú de acciones"
+            onPress={() => { /* stop propagation handled by RAC */ }}
           >
             <MoreVertical size={16} />
-          </button>
-        </DropdownMenu.Trigger>
+          </AriaButton>
+        }
+      >
+        <RAMenuItem icon={<Info size={14} className="text-blue-500" />} onAction={handleShowDetail}>
+          Ver Detalle
+        </RAMenuItem>
 
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            className="w-48 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100 py-1.5 z-[5000] overflow-hidden"
-            sideOffset={5}
-            align="end"
-            onClick={e => e.stopPropagation()}
-          >
-            <DropdownMenu.Item onSelect={handleShowDetail} className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-xs font-bold text-gray-700 transition-colors cursor-pointer outline-none data-[highlighted]:bg-gray-50">
-              <Info size={14} className="text-blue-500" /> Ver Detalle
-            </DropdownMenu.Item>
+        <RAMenuItem icon={<Edit2 size={14} className="text-amber-500" />} onAction={handleEdit}>
+          Editar Elemento
+        </RAMenuItem>
 
-            <DropdownMenu.Item onSelect={handleEdit} className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-xs font-bold text-gray-700 transition-colors cursor-pointer outline-none data-[highlighted]:bg-gray-50">
-              <Edit2 size={14} className="text-amber-500" /> Editar Elemento
-            </DropdownMenu.Item>
+        <RAMenuItem icon={<MapIcon size={14} className="text-nature-primary" />} onAction={handleGoToMap}>
+          Centrar en Plan
+        </RAMenuItem>
 
-            <DropdownMenu.Item onSelect={handleGoToMap} className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-xs font-bold text-gray-700 transition-colors cursor-pointer outline-none data-[highlighted]:bg-gray-50">
-              <MapIcon size={14} className="text-nature-primary" /> Centrar en Plan
-            </DropdownMenu.Item>
+        {item.coords && (
+          <RAMenuItem icon={<Navigation size={14} className="text-[#4285F4]" />} onAction={handleOpenGoogleMapsRoute}>
+            Abrir Google Maps
+          </RAMenuItem>
+        )}
 
-            {item.coords && (
-              <DropdownMenu.Item onSelect={handleOpenGoogleMapsRoute} className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-xs font-bold text-gray-700 transition-colors cursor-pointer outline-none data-[highlighted]:bg-gray-50">
-                <Navigation size={14} className="text-[#4285F4]" /> Abrir Google Maps
-              </DropdownMenu.Item>
-            )}
+        {item.link && item.link.startsWith('http') && (
+          <RAMenuItem icon={<ArrowRightCircle size={14} className="text-[#4285F4]" />} onAction={handleOpenWebLink}>
+            Abrir Enlace Web
+          </RAMenuItem>
+        )}
 
-            {item.link && item.link.startsWith('http') && (
-              <DropdownMenu.Item onSelect={handleOpenWebLink} className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-xs font-bold text-gray-700 transition-colors border-b border-gray-50 cursor-pointer outline-none data-[highlighted]:bg-gray-50">
-                <ArrowRightCircle size={14} className="text-[#4285F4]" /> Abrir Enlace Web
-              </DropdownMenu.Item>
-            )}
+        {onRequestMove && (
+          <>
+            <RAMenuSeparator />
+            <RAMenuItem icon={<ArrowRightCircle size={14} />} onAction={handleMoveTo} className="text-nature-primary hover:bg-nature-mint/30 focus:bg-nature-mint/30">
+              Mover de día...
+            </RAMenuItem>
+          </>
+        )}
 
-            {onRequestMove && (
-              <DropdownMenu.Item onSelect={handleMoveTo} className="w-full text-left px-4 py-2 hover:bg-nature-mint/30 flex items-center gap-2 text-xs font-bold text-nature-primary transition-colors mt-1 cursor-pointer outline-none data-[highlighted]:bg-nature-mint/30">
-                <ArrowRightCircle size={14} /> Mover de día...
-              </DropdownMenu.Item>
-            )}
-
-            {item.groupId && (
-              <DropdownMenu.Item onSelect={handleRemoveFromGroup} className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-2 text-xs font-bold text-red-600 transition-colors border-t border-gray-50 mt-1 cursor-pointer outline-none data-[highlighted]:bg-red-50">
-                <LogOut size={14} /> Sacar del Grupo
-              </DropdownMenu.Item>
-            )}
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
+        {item.groupId && (
+          <>
+            <RAMenuSeparator />
+            <RAMenuItem icon={<LogOut size={14} />} destructive onAction={handleRemoveFromGroup}>
+              Sacar del Grupo
+            </RAMenuItem>
+          </>
+        )}
+      </RAMenu>
     </div>
   );
 });

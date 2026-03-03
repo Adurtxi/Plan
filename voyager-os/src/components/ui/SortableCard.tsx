@@ -8,6 +8,7 @@ import { CAT_ICONS, CAT_LABELS, isTransportCat } from '../../constants';
 import { useAppStore } from '../../store';
 import { useUpdateLocation } from '../../hooks/useTripData';
 import { CardActions } from './CardActions';
+import { RAButton } from './RAButton';
 
 const formatDuration = (mins: number) => {
   return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60 ? (mins % 60) + 'm' : ''}` : `${mins}m`;
@@ -145,9 +146,9 @@ export const CardVisual = memo(({
                         {(item.isPinnedTime) && <Lock size={10} className="text-nature-primary opacity-50 ml-0.5 shrink-0" />}
                       </span>
                       {onTimeConflict && (
-                        <button onClick={(e) => { e.stopPropagation(); onTimeConflict(); }} className="ml-1 p-0.5 bg-amber-100 hover:bg-amber-200 text-amber-600 rounded-md transition-colors" title="Desajuste de Horario">
+                        <RAButton variant="icon" aria-label="Conflicto de horario" onPress={() => { onTimeConflict(); }} className="ml-1 p-0.5 bg-amber-100 hover:bg-amber-200 text-amber-600 rounded-md">
                           <AlertTriangle size={12} />
-                        </button>
+                        </RAButton>
                       )}
                     </div>
                   );
@@ -158,22 +159,22 @@ export const CardVisual = memo(({
                       {formattedTime}
                       {item.isPinnedTime && <Lock size={10} className="text-nature-primary opacity-50" />}
                       {onTimeConflict && (
-                        <button onClick={(e) => { e.stopPropagation(); onTimeConflict(); }} className="ml-0.5 p-0.5 bg-amber-100 hover:bg-amber-200 text-amber-600 rounded-md transition-colors" title="Desajuste de Horario">
+                        <RAButton variant="icon" aria-label="Conflicto de horario" onPress={() => { onTimeConflict(); }} className="ml-0.5 p-0.5 bg-amber-100 hover:bg-amber-200 text-amber-600 rounded-md">
                           <AlertTriangle size={12} />
-                        </button>
+                        </RAButton>
                       )}
                     </span>
                   </div>
                 ) : null}
 
                 {item.durationMinutes ? (
-                  <button onClick={handleEditDuration} className="text-[10px] font-bold px-2 py-1 rounded-md bg-nature-mint/30 hover:bg-nature-mint/60 border border-nature-primary/10 text-nature-primary transition-colors flex items-center z-20">
+                  <RAButton variant="ghost" onPress={() => handleEditDuration({} as any)} className="text-[10px] font-bold px-2 py-1 rounded-md bg-nature-mint/30 hover:bg-nature-mint/60 border border-nature-primary/10 text-nature-primary flex items-center z-20" size="sm">
                     {formatDuration(item.durationMinutes)}
-                  </button>
+                  </RAButton>
                 ) : (
-                  <button onClick={handleEditDuration} className="text-[10px] font-bold px-2 py-1 rounded-md bg-bg-surface-elevated hover:bg-border-subtle border border-dashed border-border-strong text-text-muted transition-colors opacity-0 group-hover:opacity-100 flex items-center z-20">
+                  <RAButton variant="ghost" onPress={() => handleEditDuration({} as any)} className="text-[10px] font-bold px-2 py-1 rounded-md bg-bg-surface-elevated hover:bg-border-subtle border border-dashed border-border-strong text-text-muted opacity-0 group-hover:opacity-100 flex items-center z-20" size="sm">
                     <Plus size={10} /> Duración
-                  </button>
+                  </RAButton>
                 )}
 
                 {displayPrice && (

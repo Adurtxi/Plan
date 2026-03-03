@@ -4,6 +4,7 @@ import { useReservations } from '../../hooks/useTripData';
 import { ReservationCard } from './ReservationCard';
 import { ReservationForm } from './ReservationForm';
 import type { ReservationItem } from '../../types';
+import { RAButton } from '../ui/RAButton';
 
 export const LogisticsTab = () => {
   const { data: reservations = [] } = useReservations();
@@ -17,7 +18,7 @@ export const LogisticsTab = () => {
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
-    setTimeout(() => setEditingRes(null), 300); // clear after animation
+    setTimeout(() => setEditingRes(null), 300);
   };
 
   const sortedReservations = [...reservations].sort((a, b) => {
@@ -28,7 +29,6 @@ export const LogisticsTab = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-nature-bg relative overflow-hidden">
-      {/* Header */}
       <div className="shrink-0 p-4 md:p-8 bg-bg-surface border-b border-border-strong flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between z-10">
         <div>
           <h1 className="text-3xl font-sans text-nature-text leading-tight">Cartera de Reservas</h1>
@@ -36,15 +36,11 @@ export const LogisticsTab = () => {
             Gestiona tus vuelos, hoteles, trenes y actividades maestras.
           </p>
         </div>
-        <button
-          onClick={() => { setEditingRes(null); setIsFormOpen(true); }}
-          className="flex items-center gap-2 bg-nature-primary text-white px-5 py-3 rounded-xl font-bold hover:bg-opacity-90 transition-all shadow-md active:scale-95 whitespace-nowrap"
-        >
+        <RAButton variant="primary" onPress={() => { setEditingRes(null); setIsFormOpen(true); }} size="md">
           <Plus size={20} /> Añadir Reserva
-        </button>
+        </RAButton>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-8">
         {sortedReservations.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto">
@@ -55,12 +51,9 @@ export const LogisticsTab = () => {
             <p className="text-text-secondary mb-8">
               Añade tus vuelos, trenes, hoteles o tickets de actividades. Luego podrás inyectarlos automáticamente en tu planificación diaria.
             </p>
-            <button
-              onClick={() => { setEditingRes(null); setIsFormOpen(true); }}
-              className="flex items-center gap-2 bg-bg-surface border-2 border-nature-primary text-nature-primary px-6 py-3 rounded-xl font-bold hover:bg-nature-mint/10 transition-all shadow-sm"
-            >
+            <RAButton variant="secondary" onPress={() => { setEditingRes(null); setIsFormOpen(true); }} size="md" className="border-2 border-nature-primary text-nature-primary">
               <Plus size={20} /> Crear mi primera reserva
-            </button>
+            </RAButton>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 auto-rows-max">
@@ -71,7 +64,6 @@ export const LogisticsTab = () => {
         )}
       </div>
 
-      {/* Slide-over Form */}
       <ReservationForm isOpen={isFormOpen} onClose={handleCloseForm} editTarget={editingRes} />
     </div>
   );

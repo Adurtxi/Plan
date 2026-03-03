@@ -8,6 +8,7 @@ import { useFilteredLocations } from '../../hooks/useFilteredLocations';
 import { hapticFeedback } from '../../utils/haptics';
 import type { LocationItem } from '../../types';
 import { CAT_ICONS, CAT_COLORS } from '../../constants';
+import { RAButton } from '../ui/RAButton';
 
 
 const createCustomMarker = (item: LocationItem, isHovered?: boolean, isSelected?: boolean) => {
@@ -35,7 +36,9 @@ const createCustomMarker = (item: LocationItem, isHovered?: boolean, isSelected?
 
 const MapUpdater = ({ locations, reframeTrigger }: { locations: LocationItem[], reframeTrigger: number }) => {
   const map = useMap();
-  const { isDrawingRouteFor, reframeMapCoordinates, setReframeMapCoordinates } = useAppStore();
+  const isDrawingRouteFor = useAppStore(s => s.isDrawingRouteFor);
+  const reframeMapCoordinates = useAppStore(s => s.reframeMapCoordinates);
+  const setReframeMapCoordinates = useAppStore(s => s.setReframeMapCoordinates);
   const locationsRef = useRef(locations);
 
   useEffect(() => {
@@ -149,8 +152,13 @@ const MapCursorHandler = ({ isAddMode, isDrawingMode }: { isAddMode: boolean, is
 };
 
 export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddMode, setIsAddMode }: MapViewProps) => {
-  const { selectedLocationId, setSelectedLocationId, isDrawingRouteFor, setDrawingRouteFor } = useAppStore();
+  const selectedLocationId = useAppStore(s => s.selectedLocationId);
+  const setSelectedLocationId = useAppStore(s => s.setSelectedLocationId);
+  const isDrawingRouteFor = useAppStore(s => s.isDrawingRouteFor);
+  const setDrawingRouteFor = useAppStore(s => s.setDrawingRouteFor);
+
   const { mutate: addRoutePoint } = useAddRoutePoint();
+
   const filteredLocations = useFilteredLocations();
   const [mapType, setMapType] = useState<'m' | 's'>('m'); // 'm' for Map, 's' for Satellite
   const [tempMarker, setTempMarker] = useState<{ lat: number, lng: number } | null>(null);
@@ -193,33 +201,33 @@ export const MapView = ({ routePolylines, setIsFormPanelOpen, onMapClick, isAddM
           <div className="flex items-center gap-2">
             <PenTool size={16} className="shrink-0" /> <span className="text-sm">Añadiendo puntos...</span>
           </div>
-          <button onClick={() => setDrawingRouteFor(null)} className="shrink-0 flex items-center gap-1.5 bg-bg-surface text-nature-accent hover:bg-bg-surface-elevated px-3 py-1.5 rounded-full text-xs font-bold transition-colors">
+          <RAButton variant="ghost" onPress={() => setDrawingRouteFor(null)} className="shrink-0 flex items-center gap-1.5 bg-bg-surface text-nature-accent hover:bg-bg-surface-elevated px-3 py-1.5 rounded-full text-xs font-bold" size="sm">
             <CheckCircle2 size={14} /> Listo
-          </button>
+          </RAButton>
         </div>
       )}
 
       {isAddMode && !isDrawingRouteFor && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[400] bg-nature-primary text-white px-6 py-2 rounded-full font-bold shadow-lg animate-pulse flex items-center gap-2">
           <MapPin size={16} /> Clica en el mapa para añadir destino
-          <button onClick={() => setIsAddMode(false)} className="ml-2 hover:bg-white/20 p-1 rounded-full"><MapPin size={14} className="rotate-45" /></button>
+          <RAButton variant="icon" aria-label="Cancelar modo de añadir" onPress={() => setIsAddMode(false)} className="ml-2 hover:bg-white/20 p-1"><MapPin size={14} className="rotate-45" /></RAButton>
         </div>
       )}
 
       <div className="absolute top-6 right-6 z-[400] flex flex-col gap-2">
-        <button onClick={() => setCenterMeTrigger(prev => prev + 1)} className="bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface p-3 rounded-full shadow-lg transition-colors border border-border-strong" title="Centrar en mí">
+        <RAButton variant="icon" aria-label="Centrar en mi ubicación" onPress={() => setCenterMeTrigger(prev => prev + 1)} className="bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface p-3 rounded-full shadow-lg border border-border-strong">
           <LocateFixed size={20} />
-        </button>
-        <button onClick={() => setReframeTrigger(prev => prev + 1)} className="bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface p-3 rounded-full shadow-lg transition-colors border border-border-strong" title="Reencuadrar Mapa (Ver todo)">
+        </RAButton>
+        <RAButton variant="icon" aria-label="Ajustar vista a todos los destinos" onPress={() => setReframeTrigger(prev => prev + 1)} className="bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface p-3 rounded-full shadow-lg border border-border-strong">
           <Maximize size={20} />
-        </button>
-        <button onClick={() => setIsAddMode(!isAddMode)} className={`p-3 rounded-full shadow-lg transition-colors border ${isAddMode ? 'bg-nature-primary text-white border-nature-primary' : 'bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface border-border-strong'}`} title="Añadir Destino en Mapa">
+        </RAButton>
+        <RAButton variant="icon" aria-label="Añadir destino en mapa" onPress={() => setIsAddMode(!isAddMode)} className={`p-3 rounded-full shadow-lg border ${isAddMode ? 'bg-nature-primary text-white border-nature-primary' : 'bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface border-border-strong'}`}>
           <MapPin size={20} />
-        </button>
-        <button onClick={() => setMapType(prev => prev === 'm' ? 's' : 'm')} className="bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface p-3 rounded-full shadow-lg transition-colors border border-border-strong" title="Cambiar Vista">
+        </RAButton>
+        <RAButton variant="icon" aria-label="Cambiar tipo de mapa" onPress={() => setMapType(prev => prev === 'm' ? 's' : 'm')} className="bg-bg-surface/90 backdrop-blur text-nature-primary hover:bg-bg-surface p-3 rounded-full shadow-lg border border-border-strong">
           {mapType === 'm' ? <Layers size={20} /> : <MapPin size={20} />}
-        </button>
-        <button onClick={() => setIsFormPanelOpen(true)} className="md:hidden bg-nature-primary text-white p-3 rounded-full shadow-lg"><MapPin size={20} /></button>
+        </RAButton>
+        <RAButton variant="icon" aria-label="Abrir panel de destino" onPress={() => setIsFormPanelOpen(true)} className="md:hidden bg-nature-primary text-white p-3 rounded-full shadow-lg"><MapPin size={20} /></RAButton>
       </div>
 
 

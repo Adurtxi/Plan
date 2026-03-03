@@ -4,9 +4,11 @@ import { useAppStore } from '../../store';
 import { AlertTriangle, CheckCircle, Info, Plane, Hotel, Navigation } from 'lucide-react';
 import { isTransportCat, isAccommodationCat } from '../../constants';
 import { useLocations } from '../../hooks/useTripData';
+import { RAButton } from '../ui/RAButton';
 
 export const SmartSummaryTable = () => {
-  const { setSelectedLocationId, setIsDetailModalOpen } = useAppStore();
+  const setSelectedLocationId = useAppStore(s => s.setSelectedLocationId);
+  const setIsDetailModalOpen = useAppStore(s => s.setIsDetailModalOpen);
   const { data: locations = [] } = useLocations();
   const navigate = useNavigate();
 
@@ -121,9 +123,9 @@ export const SmartSummaryTable = () => {
                     <p className="text-[10px] uppercase tracking-widest font-bold text-red-400 mt-0.5">{p.day} • {p.slot || 'S/H'}</p>
                   </div>
                 </div>
-                <button onClick={() => handleGoToReserve(p.id)} className="text-xs bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-red-600 active:scale-95 transition-all">
+                <RAButton variant="ghost" onPress={() => handleGoToReserve(p.id)} className="text-xs bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-red-600" size="sm">
                   Ir a Reservar
-                </button>
+                </RAButton>
               </div>
             ))}
           </div>

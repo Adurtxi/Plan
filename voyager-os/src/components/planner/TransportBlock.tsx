@@ -5,6 +5,7 @@ import { useAppStore } from '../../store';
 import type { LocationItem, TransportSegment } from '../../types';
 import { calculateRoute } from '../../lib/routingService';
 import { useTransports, useAddTransport } from '../../hooks/useTripData';
+import { RAButton } from '../ui/RAButton';
 
 interface TransportBlockProps {
   fromLoc: LocationItem;
@@ -12,13 +13,15 @@ interface TransportBlockProps {
 }
 
 export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => {
-  const { addToast, setDrawingRouteFor, isDrawingRouteFor } = useAppStore();
+  const addToast = useAppStore(s => s.addToast);
+  const setDrawingRouteFor = useAppStore(s => s.setDrawingRouteFor);
+  const isDrawingRouteFor = useAppStore(s => s.isDrawingRouteFor);
   const { data: transports = [] } = useTransports();
   const { mutateAsync: addTransport } = useAddTransport();
   const [isCalculating, setIsCalculating] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [hasAttemptedAutoCalc, setHasAttemptedAutoCalc] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, spaceAbove: 0, spaceBelow: 0 });
 
   const transportId = `${fromLoc.id}-${toLoc.id}`;
@@ -93,12 +96,13 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
     <div className={`flex items-center justify-center -my-2 relative group ${showOptions ? 'z-[100]' : 'z-10'}`}>
       <div className="absolute left-1/2 -top-4 bottom-0 w-[2px] bg-gray-200 group-hover:bg-nature-primary/50 transition-colors -z-10" />
 
-      <div className="relative">
-        <button
-          ref={buttonRef}
-          onClick={toggleOptions}
-          disabled={isCalculating}
-          className="bg-white border text-gray-500 border-gray-200 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm hover:border-nature-primary hover:text-nature-primary hover:shadow-md transition-all disabled:opacity-50"
+      <div className="relative" ref={buttonRef}>
+        <RAButton
+          variant="ghost"
+          onPress={toggleOptions}
+          isDisabled={isCalculating}
+          className="bg-white border text-gray-500 border-gray-200 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm hover:border-nature-primary hover:text-nature-primary hover:shadow-md disabled:opacity-50"
+          size="sm"
         >
           {isCalculating ? <Loader2 size={10} className="animate-spin" /> : (
             <>
@@ -111,7 +115,7 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
             </>
           )}
           <span>{mode === 'manual' ? (isDrawingRouteFor === transportId ? 'Dibujando...' : 'Manual') : (duration ? `${duration} min${mode === 'transit' ? ' (manual)' : ''}` : null)}</span>
-        </button>
+        </RAButton>
 
         {showOptions && createPortal(
           <div
@@ -126,7 +130,7 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
                 Modo de Transporte
               </div>
 
-              <button onClick={() => handleCalculate('walk')} className="w-full px-3 py-2.5 hover:bg-nature-primary hover:text-white rounded-xl text-gray-600 transition-all flex items-center gap-3 group/btn">
+              <RAButton variant="ghost" onPress={() => handleCalculate('walk')} className="w-full px-3 py-2.5 hover:bg-nature-primary hover:text-white rounded-xl text-gray-600 transition-all flex items-center gap-3 group/btn">
                 <div className="w-8 h-8 rounded-lg bg-gray-50 group-hover/btn:bg-white/20 flex items-center justify-center transition-colors">
                   <Map size={18} />
                 </div>
@@ -134,9 +138,9 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
                   <span className="text-xs font-bold leading-none">Persona</span>
                   <span className="text-[9px] opacity-60 font-medium">Caminando</span>
                 </div>
-              </button>
+              </RAButton>
 
-              <button onClick={() => handleCalculate('bike')} className="w-full px-3 py-2.5 hover:bg-nature-primary hover:text-white rounded-xl text-gray-600 transition-all flex items-center gap-3 group/btn">
+              <RAButton variant="ghost" onPress={() => handleCalculate('bike')} className="w-full px-3 py-2.5 hover:bg-nature-primary hover:text-white rounded-xl text-gray-600 transition-all flex items-center gap-3 group/btn">
                 <div className="w-8 h-8 rounded-lg bg-gray-50 group-hover/btn:bg-white/20 flex items-center justify-center transition-colors">
                   <Bike size={18} />
                 </div>
@@ -144,9 +148,9 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
                   <span className="text-xs font-bold leading-none">Bicicleta</span>
                   <span className="text-[9px] opacity-60 font-medium">Carril bici</span>
                 </div>
-              </button>
+              </RAButton>
 
-              <button onClick={() => handleCalculate('car')} className="w-full px-3 py-2.5 hover:bg-nature-primary hover:text-white rounded-xl text-gray-600 transition-all flex items-center gap-3 group/btn">
+              <RAButton variant="ghost" onPress={() => handleCalculate('car')} className="w-full px-3 py-2.5 hover:bg-nature-primary hover:text-white rounded-xl text-gray-600 transition-all flex items-center gap-3 group/btn">
                 <div className="w-8 h-8 rounded-lg bg-gray-50 group-hover/btn:bg-white/20 flex items-center justify-center transition-colors">
                   <Car size={18} />
                 </div>
@@ -154,41 +158,41 @@ export const TransportBlock = memo(({ fromLoc, toLoc }: TransportBlockProps) => 
                   <span className="text-xs font-bold leading-none">Coche / Taxi</span>
                   <span className="text-[9px] opacity-60 font-medium">Ruta rápida</span>
                 </div>
-              </button>
+              </RAButton>
 
-              <button onClick={() => {
+              <RAButton variant="ghost" onPress={() => {
                 const mins = prompt('¿Cuántos minutos en transporte público? (Aprox)', '15');
                 if (mins && !isNaN(parseInt(mins))) {
                   addTransport({ id: transportId, fromLocationId: fromLoc.id, toLocationId: toLoc.id, mode: 'transit', durationOverride: parseInt(mins) });
                 }
                 setShowOptions(false);
-              }} className="w-full px-3 py-2.5 hover:bg-nature-primary hover:text-white rounded-xl text-gray-600 transition-all flex items-center gap-3 group/btn">
-                <div className="w-8 h-8 rounded-lg bg-gray-50 group-hover/btn:bg-white/20 flex items-center justify-center transition-colors">
+              }} className="w-full px-3 py-2.5 hover:bg-nature-primary hover:text-white rounded-xl text-gray-600 flex items-center gap-3 group/btn" size="md">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 group-hover/btn:bg-white/20 flex items-center justify-center">
                   <Train size={18} />
                 </div>
                 <div className="flex flex-col items-start">
                   <span className="text-xs font-bold leading-none">Autobús / Tren</span>
                   <span className="text-[9px] opacity-60 font-medium">Tiempo manual</span>
                 </div>
-              </button>
+              </RAButton>
 
               <div className="h-px bg-gray-100/50 my-1 mx-2" />
 
-              <button onClick={() => {
+              <RAButton variant="ghost" onPress={() => {
                 addTransport({ id: transportId, fromLocationId: fromLoc.id, toLocationId: toLoc.id, mode: 'manual', durationCalculated: 0, distance: 0, polyline: [] });
                 setDrawingRouteFor(transportId);
                 setShowOptions(false);
                 addToast('Modo dibujo: Clica en el mapa para añadir puntos. Al terminar, cierra este aviso o cambia a otro modo.', 'info');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-              }} className="w-full px-3 py-3 bg-nature-accent/10 hover:bg-nature-accent text-nature-accent hover:text-white rounded-xl transition-all flex items-center gap-3 group/btn">
-                <div className="w-8 h-8 rounded-lg bg-white shadow-sm group-hover/btn:bg-white/20 flex items-center justify-center transition-colors">
+              }} className="w-full px-3 py-3 bg-nature-accent/10 hover:bg-nature-accent text-nature-accent hover:text-white rounded-xl flex items-center gap-3 group/btn" size="md">
+                <div className="w-8 h-8 rounded-lg bg-white shadow-sm group-hover/btn:bg-white/20 flex items-center justify-center">
                   <PenTool size={18} />
                 </div>
                 <div className="flex flex-col items-start">
                   <span className="text-[10px] font-black uppercase tracking-widest leading-none">Trazado Manual</span>
                   <span className="text-[9px] opacity-70 font-medium">Dibujar en el mapa</span>
                 </div>
-              </button>
+              </RAButton>
             </div>
 
             {/* Click outside to close */}

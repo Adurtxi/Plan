@@ -4,7 +4,8 @@ import { MobileDaySelector } from './MobileDaySelector';
 import { MapBottomSheet } from './MapBottomSheet';
 
 export const MobileMapView = ({ routePolylines }: { routePolylines: React.ReactNode }) => {
-  const { filterDays, setFilterDays } = useAppStore();
+  const filterDays = useAppStore(s => s.filterDays);
+  const setFilterDays = useAppStore(s => s.setFilterDays);
 
   // Use the first selected filterDay, or the firstDay if none selected
   const selectedDay = filterDays.length > 0 ? filterDays[0] : 'all';

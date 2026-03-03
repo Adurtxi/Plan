@@ -43,6 +43,13 @@ export const initDB = () => {
           });
         }
       },
+    }).then(async (db) => {
+      // Seed default variant if none exist
+      const variants = await db.getAll('tripVariants');
+      if (variants.length === 0) {
+        await db.put('tripVariants', { id: 'default', name: 'Plan Principal', startDate: null, endDate: null });
+      }
+      return db;
     });
   }
   return dbPromise;

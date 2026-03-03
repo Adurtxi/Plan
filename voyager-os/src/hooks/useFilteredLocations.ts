@@ -3,7 +3,9 @@ import { useAppStore } from '../store';
 import { useLocations } from './useTripData';
 
 export const useFilteredLocations = () => {
-  const { filterDays, activeGlobalVariantId, activeDayVariants } = useAppStore();
+  const filterDays = useAppStore(s => s.filterDays);
+  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
+  const activeDayVariants = useAppStore(s => s.activeDayVariants);
   const { data: locations = [] } = useLocations();
 
   const filteredLocations = useMemo(() => {

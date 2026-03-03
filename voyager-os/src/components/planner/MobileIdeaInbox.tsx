@@ -5,6 +5,7 @@ import { DAYS, isTransportCat, getCatGroup } from '../../constants';
 import { CAT_ICONS } from '../../constants';
 import { useLocations, useTripVariants } from '../../hooks/useTripData';
 import { useMoveToDay } from '../../hooks/useTripMutations';
+import { RAButton } from '../ui/RAButton';
 
 interface MobileIdeaInboxProps {
   isOpen: boolean;
@@ -14,7 +15,8 @@ interface MobileIdeaInboxProps {
 }
 
 export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: MobileIdeaInboxProps) => {
-  const { activeGlobalVariantId, activeDayVariants } = useAppStore();
+  const activeGlobalVariantId = useAppStore(s => s.activeGlobalVariantId);
+  const activeDayVariants = useAppStore(s => s.activeDayVariants);
   const { data: locations = [] } = useLocations();
   const { data: tripVariants = [] } = useTripVariants();
   const { mutate: moveToDay } = useMoveToDay();
@@ -92,16 +94,16 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
           <Inbox className="text-nature-primary" size={24} />
           <h2 className="text-2xl font-sans text-nature-primary">Buzón de Ideas</h2>
         </div>
-        <button onClick={onClose} className="p-2 bg-bg-surface-elevated rounded-full text-text-muted active:bg-border-strong">
+        <RAButton variant="icon" aria-label="Cerrar buzón" onPress={onClose} className="p-2 bg-bg-surface-elevated text-text-muted">
           <X size={20} />
-        </button>
+        </RAButton>
       </div>
 
       {/* Inputs Area */}
       <div className="px-4 py-4 bg-bg-surface border-b border-border-strong shrink-0 space-y-3">
-        <button onClick={handleAddNew} className="w-full bg-nature-primary text-white py-3.5 rounded-xl shadow-md font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-nature-primary/90 transition-all active:scale-[0.98]">
+        <RAButton variant="primary" onPress={handleAddNew} className="w-full" size="lg">
           <Plus size={18} /> Añadir Idea al Buzón
-        </button>
+        </RAButton>
 
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -118,19 +120,21 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
 
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
           {FILTER_OPTIONS.map(opt => (
-            <button
+            <RAButton
               key={opt.id}
-              onClick={() => setActiveFilter(opt.id)}
-              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${activeFilter === opt.id
+              variant="ghost"
+              onPress={() => setActiveFilter(opt.id)}
+              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border ${activeFilter === opt.id
                 ? 'bg-nature-primary text-white border-nature-primary shadow-sm'
                 : 'bg-bg-surface text-text-secondary border-border-strong hover:border-text-muted'
                 }`}
+              size="sm"
             >
               <div className="flex items-center gap-1.5">
                 {opt.id !== 'all' && <Filter size={12} />}
                 {opt.label}
               </div>
-            </button>
+            </RAButton>
           ))}
         </div>
       </div>
@@ -171,22 +175,25 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleEdit(loc.id); }}
-                    className="flex-1 py-2 text-xs font-bold text-text-secondary bg-bg-surface rounded-lg active:bg-border-subtle"
+                  <RAButton
+                    variant="ghost"
+                    onPress={() => { handleEdit(loc.id); }}
+                    className="flex-1 py-2 text-xs font-bold text-text-secondary bg-bg-surface rounded-lg"
+                    size="sm"
                   >
                     Editar
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
+                  </RAButton>
+                  <RAButton
+                    variant="ghost"
+                    onPress={() => {
                       setSelectedIds([loc.id]);
                       setShowMoveModal(true);
                     }}
-                    className="flex-[2] py-2 text-xs font-bold text-nature-primary bg-nature-mint/30 rounded-lg active:bg-nature-mint/50 flex flex-center gap-1.5"
+                    className="flex-[2] py-2 text-xs font-bold text-nature-primary bg-nature-mint/30 rounded-lg flex items-center justify-center gap-1.5"
+                    size="sm"
                   >
                     <Calendar size={14} /> Mover al plan
-                  </button>
+                  </RAButton>
                 </div>
               </div>
             );
@@ -197,13 +204,15 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
       {/* Floating Bulk Move Button */}
       {selectedIds.length > 0 && !showMoveModal && (
         <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-0 right-0 px-4 z-[610] animate-in slide-in-from-bottom-8">
-          <button
-            onClick={() => setShowMoveModal(true)}
-            className="w-full bg-nature-primary text-white py-4 rounded-2xl shadow-xl font-bold flex justify-center items-center gap-2"
+          <RAButton
+            variant="primary"
+            onPress={() => setShowMoveModal(true)}
+            className="w-full py-4 rounded-2xl shadow-xl"
+            size="lg"
           >
             <Calendar size={20} />
             Mover {selectedIds.length} {selectedIds.length === 1 ? 'idea' : 'ideas'} al plan
-          </button>
+          </RAButton>
         </div>
       )}
 
@@ -217,17 +226,19 @@ export const MobileIdeaInbox = ({ isOpen, onClose, handleEdit, handleAddNew }: M
                 <h3 className="font-sans text-xl text-nature-primary">Asignar al día</h3>
                 <p className="text-xs text-text-muted mt-1">{selectedIds.length} actividades seleccionadas</p>
               </div>
-              <button onClick={() => setShowMoveModal(false)} className="p-2 bg-bg-surface-elevated rounded-full text-text-muted"><X size={16} /></button>
+              <RAButton variant="icon" aria-label="Cerrar" onPress={() => setShowMoveModal(false)} className="p-2 bg-bg-surface-elevated text-text-muted"><X size={16} /></RAButton>
             </div>
             <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto custom-scroll pb-8">
               {dayOptions.map(opt => (
-                <button
+                <RAButton
                   key={opt.value}
-                  onClick={() => handleBulkMove(opt.value)}
-                  className="p-4 rounded-xl font-bold text-sm flex items-center justify-center bg-bg-surface-elevated border border-border-strong text-text-secondary active:bg-nature-mint/30 active:text-nature-primary active:border-nature-primary/30 transition-all"
+                  variant="ghost"
+                  onPress={() => handleBulkMove(opt.value)}
+                  className="p-4 rounded-xl font-bold text-sm flex items-center justify-center bg-bg-surface-elevated border border-border-strong text-text-secondary"
+                  size="md"
                 >
                   {opt.label}
-                </button>
+                </RAButton>
               ))}
             </div>
           </div>
