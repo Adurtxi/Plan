@@ -170,7 +170,7 @@ export const ReservationImportSheet: React.FC<Props> = ({ isOpen, onClose, targe
 
         <div className="px-6 pb-4 border-b border-border-strong flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-xl font-bold font-sans text-text-primary">Inyectar Reserva</h2>
+            <h2 className="text-xl font-bold font-sans text-text-primary">Añadir Reserva</h2>
             <p className="text-sm text-text-secondary">Convierte una reserva maestra en tarjetas del plan.</p>
           </div>
           <RAButton variant="icon" aria-label="Cerrar" onPress={onClose} className="p-2 bg-bg-surface-elevated text-text-muted hover:text-nature-primary hover:bg-nature-mint/30">

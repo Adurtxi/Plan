@@ -49,7 +49,7 @@ export const LogisticsTab = () => {
             </div>
             <h3 className="text-xl font-bold text-text-primary mb-2">No tienes reservas todavía</h3>
             <p className="text-text-secondary mb-8">
-              Añade tus vuelos, trenes, hoteles o tickets de actividades. Luego podrás inyectarlos automáticamente en tu planificación diaria.
+              Añade tus vuelos, trenes, hoteles o tickets de actividades. Luego podrás añadirlos automáticamente en tu planificación diaria.
             </p>
             <RAButton variant="secondary" onPress={() => { setEditingRes(null); setIsFormOpen(true); }} size="md" className="border-2 border-nature-primary text-nature-primary">
               <Plus size={20} /> Crear mi primera reserva

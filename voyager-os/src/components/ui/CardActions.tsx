@@ -149,26 +149,26 @@ export const CardActions = memo(({
         }
       >
         <RAMenuItem icon={<Info size={14} className="text-blue-500" />} onAction={handleShowDetail}>
-          Ver Detalle
+          Detalle
         </RAMenuItem>
 
         <RAMenuItem icon={<Edit2 size={14} className="text-amber-500" />} onAction={handleEdit}>
-          Editar Elemento
+          Editar
         </RAMenuItem>
 
         <RAMenuItem icon={<MapIcon size={14} className="text-nature-primary" />} onAction={handleGoToMap}>
-          Centrar en Plan
+          Centrar en Mapa
         </RAMenuItem>
 
         {item.coords && (
           <RAMenuItem icon={<Navigation size={14} className="text-[#4285F4]" />} onAction={handleOpenGoogleMapsRoute}>
-            Abrir Google Maps
+            Ir a
           </RAMenuItem>
         )}
 
         {item.link && item.link.startsWith('http') && (
           <RAMenuItem icon={<ArrowRightCircle size={14} className="text-[#4285F4]" />} onAction={handleOpenWebLink}>
-            Abrir Enlace Web
+            Google Maps
           </RAMenuItem>
         )}
 
